@@ -1,0 +1,3818 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCR 翻譯 — 貓狗值班版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Noto+Serif+TC:wght@300;400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js" integrity="sha384-qovJwSBbRDPP5cEjCp8S0UP66wrvnjaa60XMOGzTNanrThcrGfXfnZkvgY8N1KT3" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" integrity="sha384-Cck14aA9cifjYolcnjebXRfWGkz5ltHMBiG4px/j8GS+xQcb7OhNQWZYyWjQ+UwQ" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js" integrity="sha384-TcLTgu6flPhnZ5dfHnHimsxNFjYWN0povfGgnOvgPJKbZe6IbuoC2ociiatSHl9E" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #1a1a1a;
+    --ink2: #555;
+    --ink3: #999;
+    --line: #e8e8e8;
+    --bg: #fafaf8;
+    --white: #ffffff;
+    --accent: #2a6049;
+    --accent-l: #e8f2ee;
+    --zh-grad1: #237354;
+    --zh-grad2: #3aab7a;
+    --en-grad1: #1e4fa3;
+    --en-grad2: #3d7fe8;
+    --ja-grad1: #c0321f;
+    --ja-grad2: #f05c42;
+  }
+  body {
+    font-family: 'DM Sans', 'Zen Kaku Gothic New', 'Microsoft JhengHei', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  /* ── Header ── */
+  header {
+    width: 100%;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--white);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  header h1 {
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 300;
+    font-size: 1.3rem;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+  }
+  .badge {
+    background: linear-gradient(135deg, var(--zh-grad1), var(--zh-grad2));
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .batch-count {
+    font-size: 0.78rem;
+    color: var(--ink3);
+    font-weight: 500;
+    min-width: 100px;
+    text-align: right;
+  }
+  .batch-count strong {
+    color: var(--accent);
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .btn-settings {
+    background: none;
+    border: 1px solid var(--line);
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    color: var(--ink3);
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .btn-settings:hover { border-color: var(--ink2); color: var(--ink); background: var(--bg); }
+  /* ── Polish toggle chip (header) ── */
+  .polish-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--ink2);
+    cursor: pointer;
+    transition: all 0.18s;
+    user-select: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .polish-chip:hover { border-color: var(--ink2); color: var(--ink); }
+  .polish-chip .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #c8c8c8;
+    transition: all 0.2s;
+    box-shadow: 0 0 0 0 rgba(0,0,0,0);
+  }
+  .polish-chip.on {
+    border-color: #d4af37;
+    color: #8a6d1a;
+    background: #fffbe6;
+  }
+  .polish-chip.on .dot {
+    background: #d4af37;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.18);
+  }
+  .polish-chip .icon { font-size: 0.85rem; line-height: 1; }
+  /* ── Layout ── */
+  .app-layout {
+    display: flex;
+    min-height: calc(100vh - 65px);
+  }
+  /* ── Main content ── */
+  .main-content {
+    flex: 1;
+    padding: 28px 36px 120px;
+    max-width: calc(100% - 110px);
+  }
+  /* ── Upload zone ── */
+  .upload-zone {
+    border: 1.5px dashed var(--line);
+    border-radius: 14px;
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.25s, background 0.25s, transform 0.2s;
+    background: var(--white);
+    position: relative;
+    overflow: hidden;
+  }
+  .upload-zone:hover,
+  .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-l);
+    transform: scale(1.005);
+  }
+  .upload-zone.drag-over { border-width: 2.5px; }
+  .upload-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.5; }
+  .upload-text { font-size: 0.86rem; color: var(--ink2); line-height: 1.7; }
+  .upload-text strong { color: var(--ink); font-weight: 500; }
+  .upload-hint { margin-top: 6px; font-size: 0.72rem; color: var(--ink3); }
+  /* ── Batch Queue ── */
+  .queue-section {
+    margin-top: 24px;
+  }
+  .queue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .queue-title {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink2);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .queue-pill {
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 12px;
+    min-width: 22px;
+    text-align: center;
+  }
+  .btn-clear-queue {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink3);
+    font-family: inherit;
+    font-size: 0.72rem;
+    padding: 4px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-clear-queue:hover { border-color: #c0392b; color: #c0392b; }
+  .queue-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .queue-item {
+    position: relative;
+    width: 260px;
+    height: 200px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1.5px solid var(--line);
+    background: var(--white);
+    cursor: default;
+    transition: all 0.25s;
+    animation: queuePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes queuePop {
+    0% { transform: scale(0.5) rotate(-5deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+  }
+  .queue-item:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+  .queue-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .queue-item .remove-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px; height: 22px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+    backdrop-filter: blur(4px);
+  }
+  .queue-item:hover .remove-btn { opacity: 1; }
+  .queue-item .item-number {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+  }
+  .queue-item.processing {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-l);
+  }
+  .queue-item.processing::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(42,96,73,0.15);
+    animation: processingPulse 1s ease-in-out infinite;
+  }
+  @keyframes processingPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+  }
+  .queue-item.done { border-color: var(--accent); }
+  .queue-item.done::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    background: rgba(42,96,73,0.5);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
+  .queue-empty {
+    text-align: center;
+    padding: 30px;
+    color: var(--ink3);
+    font-size: 0.82rem;
+    border: 1.5px dashed var(--line);
+    border-radius: 10px;
+    background: var(--white);
+  }
+  /* ── Status ── */
+  #status-text {
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--ink3);
+    min-height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 16px 0;
+  }
+  .spinner {
+    width: 13px; height: 13px;
+    border: 1.5px solid var(--line);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* ── Results area ── */
+  .results-section { margin-top: 24px; }
+  /* ── Export Toolbar ── */
+  .export-toolbar {
+    display: none;
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .export-toolbar.visible { display: flex; }
+  .export-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .export-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-export {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--ink2);
+    font-family: inherit;
+    font-size: 0.76rem;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+  .btn-export:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-l); }
+  .btn-export:disabled { opacity: 0.4; cursor: not-allowed; }
+  .result-card {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    animation: resultSlideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes resultSlideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .result-header {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--bg);
+  }
+  .result-thumb {
+    width: 48px; height: 36px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+  }
+  .result-meta {
+    flex: 1;
+    font-size: 0.78rem;
+    color: var(--ink2);
+    font-weight: 500;
+  }
+  .result-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 200px;
+  }
+  @media (max-width: 860px) {
+    .result-panels { grid-template-columns: 1fr; }
+  }
+  .result-panel {
+    padding: 18px 20px;
+    overflow-y: auto;
+    max-height: 60vh;
+    font-size: 0.86rem;
+    line-height: 1.75;
+    font-family: 'Noto Serif TC', serif;
+    color: var(--ink);
+  }
+  .result-panel + .result-panel { border-left: 1px solid var(--line); }
+  @media (max-width: 860px) {
+    .result-card { overflow: visible; }
+    .result-panel + .result-panel { border-left: none; border-top: 1px solid var(--line); }
+    .result-panel {
+      max-height: none;
+      overflow-y: visible;
+      padding: 14px 12px;
+      font-size: 0.82rem;
+    }
+    .panel-content {
+      transform-origin: top left;
+    }
+    .result-panel table {
+      table-layout: fixed;
+      word-break: break-word;
+    }
+    .result-panel img {
+      max-width: 100%;
+      height: auto;
+    }
+    .result-panel pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-x: hidden;
+    }
+  }
+  .panel-content {
+    outline: none;
+    min-height: 2em;
+    cursor: text;
+  }
+  .panel-content:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .result-panel-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink3);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .result-panel-label .dot { width: 5px; height: 5px; border-radius: 50%; }
+  .result-panel table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  .result-panel td, .result-panel th { border: 1px solid var(--line); padding: 5px 8px; }
+  .result-panel::-webkit-scrollbar { width: 4px; }
+  .result-panel::-webkit-scrollbar-track { background: transparent; }
+  .result-panel::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+  /* ── Fullscreen Viewer ── */
+  .viewer-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 9999;
+    background: #ffffff;
+    flex-direction: column;
+  }
+  .viewer-overlay.open { display: flex; }
+  .viewer-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: #f5f5f5;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .viewer-toolbar button {
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--ink);
+  }
+  .viewer-toolbar button:active { background: var(--line); }
+  .viewer-body {
+    flex: 1;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 0.92rem;
+    line-height: 1.8;
+    color: var(--ink);
+  }
+  .viewer-body table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  .viewer-body td, .viewer-body th { border: 1px solid var(--line); padding: 5px 8px; }
+  .viewer-body img { max-width: 100%; height: auto; }
+  .viewer-body pre { white-space: pre-wrap; word-break: break-word; }
+  /* ── Sync scroll indicator ── */
+  .sync-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--ink3);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    user-select: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sync-badge:hover { border-color: var(--ink2); color: var(--ink2); }
+  .sync-badge .sync-icon {
+    display: inline-block;
+    transition: transform 0.3s;
+  }
+  .sync-badge.active { color: var(--accent); border-color: var(--accent); background: var(--accent-l); }
+  .sync-badge.active .sync-icon { transform: rotate(0deg); }
+  .sync-badge:not(.active) .sync-icon { transform: rotate(45deg); opacity: 0.5; }
+  /* Scroll highlight pulse on synced panel */
+  .result-panel.sync-flash {
+    box-shadow: inset 0 0 0 1.5px var(--accent);
+    transition: box-shadow 0.15s;
+  }
+  .result-actions {
+    padding: 10px 18px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    background: var(--bg);
+  }
+  /* ── Polish Button ── */
+  .btn-polish {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #f8f0e3 0%, #f2e6d0 100%);
+    border: 1px solid #e0d1b8;
+    color: #8a6d3b;
+    font-family: 'Zen Kaku Gothic New', 'DM Sans', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 5px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.25s;
+    overflow: hidden;
+    letter-spacing: 0.02em;
+  }
+  .btn-polish:hover {
+    background: linear-gradient(135deg, #f5ead8 0%, #eddbbc 100%);
+    border-color: #c9b48e;
+    box-shadow: 0 3px 12px rgba(138,109,59,0.15);
+    transform: translateY(-1px);
+  }
+  .btn-polish:active { transform: scale(0.96); }
+  .btn-polish .polish-icon { font-size: 0.85rem; }
+  .btn-polish::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(108deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
+    background-size: 250% 100%;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .btn-polish:hover::after { opacity: 1; animation: shimmer 2s linear infinite; }
+  .btn-polish.polishing {
+    pointer-events: none;
+    background: linear-gradient(135deg, #fdf6e3 0%, #f5ecd3 100%);
+    color: #b8943e;
+    border-color: #d4c08a;
+  }
+  .btn-polish.polishing .polish-icon {
+    animation: polishSpin 1s ease-in-out infinite;
+  }
+  @keyframes polishSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .btn-polish.done-polish {
+    background: linear-gradient(135deg, #e8f2ee 0%, #d5ebdf 100%);
+    border-color: #b8dcc8;
+    color: var(--accent);
+  }
+  /* ── Polish diff indicator ── */
+  .polish-indicator {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #b8943e;
+    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    background: #fdf6e3;
+    border: 1px solid #e8dbb8;
+    border-radius: 10px;
+  }
+  .polish-indicator.visible { display: inline-flex; }
+  /* ── Fixed Right Sidebar Buttons ── */
+  .side-actions {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .action-btn {
+    position: relative;
+    width: 96px;
+    padding: 22px 8px 18px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Zen Kaku Gothic New', 'DM Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color: #fff;
+  }
+  .action-btn:first-child { border-radius: 18px 0 0 0; }
+  .action-btn:last-child { border-radius: 0 0 0 18px; }
+  .action-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(108deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
+    background-size: 250% 100%;
+    animation: shimmer 3s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes shimmer {
+    0%   { background-position: -250% center; }
+    100% { background-position: 250% center; }
+  }
+  .action-btn.zh { background: linear-gradient(180deg, var(--zh-grad1), var(--zh-grad2)); }
+  .action-btn.en { background: linear-gradient(180deg, var(--en-grad1), var(--en-grad2)); }
+  .action-btn.ja { background: linear-gradient(180deg, var(--ja-grad1), var(--ja-grad2)); }
+  .action-btn:hover {
+    width: 110px;
+    box-shadow: -8px 0 32px rgba(0,0,0,0.25);
+  }
+  .action-btn:active { transform: scale(0.92); }
+  .action-flag { font-size: 1.8rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); transition: transform 0.3s; }
+  .action-btn:hover .action-flag { transform: scale(1.15) rotate(-5deg); }
+  .action-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
+  .action-sub { font-size: 0.55rem; opacity: 0.7; letter-spacing: 0.02em; }
+  .action-btn.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+    filter: grayscale(0.5);
+  }
+  .action-btn.processing-btn {
+    pointer-events: none;
+  }
+  .action-btn.processing-btn .action-flag {
+    animation: flagSpin 0.6s ease-in-out infinite;
+  }
+  @keyframes flagSpin {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(15deg); }
+    75% { transform: rotate(-15deg); }
+  }
+  /* ── Toast / Reaction ── */
+  .toast-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    pointer-events: none;
+  }
+  .toast {
+    background: rgba(10, 10, 10, 0.88);
+    color: #fff;
+    font-family: 'Zen Kaku Gothic New', 'Noto Serif TC', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    padding: 20px 40px;
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+    white-space: nowrap;
+    text-align: center;
+    animation: toastBoom 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    letter-spacing: 0.04em;
+  }
+  @keyframes toastBoom {
+    0%   { opacity: 0; transform: scale(0.3) rotate(-8deg); }
+    15%  { opacity: 1; transform: scale(1.15) rotate(2deg); }
+    25%  { transform: scale(0.95) rotate(-1deg); }
+    35%  { transform: scale(1.02) rotate(0); }
+    70%  { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.8) translateY(-30px); }
+  }
+  /* ── Confetti ── */
+  .confetti-piece {
+    position: fixed;
+    z-index: 9998;
+    pointer-events: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    animation: confettiFall 2s ease-out forwards;
+  }
+  @keyframes confettiFall {
+    0%   { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(720deg) scale(0.3); }
+  }
+  /* ── Screen Shake ── */
+  @keyframes screenShake {
+    0%, 100% { transform: translate(0); }
+    10% { transform: translate(-6px, 3px); }
+    20% { transform: translate(5px, -4px); }
+    30% { transform: translate(-3px, 6px); }
+    40% { transform: translate(4px, -2px); }
+    50% { transform: translate(-5px, 2px); }
+    60% { transform: translate(3px, -5px); }
+    70% { transform: translate(-2px, 4px); }
+    80% { transform: translate(6px, -3px); }
+    90% { transform: translate(-4px, 5px); }
+  }
+  body.shaking { animation: screenShake 0.5s ease-in-out; }
+  /* ── Emoji Rain ── */
+  .emoji-rain {
+    position: fixed;
+    z-index: 9997;
+    pointer-events: none;
+    font-size: 2rem;
+    animation: emojiDrop 2.5s ease-in forwards;
+  }
+  @keyframes emojiDrop {
+    0%   { opacity: 1; transform: translateY(-50px) rotate(0deg); }
+    100% { opacity: 0; transform: translateY(110vh) rotate(360deg); }
+  }
+  /* ── btn-ghost ── */
+  .btn-ghost {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink3);
+    font-family: inherit;
+    font-size: 0.72rem;
+    padding: 4px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-ghost:hover { border-color: var(--ink2); color: var(--ink); background: var(--bg); }
+  /* ── Progress Bar ── */
+  .progress-bar-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 110px;
+    height: 4px;
+    background: var(--line);
+    z-index: 300;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .progress-bar-container.active { opacity: 1; }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--zh-grad1), var(--zh-grad2), var(--en-grad2), var(--ja-grad2));
+    background-size: 300% 100%;
+    animation: progressGradient 2s ease infinite;
+    border-radius: 0 2px 2px 0;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  @keyframes progressGradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  /* ── Cancel Batch Button ── */
+  .btn-cancel-batch {
+    display: none;
+    align-items: center;
+    gap: 5px;
+    background: #c0392b;
+    color: #fff;
+    border: none;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-cancel-batch:hover { background: #a93226; }
+  .btn-cancel-batch.visible { display: inline-flex; }
+  /* ── Settings Modal ── */
+  #settings-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(8, 8, 8, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
+  }
+  #settings-modal.open {
+    display: flex;
+    animation: modalFadeIn 0.3s ease;
+  }
+  @keyframes modalFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .settings-card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 36px 36px 32px;
+    width: min(460px, 90vw);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.22);
+    animation: cardSlideUp 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes cardSlideUp {
+    from { opacity: 0; transform: translateY(32px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .settings-title {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 1.15rem;
+    font-weight: 300;
+    margin-bottom: 24px;
+    color: var(--ink);
+  }
+  .field-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--ink2);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .field-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .field-input {
+    width: 100%;
+    padding: 10px 40px 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-family: 'DM Sans', monospace;
+    font-size: 0.85rem;
+    color: var(--ink);
+    background: var(--bg);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field-input:focus { border-color: var(--accent); }
+  .field-input::placeholder { color: var(--ink3); }
+  .btn-eye {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--ink3);
+    padding: 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .btn-eye:hover { color: var(--ink); }
+  .btn-test {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink2);
+    font-family: inherit;
+    font-size: 0.78rem;
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-test:hover { border-color: var(--ink2); color: var(--ink); }
+  .btn-test:disabled { opacity: 0.5; cursor: default; }
+  .save-feedback {
+    font-size: 0.78rem;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s;
+    margin-right: auto;
+    align-self: center;
+  }
+  .save-feedback.show { opacity: 1; }
+  .settings-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 24px;
+  }
+  .btn-cancel {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink2);
+    font-family: inherit;
+    font-size: 0.82rem;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-cancel:hover { border-color: var(--ink2); color: var(--ink); }
+  .btn-save {
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 8px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-save:hover { background: #225a3e; }
+  .field-row-model {
+    margin-top: 16px;
+  }
+  .field-input-select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-family: 'DM Sans', monospace;
+    font-size: 0.85rem;
+    color: var(--ink);
+    background: var(--bg);
+    outline: none;
+    transition: border-color 0.15s;
+    cursor: pointer;
+  }
+  .field-input-select:focus { border-color: var(--accent); }
+  /* ── Polish toggle (settings modal) ── */
+  .field-row-polish {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .field-row-polish .polish-info { flex: 1; }
+  .field-row-polish .polish-info .polish-label {
+    font-size: 0.85rem;
+    color: var(--ink);
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .field-row-polish .polish-info .polish-desc {
+    font-size: 0.7rem;
+    color: var(--ink3);
+    line-height: 1.4;
+  }
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 44px; height: 24px;
+    flex-shrink: 0;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #d0d0d0;
+    border-radius: 24px;
+    transition: 0.25s;
+  }
+  .switch .slider::before {
+    content: '';
+    position: absolute;
+    height: 18px; width: 18px;
+    left: 3px; bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.25s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .switch input:checked + .slider { background: #d4af37; }
+  .switch input:checked + .slider::before { transform: translateX(20px); }
+  .key-hint {
+    margin-top: 6px;
+    font-size: 0.68rem;
+    color: var(--ink3);
+    line-height: 1.5;
+  }
+  /* ── Responsive Header / Side Buttons ── */
+  @media (max-width: 700px) {
+    .main-content { padding: 20px 16px 120px; max-width: calc(100% - 72px); }
+    .side-actions { gap: 0; }
+    .action-btn { width: 68px; padding: 16px 6px 14px; }
+    .action-btn:hover { width: 76px; }
+    .action-flag { font-size: 1.4rem; }
+    .action-label { font-size: 0.6rem; }
+    .action-sub { display: none; }
+    .queue-item { width: 200px; height: 152px; }
+  }
+  /* ══════════════════════════════════
+     ── Robot Mascots Stage (Simplified SVG) ──
+  ══════════════════════════════════ */
+  .robot-stage {
+    position: fixed;
+    bottom: 18px;
+    left: 18px;
+    z-index: 500;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .robot-stage.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .robot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    flex-shrink: 0;
+    gap: 2px;
+  }
+  .robot::after {
+    content: '';
+    position: absolute;
+    bottom: -7px;
+    width: 44px;
+    height: 7px;
+    background: rgba(14, 22, 20, 0.08);
+    border-radius: 50%;
+    z-index: -1;
+    transition: all 0.3s ease;
+  }
+  .robot.idle::after { animation: robotShadowFloat 3.2s ease-in-out infinite; }
+  @keyframes robotShadowFloat {
+    0%, 100% { transform: scale(1); opacity: 0.12; }
+    50% { transform: scale(0.84); opacity: 0.06; }
+  }
+  .robot-svg {
+    width: 84px;
+    height: 84px;
+    overflow: visible;
+    filter: drop-shadow(0 7px 16px rgba(17, 24, 22, 0.1));
+    transition: transform 0.22s ease, filter 0.22s ease;
+  }
+  .robot-shell {
+    fill: #ffffff;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .robot-face {
+    fill: rgba(255,255,255,0.94);
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .robot-antenna,
+  .robot-wave,
+  .robot-mouth {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .robot-accent {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .robot-eye {
+    --eye-x: 0px;
+    --eye-y: 0px;
+    --eye-blink: 1;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.18s ease;
+    transform: translate(var(--eye-x), var(--eye-y)) scaleY(var(--eye-blink));
+    fill: #1a2621;
+  }
+  .robot-eye.blinking { --eye-blink: 0.16; }
+  .robot .robot-mouth { stroke: #1a2621; }
+  .robot .robot-mouth-talk {
+    fill: rgba(26, 38, 33, 0.12);
+    stroke-width: 2;
+  }
+  .robot .robot-mouth-surprised { fill: rgba(255,255,255,0.76); }
+  .robot.scanner.active .robot-svg,
+  .robot.translator.active .robot-svg {
+    filter: drop-shadow(0 10px 18px rgba(17, 24, 22, 0.16));
+  }
+  /* ── Cat-specific features ── */
+  .robot.scanner .robot-accent { fill: #ffe2bf; stroke: #d8924a; stroke-width: 1.6; }
+  .robot.scanner .robot-shell { fill: #fff7ec; stroke: #d8924a; }
+  .robot.scanner .robot-face { fill: rgba(255, 200, 140, 0.18); stroke: #e8b27c; }
+  .robot.scanner { color: #d8924a; }
+  .cat-ear-inner {
+    fill: #ffc0cb;
+    stroke: none;
+    opacity: 0.9;
+  }
+  .cat-whisker {
+    stroke: #b8a78a;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    fill: none;
+    opacity: 0.65;
+  }
+  .cat-nose {
+    fill: #f0a3b1;
+    stroke: #c47888;
+    stroke-width: 0.8;
+    stroke-linejoin: round;
+  }
+  .cat-eye-shine {
+    fill: #fff;
+    pointer-events: none;
+  }
+  /* Cat blinking is more frequent — eyes go to slits when surprised */
+  .robot.scanner.surprised .robot-eye {
+    --eye-blink: 1.15;
+  }
+  .robot.scanner.looking-up .robot-eye { --eye-y: -2px; }
+  /* ── Dog-specific features ── */
+  .robot.translator .robot-accent { fill: #c89060; stroke: #8a5a30; stroke-width: 1.6; }
+  .robot.translator .robot-shell { fill: #fdf3e6; stroke: #b8855a; }
+  .robot.translator .robot-face { fill: rgba(200, 144, 96, 0.18); stroke: #c89870; }
+  .robot.translator { color: #8a5a30; }
+  .dog-marking {
+    fill: #c89060;
+    stroke: none;
+    opacity: 0.55;
+  }
+  .dog-nose {
+    fill: #2a2018;
+    stroke: none;
+  }
+  .dog-eye-shine {
+    fill: #fff;
+    pointer-events: none;
+  }
+  .dog-tongue {
+    fill: #ff7a8a;
+    stroke: #c25868;
+    stroke-width: 0.8;
+    stroke-linejoin: round;
+    display: none;
+  }
+  .robot.translator.happy .dog-tongue,
+  .robot.translator.talking .dog-tongue {
+    display: block;
+  }
+  .robot.idle .robot-svg { animation: robotFloat 3.4s ease-in-out infinite; }
+  @keyframes robotFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  .robot.talking .robot-svg { animation: robotTalkBob 0.28s ease-in-out infinite alternate; }
+  @keyframes robotTalkBob {
+    from { transform: translateY(0) scale(1); }
+    to { transform: translateY(-1.5px) scale(1.02, 0.99); }
+  }
+  /* Cat tail swish (subtle, intermittent) */
+  .robot.scanner .cat-tail {
+    transform-origin: 76px 60px;
+    animation: catTailIdle 4.2s ease-in-out infinite;
+  }
+  .robot.scanner.waving .cat-tail,
+  .robot.scanner.excited .cat-tail {
+    animation: catTailSwish 0.55s ease-in-out 4;
+  }
+  @keyframes catTailIdle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-4deg); }
+    75% { transform: rotate(3deg); }
+  }
+  @keyframes catTailSwish {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-22deg); }
+    75% { transform: rotate(18deg); }
+  }
+  /* Dog tail wag (faster, friendlier) */
+  .robot.translator .dog-tail {
+    transform-origin: 20px 60px;
+    animation: dogTailIdle 3.6s ease-in-out infinite;
+  }
+  .robot.translator.waving .dog-tail,
+  .robot.translator.excited .dog-tail,
+  .robot.translator.happy .dog-tail {
+    animation: dogTailWag 0.32s ease-in-out infinite alternate;
+  }
+  @keyframes dogTailIdle {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(-6deg); }
+  }
+  @keyframes dogTailWag {
+    from { transform: rotate(-18deg); }
+    to { transform: rotate(22deg); }
+  }
+  .robot.excited .robot-svg { animation: robotExcited 0.38s ease-in-out infinite alternate; }
+  @keyframes robotExcited {
+    from { transform: translateY(-1px) rotate(-1deg); }
+    to { transform: translateY(-3px) rotate(1deg); }
+  }
+  .robot .robot-mouth-talk,
+  .robot .robot-mouth-happy,
+  .robot .robot-mouth-surprised {
+    display: none;
+  }
+  .robot.happy .robot-mouth-neutral,
+  .robot.surprised .robot-mouth-neutral,
+  .robot.talking .robot-mouth-neutral {
+    display: none;
+  }
+  .robot.happy .robot-mouth-happy { display: block; }
+  .robot.surprised .robot-mouth-surprised { display: block; }
+  .robot.talking .robot-mouth-talk { display: block; }
+  .robot:not(.happy):not(.surprised):not(.talking) .robot-mouth-neutral { display: block; }
+  .robot.looking-right .robot-eye { --eye-x: 1.8px; }
+  .robot.looking-left .robot-eye { --eye-x: -1.8px; }
+  .robot.looking-up .robot-eye { --eye-y: -1.6px; }
+  .robot.happy .robot-eye { --eye-y: -1px; }
+  .speech-area {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+    min-width: 0;
+    max-width: 236px;
+    z-index: 10;
+  }
+  .speech-bubble {
+    position: relative;
+    padding: 10px 13px;
+    border-radius: 18px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    line-height: 1.5;
+    font-family: 'Zen Kaku Gothic New', 'DM Sans', sans-serif;
+    color: var(--ink);
+    box-shadow: 0 8px 18px rgba(18,24,21,0.1);
+    animation: bubblePop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: bottom center;
+    letter-spacing: 0.01em;
+  }
+  @keyframes bubblePop {
+    0% { opacity: 0; transform: scale(0.8) translateY(15px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .speech-bubble.scanner-bubble {
+    background: rgba(255,251,243,0.98);
+    border: 1.5px solid #f0c896;
+    border-bottom-left-radius: 6px;
+    margin-right: 8px;
+    color: #8a5520;
+  }
+  .speech-bubble.scanner-bubble::before {
+    content: '🐱';
+    margin-right: 4px;
+    font-size: 0.95em;
+  }
+  .speech-bubble.translator-bubble {
+    background: rgba(252,246,236,0.98);
+    border: 1.5px solid #d6a878;
+    border-bottom-right-radius: 6px;
+    margin-left: 8px;
+    align-self: flex-end;
+    color: #6a4520;
+  }
+  .speech-bubble.translator-bubble::before {
+    content: '🐶';
+    margin-right: 4px;
+    font-size: 0.95em;
+  }
+  .speech-name {
+    display: none;
+  }
+  .speech-bubble.fadeout {
+    animation: bubbleFade 0.3s ease forwards;
+  }
+  @keyframes bubbleFade {
+    to { opacity: 0; transform: scale(0.9) translateY(-5px); }
+  }
+  .robot-stage-inner {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    padding: 10px 12px 8px;
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.65);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.9), rgba(246,250,247,0.84));
+    box-shadow: 0 16px 36px rgba(15, 24, 19, 0.12);
+    backdrop-filter: blur(10px);
+  }
+  .robot-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  @media (max-width: 700px) {
+    .robot-stage { left: 10px; bottom: 10px; }
+    .robot-stage-inner {
+      gap: 9px;
+      padding: 9px 10px 7px;
+      border-radius: 20px;
+    }
+    .robot-svg { width: 68px; height: 68px; }
+    .speech-area { max-width: 176px; }
+    .speech-bubble { font-size: 0.8rem; padding: 9px 11px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <h1>OCR 翻譯</h1>
+    <span class="badge">Batch</span>
+  </div>
+  <div class="header-right">
+    <div class="batch-count" id="batch-count"></div>
+    <button class="btn-cancel-batch" id="btn-cancel-batch" onclick="cancelBatch()" title="取消批次">⏹ 取消</button>
+    <button class="polish-chip" id="polish-chip" onclick="togglePolishEnabled()" title="切換自動潤稿（演示時可關閉以加速）" aria-label="切換自動潤稿">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="icon">✨</span>
+      <span class="polish-chip-label" id="polish-chip-label">潤稿 開</span>
+    </button>
+    <button class="btn-settings" onclick="openSettings()" title="設定" aria-label="設定">⚙</button>
+  </div>
+</header>
+<!-- Fixed Side Buttons -->
+<div class="side-actions" id="side-actions">
+  <button class="action-btn zh disabled" id="btn-zh" onclick="startBatch('Traditional Chinese (Taiwan usage)')">
+    <span class="action-flag">🇹🇼</span>
+    <span class="action-label">繁體中文</span>
+    <span class="action-sub">翻譯</span>
+  </button>
+  <button class="action-btn en disabled" id="btn-en" onclick="startBatch('English')">
+    <span class="action-flag">🇺🇸</span>
+    <span class="action-label">English</span>
+    <span class="action-sub">Translate</span>
+  </button>
+  <button class="action-btn ja disabled" id="btn-ja" onclick="startBatch('Japanese')">
+    <span class="action-flag">🇯🇵</span>
+    <span class="action-label">日本語</span>
+    <span class="action-sub">翻訳</span>
+  </button>
+</div>
+<!-- Progress bar -->
+<div class="progress-bar-container" id="progress-container">
+  <div class="progress-bar" id="progress-bar"></div>
+</div>
+<!-- Toast container -->
+<div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
+<!-- Robot Mascot Stage -->
+<div class="robot-stage" id="robot-stage">
+  <div class="robot-stage-inner">
+    <div class="robot-col">
+      <div class="robot scanner idle" id="robot-scanner">
+        <svg class="robot-svg" viewBox="0 0 96 96" aria-hidden="true">
+          <!-- Tail (swishes when waving) -->
+          <path class="robot-wave cat-tail" d="M76 60 q14 -2 14 -18 q0 -8 -6 -8"></path>
+          <!-- Ears (triangular) -->
+          <path class="robot-accent cat-ear" d="M22 32 L18 12 L36 26 Z"></path>
+          <path class="robot-accent cat-ear" d="M74 32 L78 12 L60 26 Z"></path>
+          <!-- Inner ear pink -->
+          <path class="cat-ear-inner" d="M25 28 L22 16 L31 24 Z"></path>
+          <path class="cat-ear-inner" d="M71 28 L74 16 L65 24 Z"></path>
+          <!-- Head shell -->
+          <ellipse class="robot-shell" cx="48" cy="50" rx="28" ry="26"></ellipse>
+          <!-- Face panel -->
+          <ellipse class="robot-face" cx="48" cy="48" rx="22" ry="16"></ellipse>
+          <!-- Whiskers -->
+          <path class="cat-whisker" d="M14 53 H30"></path>
+          <path class="cat-whisker" d="M14 58 H30"></path>
+          <path class="cat-whisker" d="M66 53 H82"></path>
+          <path class="cat-whisker" d="M66 58 H82"></path>
+          <!-- Eyes -->
+          <circle class="robot-eye" id="scan-eye-l" cx="39" cy="46" r="4.2"></circle>
+          <circle class="robot-eye" id="scan-eye-r" cx="57" cy="46" r="4.2"></circle>
+          <!-- Pupil highlights -->
+          <circle class="cat-eye-shine" cx="40.5" cy="44.5" r="1.1"></circle>
+          <circle class="cat-eye-shine" cx="58.5" cy="44.5" r="1.1"></circle>
+          <!-- Pink nose (triangle) -->
+          <path class="cat-nose" d="M45 56 L51 56 L48 60 Z"></path>
+          <!-- Mouth states (cat-style "ω") -->
+          <path class="robot-mouth robot-mouth-neutral" d="M48 60 v2 M42 63 q3 3 6 0 q3 -3 6 0"></path>
+          <path class="robot-mouth robot-mouth-happy" d="M48 60 v1.5 M40 62 q4 5 8 0 q4 -5 8 0"></path>
+          <ellipse class="robot-mouth robot-mouth-talk" cx="48" cy="65" rx="5" ry="3.8"></ellipse>
+          <circle class="robot-mouth robot-mouth-surprised" cx="48" cy="65" r="3.8"></circle>
+        </svg>
+      </div>
+    </div>
+    <div class="speech-area" id="speech-area"></div>
+    <div class="robot-col">
+      <div class="robot translator idle" id="robot-translator">
+        <svg class="robot-svg" viewBox="0 0 96 96" aria-hidden="true">
+          <!-- Tail (wags when waving) -->
+          <path class="robot-wave dog-tail" d="M20 60 q-14 -2 -14 -18 q0 -8 6 -8"></path>
+          <!-- Floppy ears (hanging on sides) -->
+          <path class="robot-accent dog-ear" d="M24 28 q-8 4 -8 22 q0 8 6 10 q5 -4 6 -16 q0 -8 -4 -16 Z"></path>
+          <path class="robot-accent dog-ear" d="M72 28 q8 4 8 22 q0 8 -6 10 q-5 -4 -6 -16 q0 -8 4 -16 Z"></path>
+          <!-- Head shell -->
+          <rect class="robot-shell" x="26" y="22" width="44" height="48" rx="20"></rect>
+          <!-- Snout area -->
+          <ellipse class="robot-face" cx="48" cy="58" rx="14" ry="10"></ellipse>
+          <!-- Forehead marking -->
+          <path class="dog-marking" d="M44 30 q4 -6 8 0 q-2 4 -4 4 q-2 0 -4 -4 Z"></path>
+          <!-- Eyes -->
+          <circle class="robot-eye" id="trans-eye-l" cx="39" cy="45" r="4"></circle>
+          <circle class="robot-eye" id="trans-eye-r" cx="57" cy="45" r="4"></circle>
+          <!-- Eye shine -->
+          <circle class="dog-eye-shine" cx="40" cy="43.5" r="1"></circle>
+          <circle class="dog-eye-shine" cx="58" cy="43.5" r="1"></circle>
+          <!-- Black nose -->
+          <ellipse class="dog-nose" cx="48" cy="55" rx="3.6" ry="2.7"></ellipse>
+          <!-- Tongue (visible only when happy/talking) -->
+          <path class="dog-tongue" d="M44 64 q4 5 8 0 q-1 5 -4 5 q-3 0 -4 -5 Z"></path>
+          <!-- Mouth states (dog-style with vertical lip line) -->
+          <path class="robot-mouth robot-mouth-neutral" d="M48 58 v4 M44 62 q4 2 8 0"></path>
+          <path class="robot-mouth robot-mouth-happy" d="M48 58 v3 M40 61 q8 6 16 0"></path>
+          <ellipse class="robot-mouth robot-mouth-talk" cx="48" cy="64" rx="6" ry="4"></ellipse>
+          <circle class="robot-mouth robot-mouth-surprised" cx="48" cy="64" r="4"></circle>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Settings Modal -->
+<div id="settings-modal">
+  <div class="settings-card">
+    <p class="settings-title">設定</p>
+    <div class="field-label">Gemini API Key</div>
+    <div class="field-row">
+      <input class="field-input" id="api-key-input" type="password" placeholder="貼上你的 API Key" autocomplete="off" spellcheck="false">
+      <button class="btn-eye" id="btn-eye" onclick="toggleKeyVisibility()" title="顯示/隱藏" aria-label="顯示或隱藏 API Key">👁</button>
+    </div>
+    <div class="key-hint">⚠ Key 僅存於本機瀏覽器，不會傳送至第三方</div>
+    <div class="field-row-model">
+      <div class="field-label">Model</div>
+      <select class="field-input-select" id="model-select">
+        <option value="gemini-3.1-flash-lite-preview">gemini-3.1-flash-lite-preview</option>
+        <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
+        <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
+      </select>
+    </div>
+    <div class="field-row-polish">
+      <div class="polish-info">
+        <div class="polish-label">✨ 自動潤稿</div>
+        <div class="polish-desc">關閉後僅執行 OCR + 翻譯，每張可省下 1 次 API 呼叫，演示更快</div>
+      </div>
+      <label class="switch" title="自動潤稿開關">
+        <input type="checkbox" id="polish-toggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="settings-actions">
+      <span class="save-feedback" id="save-feedback">已儲存 ✓</span>
+      <button class="btn-test" id="btn-test" onclick="testApiKey()">測試連線</button>
+      <button class="btn-cancel" onclick="closeSettings()">取消</button>
+      <button class="btn-save" id="btn-save-key" onclick="saveApiKey()">儲存</button>
+    </div>
+  </div>
+</div>
+<!-- Fullscreen Viewer -->
+<div class="viewer-overlay" id="viewer-overlay">
+  <div class="viewer-toolbar">
+    <button onclick="closeViewer()">✕ 關閉</button>
+    <button onclick="shareViewerImage()">📤 分享</button>
+  </div>
+  <div class="viewer-body" id="viewer-body"></div>
+</div>
+
+<div class="app-layout">
+  <div class="main-content">
+    <!-- Upload -->
+    <div class="upload-zone" id="drop-zone">
+      <div class="upload-icon">⬆︎</div>
+      <p class="upload-text"><strong>點擊上傳</strong>、拖曳圖片、或直接 <strong>Ctrl+V</strong> 貼上</p>
+      <p class="upload-hint">支援多張圖片　｜　JPG、PNG、GIF、WebP　｜　上限 30 張、每張 10MB</p>
+      <input type="file" id="file-input" accept="image/*" multiple style="display:none">
+    </div>
+    <!-- Batch Queue -->
+    <div class="queue-section" id="queue-section">
+      <div class="queue-header">
+        <div class="queue-title">
+          待翻譯圖片
+          <span class="queue-pill" id="queue-pill">0</span>
+        </div>
+        <button class="btn-clear-queue" id="btn-clear" onclick="clearQueue()">清空佇列</button>
+      </div>
+      <div class="queue-grid" id="queue-grid">
+        <div class="queue-empty" id="queue-empty">
+          還沒有圖片喔，貼上或拖曳圖片就會出現在這裡 ✨
+        </div>
+      </div>
+    </div>
+    <!-- Status -->
+    <div id="status-text"></div>
+    <!-- Results -->
+    <div class="results-section" id="results-section"></div>
+    <!-- Export Toolbar -->
+    <div class="export-toolbar" id="export-toolbar">
+      <span class="export-label">匯出全部</span>
+      <div class="export-buttons">
+        <button class="btn-export" onclick="exportMergedImage()" title="合併所有結果為一張大圖">🖼️ 合併大圖</button>
+        <button class="btn-export" onclick="exportZip()" title="每張結果截圖打包成 ZIP">📦 ZIP</button>
+        <button class="btn-export" onclick="exportPdf()" title="合併成 PDF 文件">📄 PDF</button>
+        <button class="btn-export" onclick="exportPptx()" title="每張結果一頁投影片">📊 PPTX</button>
+        <button class="btn-export" onclick="exportDocx()" title="匯出 Word 文件">📝 DOCX</button>
+        <button class="btn-export" onclick="exportXlsx()" title="匯出 Excel 表格">📋 XLSX</button>
+      </div>
+      <span class="export-label" style="margin-top:6px;">僅匯出譯文</span>
+      <div class="export-buttons">
+        <button class="btn-export" onclick="exportMergedImage(true)" title="僅譯文合併大圖">🖼️ 譯文大圖</button>
+        <button class="btn-export" onclick="exportZip(true)" title="僅譯文截圖 ZIP">📦 譯文ZIP</button>
+        <button class="btn-export" onclick="exportPdf(true)" title="僅譯文 PDF">📄 譯文PDF</button>
+        <button class="btn-export" onclick="exportPptx(true)" title="僅譯文投影片">📊 譯文PPTX</button>
+        <button class="btn-export" onclick="exportDocx(true)" title="僅譯文 Word">📝 譯文DOCX</button>
+        <button class="btn-export" onclick="exportXlsx(true)" title="僅譯文 Excel">📋 譯文XLSX</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // ══════════════════════════════════
+  // ── Constants & Config ──
+  // ══════════════════════════════════
+  const STORAGE_KEY = 'ocr_gemini_api_key';
+  const STORAGE_MODEL_KEY = 'ocr_gemini_model';
+  const STORAGE_POLISH_KEY = 'ocr_polish_enabled';
+  const DEFAULT_MODEL = 'gemini-3.1-flash-lite-preview';
+  const MAX_FILES = 30;
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+  const MAX_RETRIES = 3;
+  const MAX_RESULT_CARDS = 20;
+
+  // ══════════════════════════════════
+  // ── DOM References ──
+  // ══════════════════════════════════
+  const fileInput = document.getElementById('file-input');
+  const dropZone = document.getElementById('drop-zone');
+  const statusText = document.getElementById('status-text');
+  const queueGrid = document.getElementById('queue-grid');
+  const queuePill = document.getElementById('queue-pill');
+  const queueEmpty = document.getElementById('queue-empty');
+  const batchCountEl = document.getElementById('batch-count');
+  const resultsSection = document.getElementById('results-section');
+  const progressContainer = document.getElementById('progress-container');
+  const progressBar = document.getElementById('progress-bar');
+  const toastContainer = document.getElementById('toast-container');
+  const settingsModal = document.getElementById('settings-modal');
+  const apiKeyInput = document.getElementById('api-key-input');
+  const modelSelect = document.getElementById('model-select');
+  const saveFeedback = document.getElementById('save-feedback');
+  const btnTest = document.getElementById('btn-test');
+  const btnEye = document.getElementById('btn-eye');
+  const btnCancelBatch = document.getElementById('btn-cancel-batch');
+  const polishToggleInput = document.getElementById('polish-toggle');
+  const polishChip = document.getElementById('polish-chip');
+  const polishChipLabel = document.getElementById('polish-chip-label');
+
+  // ══════════════════════════════════
+  // ── State ──
+  // ══════════════════════════════════
+  let imageQueue = []; // { id, file, base64, mimeType, blobUrl }
+  let renderedBlobUrls = new Set(); // blob URLs used in result cards — do NOT revoke
+  let isProcessing = false;
+  let queueIdCounter = 0;
+  let queueEpoch = 0; // incremented on clearQueue to invalidate pending readers
+  let pendingReaders = 0; // number of FileReaders still in-flight
+  let lastUsedLang = '';
+  let batchAbortController = null; // AbortController for cancelling batch
+
+  // ══════════════════════════════════
+  // ── HTML Sanitizer (XSS Protection) ──
+  // ══════════════════════════════════
+  function sanitizeHtml(dirty) {
+    // Create an inert document fragment via <template>
+    const template = document.createElement('template');
+    template.innerHTML = dirty;
+
+    // Remove dangerous tags
+    const dangerousTags = 'script,iframe,object,embed,form,input,textarea,select,button,link,meta,base,applet,style';
+    template.content.querySelectorAll(dangerousTags).forEach(el => el.remove());
+
+    // Scrub dangerous attributes from all elements
+    template.content.querySelectorAll('*').forEach(el => {
+      const attrs = [...el.attributes];
+      for (const attr of attrs) {
+        const name = attr.name.toLowerCase();
+        const value = (attr.value || '').toLowerCase().trim();
+        // Remove all event handlers
+        if (name.startsWith('on')) {
+          el.removeAttribute(attr.name);
+          continue;
+        }
+        // Remove javascript: URLs
+        if ((name === 'src' || name === 'href' || name === 'action' || name === 'xlink:href') &&
+            /^\s*javascript\s*:/i.test(attr.value)) {
+          el.removeAttribute(attr.name);
+          continue;
+        }
+        // Remove data: URLs on src (except images)
+        if (name === 'src' && /^\s*data\s*:/i.test(attr.value) && !/^\s*data\s*:\s*image\//i.test(attr.value)) {
+          el.removeAttribute(attr.name);
+          continue;
+        }
+      }
+      // Remove SVG dangerous elements inside SVG
+      if (el.tagName && ['FOREIGNOBJECT', 'SET', 'ANIMATE', 'ANIMATETRANSFORM'].includes(el.tagName.toUpperCase())) {
+        el.remove();
+      }
+    });
+
+    return template.innerHTML;
+  }
+
+  // ══════════════════════════════════
+  // ── Safe API Response Parser ──
+  // ══════════════════════════════════
+  function extractModelText(data) {
+    if (data?.error) {
+      throw new Error(data.error.message || 'API error');
+    }
+    const candidates = data?.candidates;
+    if (!candidates || candidates.length === 0) {
+      const blockReason = data?.promptFeedback?.blockReason;
+      throw new Error(blockReason ? `Blocked: ${blockReason}` : 'No candidates returned');
+    }
+    const candidate = candidates[0];
+    if (candidate.finishReason === 'MAX_TOKENS') {
+      throw new Error('回應被截斷（MAX_TOKENS），內容不完整');
+    } else if (candidate.finishReason && candidate.finishReason !== 'STOP') {
+      throw new Error(`Response filtered: ${candidate.finishReason}`);
+    }
+    const text = candidate?.content?.parts
+      ?.map(part => part.text || '')
+      .join('')
+      .trim();
+    if (!text) {
+      throw new Error('Model returned empty text');
+    }
+    return text.replace(/```html|```/g, '').trim();
+  }
+
+  // ══════════════════════════════════
+  // ── Centralized Gemini API Caller (with retries & backoff) ──
+  // ══════════════════════════════════
+  function getApiKey() { return localStorage.getItem(STORAGE_KEY) || ''; }
+  function getModel() { return localStorage.getItem(STORAGE_MODEL_KEY) || DEFAULT_MODEL; }
+  function getPolishEnabled() {
+    const v = localStorage.getItem(STORAGE_POLISH_KEY);
+    return v === null ? true : v === '1';
+  }
+  function setPolishEnabled(on) {
+    localStorage.setItem(STORAGE_POLISH_KEY, on ? '1' : '0');
+    syncPolishUi();
+  }
+  function syncPolishUi() {
+    const on = getPolishEnabled();
+    if (polishToggleInput) polishToggleInput.checked = on;
+    if (polishChip) polishChip.classList.toggle('on', on);
+    if (polishChipLabel) polishChipLabel.textContent = on ? '潤稿 開' : '潤稿 關';
+    if (polishChip) polishChip.title = on
+      ? '自動潤稿：開（點擊關閉以加速）'
+      : '自動潤稿：關（點擊開啟以提升品質）';
+  }
+  function togglePolishEnabled() {
+    const next = !getPolishEnabled();
+    setPolishEnabled(next);
+    showToast(next ? '🐶 汪！潤稿開。' : '🐱 喵，省一步。');
+  }
+
+  function abortableSleep(ms, signal) {
+    return new Promise((resolve, reject) => {
+      if (signal?.aborted) { reject(new DOMException('Aborted', 'AbortError')); return; }
+      const timer = setTimeout(resolve, ms);
+      signal?.addEventListener('abort', () => { clearTimeout(timer); reject(new DOMException('Aborted', 'AbortError')); }, { once: true });
+    });
+  }
+
+  async function callGemini(parts, { signal, model: modelOverride, systemInstruction } = {}) {
+    const key = getApiKey();
+    const model = modelOverride || getModel();
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+
+    let lastError;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
+      try {
+        const reqBody = { contents: [{ parts }] };
+        if (systemInstruction) {
+          reqBody.systemInstruction = { parts: [{ text: systemInstruction }] };
+        }
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(reqBody),
+          signal,
+        });
+
+        // Retry on 429 / 502 / 503 with exponential backoff
+        if (res.status === 429 || res.status === 502 || res.status === 503) {
+          const wait = Math.min(1000 * Math.pow(2, attempt) + Math.random() * 500, 16000);
+          await abortableSleep(wait, signal);
+          lastError = new Error(`HTTP ${res.status} (retry ${attempt + 1}/${MAX_RETRIES})`);
+          continue;
+        }
+
+        // Non-retryable client errors (400, 401, 403, 404…) — fail immediately
+        if (res.status >= 400 && res.status < 500) {
+          const data = await res.json().catch(() => ({}));
+          const err = new Error(data?.error?.message || `HTTP ${res.status}`);
+          err.nonRetryable = true;
+          throw err;
+        }
+
+        const data = await res.json();
+        return extractModelText(data);
+
+      } catch (err) {
+        if (err.name === 'AbortError') throw err;
+        if (err.nonRetryable) throw err;
+        lastError = err;
+        if (attempt < MAX_RETRIES - 1) {
+          const wait = Math.min(1000 * Math.pow(2, attempt), 8000);
+          await abortableSleep(wait, signal);
+        }
+      }
+    }
+    throw lastError || new Error('Max retries exceeded');
+  }
+
+  // ══════════════════════════════════
+  // ── Funny Reactions ──
+  // ══════════════════════════════════
+  const reactions = {
+    'Traditional Chinese (Taiwan usage)': {
+      start: [
+        '翻譯大師出動！🔥', '開始施法：繁體化！✨', '台灣 NO.1！衝啊！🚀',
+        '正在把外語打成中文…💪', '啟動繁體結界！🛡️', '翻譯引擎：全力運轉！⚡',
+        '文字煉金術，開始！🧙', '吃我一記翻譯波動拳！👊',
+      ],
+      done: [
+        '翻譯完成！可以下班了嗎？😴', '大功告成！頒獎典禮在哪？🏆',
+        '搞定！這翻譯品質，我自己都感動 🥲', '完美落地！裁判請給分！💯',
+        '翻譯完畢，請簽收 📦', '任務完成！今天也是優秀的一天 ✌️',
+        '交貨！品質保證，不滿意可以…再按一次 😏',
+      ],
+      emoji: '🇹🇼'
+    },
+    'English': {
+      start: [
+        'Translating like a boss! 💼', 'English mode: ACTIVATED 🦅',
+        'Making it speak English… 🗽', 'Hold my tea, translating! 🍵',
+        'Deploying English protocol! 🚀', 'Translation turbo: ON! ⚡',
+        'Summoning the power of Shakespeare! 📜', 'Let\'s gooo! 🎯',
+      ],
+      done: [
+        'Done! That was brilliant! 🎩', 'Translation complete! *mic drop* 🎤',
+        'Nailed it! You\'re welcome 😎', 'Finished! Where\'s my trophy? 🏆',
+        'All done! English has entered the chat 💬',
+        'Mission accomplished! 🫡', 'That\'s a wrap! 🎬',
+      ],
+      emoji: '🇺🇸'
+    },
+    'Japanese': {
+      start: [
+        '翻訳開始！気合い入れるぞ！🔥', '日本語モード：起動！⚡',
+        'よっしゃ！翻訳するぜ！💪', '翻訳の呼吸…壱ノ型！🌊',
+        'いくぞ！全集中！🎯', '翻訳エンジン、フルスロットル！🚂',
+        'ただいま翻訳中…邪魔しないで！🙅', '翻訳忍法、発動！🥷',
+      ],
+      done: [
+        '完了！お疲れ様でした！🎉', '翻訳完了！天才かもしれない 🧠',
+        'できた！拍手をどうぞ！👏', '任務完了！ご褒美はラーメン 🍜',
+        'やったぜ！完璧だ！✨', '以上！異議なし！⚖️',
+        '終わり！今日も一日お疲れ様 🌅',
+      ],
+      emoji: '🇯🇵'
+    }
+  };
+
+  // ══════════════════════════════════
+  // ── Queue Management ──
+  // ══════════════════════════════════
+  function updateQueueUI() {
+    const count = imageQueue.length;
+    queuePill.textContent = count + (pendingReaders > 0 ? `+${pendingReaders}` : '');
+    batchCountEl.innerHTML = count > 0 ? `待翻譯：<strong>${count}</strong> 張` : '';
+    queueEmpty.style.display = count === 0 && pendingReaders === 0 ? 'block' : 'none';
+    const btns = document.querySelectorAll('.action-btn');
+    btns.forEach(btn => {
+      if (count > 0 && !isProcessing && pendingReaders === 0) {
+        btn.classList.remove('disabled');
+      } else {
+        btn.classList.add('disabled');
+      }
+    });
+  }
+
+  function addToQueue(file) {
+    // ── File count limit（含 pending 中的）──
+    if (imageQueue.length + pendingReaders >= MAX_FILES) {
+      showToast(`最多 ${MAX_FILES} 張圖片！`);
+      return;
+    }
+    // ── File size limit ──
+    if (file.size > MAX_FILE_SIZE) {
+      showToast(`${file.name} 超過 10MB，已跳過`);
+      return;
+    }
+
+    const id = ++queueIdCounter;
+    const blobUrl = URL.createObjectURL(file);
+    const myEpoch = queueEpoch;
+    pendingReaders++;
+    updateQueueUI(); // disable buttons while readers pending
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      pendingReaders--;
+      // 若 clearQueue 已被��叫（epoch 變了），丟棄結果
+      if (myEpoch !== queueEpoch) {
+        try { URL.revokeObjectURL(blobUrl); } catch(e) {}
+        updateQueueUI();
+        return;
+      }
+      // 再次檢查上限（防止並行 readers 超額）
+      if (imageQueue.length >= MAX_FILES) {
+        try { URL.revokeObjectURL(blobUrl); } catch(e) {}
+        showToast(`最多 ${MAX_FILES} 張圖片！`);
+        updateQueueUI();
+        return;
+      }
+      const base64 = reader.result.split(',')[1];
+      const item = { id, file, base64, mimeType: file.type, blobUrl };
+      imageQueue.push(item);
+      const el = document.createElement('div');
+      el.className = 'queue-item';
+      el.id = `queue-item-${id}`;
+      const img = document.createElement('img');
+      img.src = blobUrl;
+      img.alt = `圖片 ${id}`;
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-btn';
+      removeBtn.textContent = '✕';
+      removeBtn.onclick = () => removeFromQueue(id);
+      const numSpan = document.createElement('span');
+      numSpan.className = 'item-number';
+      numSpan.textContent = `#${imageQueue.length}`;
+      el.append(img, removeBtn, numSpan);
+      queueGrid.appendChild(el);
+      updateQueueUI();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeFromQueue(id) {
+    const removed = imageQueue.find(i => i.id === id);
+    if (removed) {
+      // Only revoke if NOT already used in a result card
+      if (removed.blobUrl && !renderedBlobUrls.has(removed.blobUrl)) {
+        try { URL.revokeObjectURL(removed.blobUrl); } catch(e) {}
+      }
+      removed.base64 = null;
+      removed.file = null;
+    }
+    imageQueue = imageQueue.filter(i => i.id !== id);
+    const el = document.getElementById(`queue-item-${id}`);
+    if (el) {
+      el.style.transition = 'all 0.25s';
+      el.style.transform = 'scale(0) rotate(10deg)';
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.remove();
+        document.querySelectorAll('.queue-item .item-number').forEach((n, i) => {
+          n.textContent = `#${i + 1}`;
+        });
+        updateQueueUI();
+      }, 250);
+    }
+  }
+
+  function clearQueue() {
+    queueEpoch++; // invalidate any in-flight FileReaders
+    imageQueue.forEach(item => {
+      // Only revoke blob URLs NOT used in rendered result cards
+      if (item.blobUrl && !renderedBlobUrls.has(item.blobUrl)) {
+        try { URL.revokeObjectURL(item.blobUrl); } catch(e) {}
+      }
+      item.base64 = null;
+      item.file = null;
+    });
+    imageQueue = [];
+    queueIdCounter = 0;
+    // pendingReaders 不歸零，讓 onloadend 自行遞減並因 epoch 不符而丟棄
+    queueGrid.querySelectorAll('.queue-item').forEach(el => el.remove());
+    updateQueueUI();
+  }
+
+  // ══════════════════════════════════
+  // ── Effects & Reactions (DOM-limited) ──
+  // ══════════════════════════════════
+  function showToast(text) {
+    toastContainer.innerHTML = '';
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = text;
+    toastContainer.appendChild(el);
+    setTimeout(() => { if (el.parentNode) el.remove(); }, 2000);
+  }
+
+  const MAX_EFFECTS = 25;
+
+  function spawnConfetti(count = 20) {
+    count = Math.min(count, MAX_EFFECTS);
+    document.querySelectorAll('.confetti-piece').forEach(e => e.remove());
+    const colors = ['#237354', '#3aab7a', '#1e4fa3', '#3d7fe8', '#c0321f', '#f05c42', '#f0c040', '#e87dd8'];
+    for (let i = 0; i < count; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = `${50 + (Math.random() - 0.5) * 60}vw`;
+      piece.style.top = `${40 + (Math.random() - 0.5) * 30}vh`;
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.setProperty('--dx', `${(Math.random() - 0.5) * 400}px`);
+      piece.style.setProperty('--dy', `${Math.random() * 500 + 150}px`);
+      piece.style.width = `${6 + Math.random() * 6}px`;
+      piece.style.height = `${6 + Math.random() * 6}px`;
+      piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      piece.style.animationDuration = `${1.5 + Math.random() * 1}s`;
+      document.body.appendChild(piece);
+      setTimeout(() => { if (piece.parentNode) piece.remove(); }, 2800);
+    }
+  }
+
+  function shakeScreen() {
+    document.body.classList.add('shaking');
+    setTimeout(() => document.body.classList.remove('shaking'), 500);
+  }
+
+  function emojiRain(emoji, count = 6) {
+    count = Math.min(count, 8);
+    document.querySelectorAll('.emoji-rain').forEach(e => e.remove());
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement('div');
+      el.className = 'emoji-rain';
+      el.textContent = emoji;
+      el.style.left = `${10 + Math.random() * 80}vw`;
+      el.style.top = `-40px`;
+      el.style.animationDelay = `${Math.random() * 1}s`;
+      el.style.fontSize = `${1.5 + Math.random() * 1}rem`;
+      document.body.appendChild(el);
+      setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
+    }
+  }
+
+  function randomPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  // ══════════════════════════════════
+  // ── Robot Mascot System ──
+  // ══════════════════════════════════
+  const robotStage = document.getElementById('robot-stage');
+  const speechArea = document.getElementById('speech-area');
+  const scannerBot = document.getElementById('robot-scanner');
+  const translatorBot = document.getElementById('robot-translator');
+  let blinkTimer = null;
+  let robotVisible = false;
+
+  function showRobots() {
+    if (robotVisible) return;
+    robotVisible = true;
+    robotStage.classList.add('visible');
+    startBlinking();
+  }
+
+  function hideRobots() {
+    stopIdleChat();
+    clearAllBubbles();
+    robotVisible = false;
+    robotStage.classList.remove('visible');
+    stopBlinking();
+    resetRobotState(scannerBot);
+    resetRobotState(translatorBot);
+  }
+
+  function resetRobotState(bot) {
+    bot.className = bot.id === 'robot-scanner' ? 'robot scanner idle' : 'robot translator idle';
+  }
+
+  function setRobotMood(bot, moods) {
+    const base = bot.id === 'robot-scanner' ? 'robot scanner' : 'robot translator';
+    bot.className = base + ' ' + moods.join(' ');
+  }
+
+  // ── Natural blinking with recursive setTimeout ──
+  function startBlinking() {
+    stopBlinking();
+    function scheduleBlink() {
+      if (!robotVisible) return;
+      const delay = 2000 + Math.random() * 3000;
+      blinkTimer = setTimeout(() => {
+        if (!robotVisible) return;
+        const eyes = [
+          document.getElementById('scan-eye-l'),
+          document.getElementById('scan-eye-r'),
+          document.getElementById('trans-eye-l'),
+          document.getElementById('trans-eye-r'),
+        ];
+        const pair = Math.random() > 0.5 ? [0, 1] : [2, 3];
+        pair.forEach(i => {
+          if (eyes[i]) {
+            eyes[i].classList.add('blinking');
+            setTimeout(() => eyes[i].classList.remove('blinking'), 220);
+          }
+        });
+        scheduleBlink();
+      }, delay);
+    }
+    scheduleBlink();
+  }
+
+  function stopBlinking() {
+    if (blinkTimer) { clearTimeout(blinkTimer); blinkTimer = null; }
+  }
+
+  // ── Speech bubble system ──
+  let speechQueue = [];
+  let speechBusy = false;
+  let speechEpoch = 0;  // race-condition guard
+
+  async function addSpeech(who, text, duration) {
+    return new Promise(resolve => {
+      speechQueue.push({ who, text, duration: duration || 2800, resolve });
+      if (!speechBusy) drainSpeechQueue();
+    });
+  }
+
+  async function drainSpeechQueue() {
+    if (speechBusy || speechQueue.length === 0) return;
+    speechBusy = true;
+    const myEpoch = speechEpoch;
+    while (speechQueue.length > 0 && myEpoch === speechEpoch) {
+      const { who, text, duration, resolve } = speechQueue.shift();
+      await showBubble(who, text, duration);
+      resolve();
+    }
+    if (myEpoch === speechEpoch) speechBusy = false;
+  }
+
+  function cycleBubble(limit = 2) {
+    return new Promise(resolve => {
+      if (speechArea.children.length < limit) {
+        resolve();
+        return;
+      }
+      const oldest = speechArea.children[0];
+      if (!oldest) {
+        resolve();
+        return;
+      }
+      oldest.classList.add('fadeout');
+      setTimeout(() => {
+        if (oldest.parentNode) oldest.remove();
+        resolve();
+      }, 160);
+    });
+  }
+
+  async function showBubble(who, text, duration) {
+    await cycleBubble(2);
+    return new Promise(resolve => {
+      const isScanner = who === 'scanner';
+      const bot = isScanner ? scannerBot : translatorBot;
+      const otherBot = isScanner ? translatorBot : scannerBot;
+      setRobotMood(bot, ['active', 'talking', isScanner ? 'looking-right' : 'looking-left']);
+      setRobotMood(otherBot, ['idle', isScanner ? 'looking-left' : 'looking-right']);
+      const bubble = document.createElement('div');
+      bubble.className = `speech-bubble ${who}-bubble`;
+      bubble.textContent = text;
+      speechArea.appendChild(bubble);
+      const talkTime = Math.min(text.length * 70, 1500);
+      setTimeout(() => {
+        setRobotMood(bot, ['active', 'happy', isScanner ? 'looking-right' : 'looking-left']);
+      }, talkTime);
+      setTimeout(resolve, duration);
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function clearAllBubbles() {
+    speechEpoch++;          // invalidate any in-flight drain
+    const stale = speechQueue.splice(0);
+    stale.forEach(item => item.resolve());  // unblock any awaiting callers
+    speechBusy = false;
+    speechArea.innerHTML = '';
+  }
+
+  // ══════════════════════════════════
+  // ── Dialogue Database ──
+  // ══════════════════════════════════
+  const greetingPairs = [
+    [
+      { who: 'scanner', text: '喵？' },
+      { who: 'translator', text: '汪！上工。' },
+    ],
+    [
+      { who: 'scanner', text: '(瞳孔放大)' },
+      { who: 'translator', text: '好，我衝。' },
+    ],
+    [
+      { who: 'scanner', text: '字...來了。' },
+      { who: 'translator', text: '汪汪！' },
+    ],
+    [
+      { who: 'scanner', text: '喵——準備。' },
+      { who: 'translator', text: '我也是。' },
+    ],
+    [
+      { who: 'scanner', text: '紙的味道。' },
+      { who: 'translator', text: '汪。出發。' },
+    ],
+    [
+      { who: 'scanner', text: '(盯)' },
+      { who: 'translator', text: '盯歸盯，要做事。' },
+    ],
+    [
+      { who: 'scanner', text: '今天的字好像比較肥。' },
+      { who: 'translator', text: '肥就肥，翻就對。' },
+    ],
+    [
+      { who: 'scanner', text: '我先撥一下。喵。' },
+      { who: 'translator', text: '撥完換我接。' },
+    ],
+  ];
+
+  // ── Idle chatter while waiting ──
+  const idleChatPairs = [
+    [
+      { who: 'scanner', text: '喵...' },
+      { who: 'translator', text: '嗯。' },
+    ],
+    [
+      { who: 'scanner', text: '(發呆)' },
+      { who: 'translator', text: '你發呆，我警戒。' },
+    ],
+    [
+      { who: 'scanner', text: '好像有東西在動。' },
+      { who: 'translator', text: '灰塵。' },
+    ],
+    [
+      { who: 'scanner', text: '陽光。' },
+      { who: 'translator', text: '別走神。' },
+    ],
+    [
+      { who: 'scanner', text: '(舔爪子)' },
+      { who: 'translator', text: '你舔，我等。' },
+    ],
+    [
+      { who: 'scanner', text: '尾巴自己在動。' },
+      { who: 'translator', text: '正常。' },
+    ],
+    [
+      { who: 'scanner', text: '喵——好慢。' },
+      { who: 'translator', text: '我也覺得。' },
+    ],
+    [
+      { who: 'scanner', text: '他在挑哪張啊。' },
+      { who: 'translator', text: '我也想知道。汪。' },
+    ],
+    [
+      { who: 'scanner', text: '肚子...' },
+      { who: 'translator', text: '我也餓。等等。' },
+    ],
+    [
+      { who: 'translator', text: '汪。' },
+      { who: 'scanner', text: '嗯？' },
+    ],
+  ];
+
+  let _idleChatTimer = null;
+  let _idleChatActive = false;
+
+  function startIdleChat() {
+    if (_idleChatActive) return;
+    _idleChatActive = true;
+    const usedIndices = new Set();
+    const schedule = () => {
+      if (!_idleChatActive) return;
+      const delay = 4000 + Math.random() * 4000;
+      _idleChatTimer = setTimeout(async () => {
+        if (!_idleChatActive) return;
+        if (usedIndices.size >= idleChatPairs.length) usedIndices.clear();
+        let idx;
+        do { idx = Math.floor(Math.random() * idleChatPairs.length); } while (usedIndices.has(idx));
+        usedIndices.add(idx);
+        const pair = idleChatPairs[idx];
+        for (const line of pair) {
+          if (!_idleChatActive) return;
+          await addSpeech(line.who, line.text, 2800);
+        }
+        schedule();
+      }, delay);
+    };
+    schedule();
+  }
+
+  function stopIdleChat() {
+    _idleChatActive = false;
+    if (_idleChatTimer) { clearTimeout(_idleChatTimer); _idleChatTimer = null; }
+  }
+
+  const scannerOcrQuips = [
+    '喵！',
+    '(瞳孔放大)',
+    '字。',
+    '看到了。',
+    '喵——',
+    '這張...有點擠。',
+    '(盯)',
+    '字字字。',
+    '嗯？',
+    '有黑點。',
+  ];
+
+  const scannerDoneQuips = [
+    '喵。看完。',
+    '拿去。',
+    '字都在。',
+    '好了。',
+    '(尾巴一甩)',
+    '搞定。喵。',
+    '換你。',
+    '喵——',
+  ];
+
+  function scannerPageQuip(idx, total) {
+    const ordinal = ['第一', '第二', '第三', '第四', '第五', '第六', '第七', '第八', '第九', '第十'];
+    const pageWord = idx <= 10 ? ordinal[idx - 1] : `第${idx}`;
+    const remaining = total - idx;
+    const quips = [
+      `${pageWord}張。喵。`,
+      `${pageWord}張。還有 ${remaining}。`,
+      `(瞳孔放大)${pageWord}張。`,
+      `${pageWord}張...看一下。`,
+      `下一張...啊，${pageWord}張。`,
+      `${pageWord}張。有點難。`,
+    ];
+    return randomPick(quips);
+  }
+
+  const translatorStartQuips = [
+    '汪！',
+    '好，我來。',
+    '汪汪！',
+    '拿到。翻。',
+    '嗯。',
+    '看我的。',
+    '(尾巴搖)',
+    '汪——',
+    'OK。',
+    '翻。',
+  ];
+
+  const translatorDoneQuips = [
+    '汪！好了。',
+    '翻完。',
+    '拿去。',
+    '好了。汪。',
+    '(尾巴搖)',
+    '汪汪！',
+    '搞定。',
+    'OK。',
+  ];
+
+  const scannerCheersQuips = [
+    '喵！厲害。',
+    '(拍拍肉球)',
+    '你贏。',
+    '喵——讚。',
+    '我服。',
+    '對嘛。喵。',
+  ];
+
+  const allDoneScannerQuips = [
+    '全部好了。喵。',
+    '下班！喵——',
+    '(伸懶腰)',
+    '我去睡了。',
+    '喵。完。',
+  ];
+
+  const allDoneTranslatorQuips = [
+    '汪汪！',
+    '下班！',
+    '(尾巴搖搖)結束。',
+    '我去喝水。',
+    '汪——好累。',
+  ];
+
+  // ── Robot dialogue controllers ──
+  async function robotGreeting() {
+    showRobots();
+    clearAllBubbles();
+    setRobotMood(scannerBot, ['active', 'waving', 'happy']);
+    setRobotMood(translatorBot, ['idle', 'looking-left']);
+    const pair = randomPick(greetingPairs);
+    for (const line of pair) {
+      await addSpeech(line.who, line.text, 1200);
+    }
+    startIdleChat();
+  }
+
+  async function robotOcrStart(imageIndex, total) {
+    stopIdleChat();
+    clearAllBubbles();
+    setRobotMood(scannerBot, ['active', 'looking-right']);
+    if (total > 1) {
+      await addSpeech('scanner', scannerPageQuip(imageIndex, total), 2000);
+    } else {
+      await addSpeech('scanner', randomPick(scannerOcrQuips), 2000);
+    }
+  }
+
+  async function robotOcrDone() {
+    await addSpeech('scanner', randomPick(scannerDoneQuips), 2000);
+  }
+
+  async function robotTranslateStart() {
+    setRobotMood(translatorBot, ['active', 'looking-left']);
+    await addSpeech('translator', randomPick(translatorStartQuips), 2000);
+  }
+
+  async function robotTranslateDone() {
+    setRobotMood(translatorBot, ['active', 'happy']);
+    await addSpeech('translator', randomPick(translatorDoneQuips), 2000);
+    setRobotMood(scannerBot, ['idle', 'happy', 'excited']);
+    await addSpeech('scanner', randomPick(scannerCheersQuips), 2000);
+  }
+
+  async function robotAllDone(count) {
+    clearAllBubbles();
+    setRobotMood(scannerBot, ['active', 'happy', 'excited']);
+    setRobotMood(translatorBot, ['active', 'happy']);
+    await addSpeech('scanner', randomPick(allDoneScannerQuips), 2500);
+    await addSpeech('translator', randomPick(allDoneTranslatorQuips), 2500);
+    setTimeout(() => hideRobots(), 3500);
+  }
+
+  async function robotError(msg) {
+    setRobotMood(scannerBot, ['active', 'surprised']);
+    setRobotMood(translatorBot, ['idle', 'surprised']);
+    await addSpeech('scanner', '喵？！', 2000);
+    await addSpeech('translator', '汪？再一次。', 2000);
+  }
+
+  // ══════════════════════════════════
+  // ── API Calls (OCR / Translate / Polish) ──
+  // ══════════════════════════════════
+  async function callGeminiOCR(base64Data, mimeType, signal) {
+    const sysInstr = `You are an expert Frontend Developer specializing in converting images to high-fidelity HTML.`;
+    const prompt = `Convert this image to high-fidelity HTML.
+Rules:
+1. Use inline CSS for layout (flex/grid).
+2. Match colors, fonts, and positions as closely as possible.
+3. If the text in the image is written vertically (top-to-bottom), you MUST use CSS "writing-mode: vertical-rl" on those text elements to preserve the vertical layout.
+4. Return ONLY raw HTML string. No markdown, no code fences.`;
+
+    return callGemini([
+      { text: prompt },
+      { inline_data: { mime_type: mimeType, data: base64Data } }
+    ], { signal, systemInstruction: sysInstr });
+  }
+
+  async function callGeminiTranslate(html, lang, signal) {
+    let localeRule = '';
+    if (/chinese/i.test(lang)) {
+      localeRule = '\n3. Use Taiwan Traditional Chinese phrasing (not Mainland China/HK usage).';
+    } else if (/japanese/i.test(lang)) {
+      localeRule = '\n3. Use natural, native Japanese (日本語) phrasing. Output MUST be in Japanese, NOT Chinese.';
+    } else if (/english/i.test(lang)) {
+      localeRule = '\n3. Use natural, fluent English phrasing.';
+    } else {
+      localeRule = `\n3. Use natural, native ${lang} phrasing.`;
+    }
+    const sysInstr = `You are a Localization Engineer. Your job is to translate HTML content while preserving all markup structure exactly.`;
+    const prompt = `Target language: ${lang}.
+Source HTML:
+${html}
+Rules:
+1. Keep all HTML structure, classes, and inline styles EXACTLY the same.
+2. Only translate visible text content.${localeRule}
+4. Return ONLY raw HTML string. No markdown, no code fences.`;
+
+    return callGemini([{ text: prompt }], { signal, systemInstruction: sysInstr });
+  }
+
+  async function callGeminiPolish(sourceHtml, translatedHtml, lang, signal) {
+    const sysInstr = `You are a senior translation editor and quality assurance specialist. Your job is to polish and elevate existing translations through deep revision along three axes: Precision, Localization, and Fluency.`;
+    const prompt = `## Step 1: Deep Comprehension
+First, carefully re-read the source text to fully understand:
+- The overall meaning, intent, and nuance of the original
+- Any domain-specific terminology or context
+- The tone, register, and rhetorical purpose
+
+## Source HTML (original text):
+${sourceHtml}
+
+## Current Translation (${lang}):
+${translatedHtml}
+
+## Step 2: Three-Axis Quality Enhancement
+Revise the translation along these three axes:
+
+### Axis 1 — Precision (精準度)
+- Fix any mistranslations, omissions, or additions
+- Ensure numbers, proper nouns, and technical terms are correct
+- Verify that the meaning faithfully reflects the source
+
+### Axis 2 — Localization (在地化)
+- Use natural phrasing for the target locale
+- For Traditional Chinese (Taiwan): use Taiwan-standard vocabulary, measure words, and expressions; strictly avoid Mainland China or Hong Kong phrasing
+- Adapt cultural references, units, or idioms appropriately for the target audience
+
+### Axis 3 — Fluency & Naturalness (流暢自然度)
+- Ensure the text reads as if originally written in the target language
+- Improve sentence rhythm, flow, and cohesion
+- Remove translationese — awkward calques, unnatural word order, or overly literal constructions
+- Maintain consistency in style and tone throughout
+
+## Output Rules:
+1. Keep ALL HTML structure, tags, classes, and inline styles EXACTLY the same as the current translation
+2. Only modify the visible text content
+3. Return ONLY the revised raw HTML string. No markdown, no code fences, no explanations.`;
+
+    return callGemini([{ text: prompt }], { signal, model: 'gemini-3-flash-preview', systemInstruction: sysInstr });
+  }
+
+  // ══════════════════════════════════
+  // ── Batch Processing ──
+  // ══════════════════════════════════
+  function cancelBatch() {
+    if (batchAbortController) {
+      batchAbortController.abort();
+      showToast('正在取消…⏹');
+    }
+  }
+
+  async function startBatch(lang) {
+    if (imageQueue.length === 0 || isProcessing) return;
+    if (!getApiKey()) {
+      showToast('先設定 API Key 啦！⚙️');
+      shakeScreen();
+      return;
+    }
+
+    isProcessing = true;
+    lastUsedLang = lang;
+    batchAbortController = new AbortController();
+    const signal = batchAbortController.signal;
+    const r = reactions[lang];
+    const polishEnabled = getPolishEnabled();
+    const stepsPerImage = polishEnabled ? 3 : 2; // OCR + Translate (+ Polish)
+    const totalSteps = imageQueue.length * stepsPerImage;
+    let completedSteps = 0;
+
+    // Show cancel button
+    btnCancelBatch.classList.add('visible');
+
+    // Epic start reaction
+    showToast(randomPick(r.start));
+    shakeScreen();
+    emojiRain(r.emoji, 6);
+
+    document.querySelectorAll('.action-btn').forEach(btn => {
+      btn.classList.add('disabled', 'processing-btn');
+    });
+
+    progressContainer.classList.add('active');
+    progressBar.style.width = '0%';
+
+    const items = [...imageQueue];
+
+    // Robots greet (awaited for ordering)
+    await robotGreeting();
+
+    let cancelled = false;
+
+    for (let i = 0; i < items.length; i++) {
+      if (signal.aborted) { cancelled = true; break; }
+
+      const item = items[i];
+      const queueEl = document.getElementById(`queue-item-${item.id}`);
+      if (queueEl) queueEl.classList.add('processing');
+
+      setStatus('spinner', `OCR 辨識中… (${i + 1}/${items.length})`);
+
+      // Robot: OCR start (fire-and-forget, don't block API call)
+      robotOcrStart(i + 1, items.length);
+
+      let ocrHtml = '';
+      try {
+        ocrHtml = await callGeminiOCR(item.base64, item.mimeType, signal);
+        completedSteps++;
+        progressBar.style.width = `${(completedSteps / totalSteps) * 100}%`;
+      } catch (err) {
+        if (err.name === 'AbortError') { cancelled = true; break; }
+        if (queueEl) queueEl.classList.remove('processing');
+        await robotError(err.message);
+        appendResultCard(item, `<div style="color:#c0392b">OCR 失敗：${escapeHtml(err.message)}</div>`, '', i + 1);
+        completedSteps += stepsPerImage; // skip remaining steps for this image
+        progressBar.style.width = `${(completedSteps / totalSteps) * 100}%`;
+        item.base64 = null;
+        continue;
+      }
+
+      // Free base64 memory immediately after OCR
+      item.base64 = null;
+
+      // Robot: OCR done (fire-and-forget)
+      robotOcrDone();
+
+      if (signal.aborted) { cancelled = true; break; }
+
+      setStatus('spinner', `翻譯中… (${i + 1}/${items.length})`);
+
+      // Robot: Translate start (fire-and-forget)
+      robotTranslateStart();
+
+      let transHtml = '';
+      let translationOk = false;
+      try {
+        transHtml = await callGeminiTranslate(ocrHtml, lang, signal);
+        translationOk = true;
+        completedSteps++;
+        progressBar.style.width = `${(completedSteps / totalSteps) * 100}%`;
+      } catch (err) {
+        if (err.name === 'AbortError') { cancelled = true; break; }
+        transHtml = `<div style="color:#c0392b">翻譯失敗：${escapeHtml(err.message)}</div>`;
+        completedSteps += polishEnabled ? 2 : 1; // skip Translate (+ Polish)
+        progressBar.style.width = `${(completedSteps / totalSteps) * 100}%`;
+      }
+
+      const finalOcr = ocrHtml;
+      ocrHtml = null;
+
+      // Robot: Translate done (fire-and-forget)
+      robotTranslateDone();
+
+      // ── Auto-polish ──
+      let polished = false;
+      if (polishEnabled && translationOk && !signal.aborted) {
+        setStatus('spinner', `潤稿中… (${i + 1}/${items.length})`);
+        // Robot: Polish start (fire-and-forget)
+        robotPolishStart();
+        try {
+          const polishedHtml = await callGeminiPolish(finalOcr, transHtml, lang, signal);
+          transHtml = polishedHtml;
+          polished = true;
+        } catch (err) {
+          if (err.name === 'AbortError') { cancelled = true; break; }
+          // Polish failed — keep original translation, not a fatal error
+        }
+        completedSteps++;
+        progressBar.style.width = `${(completedSteps / totalSteps) * 100}%`;
+      }
+
+      if (queueEl) {
+        queueEl.classList.remove('processing');
+        queueEl.classList.add('done');
+      }
+
+      appendResultCard(item, finalOcr, transHtml, i + 1);
+
+      // Mark polish indicator if polished
+      if (polished) {
+        const lastCard = resultsSection.lastElementChild;
+        if (lastCard) {
+          const polishInd = lastCard.querySelector('.polish-indicator');
+          if (polishInd) polishInd.classList.add('visible');
+          const polishBtn = lastCard.querySelector('.btn-polish');
+          if (polishBtn) {
+            polishBtn.classList.add('done-polish');
+            polishBtn.innerHTML = '<span class="polish-icon">✨</span> 再次潤稿';
+          }
+        }
+      }
+    }
+
+    // Hide cancel button
+    btnCancelBatch.classList.remove('visible');
+
+    if (cancelled) {
+      setStatus('', '⏹ 已取消');
+      showToast('批次已取消 ⏹');
+      hideRobots();
+    } else {
+      // Epic done reaction
+      setTimeout(() => {
+        showToast(randomPick(r.done));
+        spawnConfetti(20);
+        emojiRain('🎉', 5);
+      }, 300);
+      // Robot: All done (awaited)
+      await robotAllDone(items.length);
+      setStatus('', `✓ 全部完成！共 ${items.length} 張`);
+      // Auto-download merged image (silent, no filename prompt)
+      autoDownloadMergedImage();
+    }
+
+    progressBar.style.width = '100%';
+    setTimeout(() => { progressContainer.classList.remove('active'); }, 1500);
+
+    isProcessing = false;
+    batchAbortController = null;
+
+    if (cancelled) {
+      // Only remove processed/partial items; keep unprocessed items in queue
+      const doneIds = new Set();
+      queueGrid.querySelectorAll('.queue-item.done, .queue-item.processing').forEach(el => {
+        const id = parseInt(el.id.replace('queue-item-', ''));
+        if (!isNaN(id)) doneIds.add(id);
+        el.remove();
+      });
+      imageQueue = imageQueue.filter(item => {
+        if (doneIds.has(item.id)) {
+          if (item.blobUrl && !renderedBlobUrls.has(item.blobUrl)) {
+            try { URL.revokeObjectURL(item.blobUrl); } catch(e) {}
+          }
+          item.base64 = null;
+          item.file = null;
+          return false;
+        }
+        return true;
+      });
+      // Re-number remaining queue items
+      document.querySelectorAll('.queue-item .item-number').forEach((n, i) => {
+        n.textContent = `#${i + 1}`;
+      });
+    } else {
+      clearQueue();
+    }
+
+    document.querySelectorAll('.action-btn').forEach(btn => {
+      btn.classList.remove('processing-btn');
+    });
+    updateQueueUI();
+  }
+
+  // ══════════════════════════════════
+  // ── Result Card Rendering ──
+  // ══════════════════════════════════
+  function appendResultCard(item, ocrHtml, transHtml, index) {
+    while (resultsSection.children.length >= MAX_RESULT_CARDS) {
+      const oldest = resultsSection.children[0];
+      const oldPanels = oldest.querySelector('.result-panels');
+      if (oldPanels?.id && syncState[oldPanels.id]) {
+        delete syncState[oldPanels.id];
+      }
+      // Revoke blob URL used by this card to free memory
+      const oldThumb = oldest.querySelector('.result-thumb');
+      if (oldThumb?.src && oldThumb.src.startsWith('blob:')) {
+        renderedBlobUrls.delete(oldThumb.src);
+        try { URL.revokeObjectURL(oldThumb.src); } catch(e) {}
+      }
+      oldest.remove();
+      showToast('已移除最舊的結果以節省記憶體 🗑️');
+    }
+
+    // Track this blob URL as "rendered" — do not revoke it
+    if (item.blobUrl) renderedBlobUrls.add(item.blobUrl);
+
+    // ── Sanitize model-generated HTML ──
+    const safeOcrHtml = sanitizeHtml(ocrHtml);
+    const safeTransHtml = sanitizeHtml(transHtml);
+
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    const cardId = `result-${Date.now()}-${index}`;
+    card.dataset.lang = lastUsedLang;
+
+    card.innerHTML = `
+      <div class="result-header">
+        <img class="result-thumb" src="${item.blobUrl}" alt="">
+        <div class="result-meta">圖片 #${index}</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span class="sync-badge active" id="sync-${cardId}" onclick="toggleSync('${cardId}')" title="同步滾動">
+            <span class="sync-icon">🔗</span> 同步
+          </span>
+          <button class="btn-ghost" onclick="copyResult('${cardId}', 'ocr')">複製原文</button>
+          <button class="btn-ghost" onclick="copyResult('${cardId}', 'trans')">複製譯文</button>
+          <button class="btn-ghost" onclick="downloadResultImage('${cardId}', ${index}, event)">📥 下載圖</button>
+        </div>
+      </div>
+      <div class="result-panels" id="${cardId}">
+        <div class="result-panel" data-type="ocr">
+          <div class="result-panel-label"><span class="dot" style="background:#aaa"></span>原文 OCR</div>
+          <div class="panel-content" contenteditable="true" role="textbox" aria-label="原文 OCR" aria-multiline="true">${safeOcrHtml}</div>
+        </div>
+        <div class="result-panel" data-type="trans">
+          <div class="result-panel-label" style="justify-content:space-between;">
+            <span style="display:flex;align-items:center;gap:6px;">
+              <span class="dot" style="background:var(--accent)"></span>譯文
+              <span class="polish-indicator" id="polish-ind-${cardId}">✨ 已潤稿</span>
+            </span>
+            <button class="btn-polish" id="polish-btn-${cardId}" onclick="polishTranslation('${cardId}')">
+              <span class="polish-icon">✨</span> 潤稿
+            </button>
+          </div>
+          <div class="panel-content" contenteditable="true" role="textbox" aria-label="譯文" aria-multiline="true">${safeTransHtml}</div>
+        </div>
+      </div>
+    `;
+    resultsSection.appendChild(card);
+    fitPanelContent(card);
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setupSyncScroll(cardId);
+    updateExportToolbar();
+  }
+
+  function fitPanelContent(card) {
+    card.querySelectorAll('.panel-content').forEach(pc => {
+      pc.style.transform = '';
+      pc.style.height = '';
+      requestAnimationFrame(() => {
+        const panelWidth = pc.parentElement.clientWidth - 24;
+        const contentWidth = pc.scrollWidth;
+        if (contentWidth > panelWidth && contentWidth > 0) {
+          const scale = panelWidth / contentWidth;
+          pc.style.transform = `scale(${scale})`;
+          pc.style.transformOrigin = 'top left';
+          pc.style.height = (pc.scrollHeight * scale) + 'px';
+        }
+      });
+    });
+  }
+
+  window.addEventListener('resize', () => {
+    document.querySelectorAll('.result-card').forEach(fitPanelContent);
+  });
+
+  // ══════════════════════════════════
+  // ── Sync Scroll System ──
+  // ══════════════════════════════════
+  const syncState = {};
+
+  function setupSyncScroll(cardId) {
+    const container = document.getElementById(cardId);
+    if (!container) return;
+    const panels = container.querySelectorAll('.result-panel');
+    if (panels.length < 2) return;
+    const ocrPanel = panels[0];
+    const transPanel = panels[1];
+    syncState[cardId] = { enabled: true, busy: false };
+
+    function getScrollRatio(el) {
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      return maxScroll > 0 ? el.scrollTop / maxScroll : 0;
+    }
+    function applyScrollRatio(el, ratio) {
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      el.scrollTop = ratio * maxScroll;
+    }
+
+    ocrPanel.addEventListener('scroll', () => {
+      const s = syncState[cardId];
+      if (!s || !s.enabled || s.busy) return;
+      s.busy = true;
+      const ratio = getScrollRatio(ocrPanel);
+      applyScrollRatio(transPanel, ratio);
+      requestAnimationFrame(() => { s.busy = false; });
+    });
+    transPanel.addEventListener('scroll', () => {
+      const s = syncState[cardId];
+      if (!s || !s.enabled || s.busy) return;
+      s.busy = true;
+      const ratio = getScrollRatio(transPanel);
+      applyScrollRatio(ocrPanel, ratio);
+      requestAnimationFrame(() => { s.busy = false; });
+    });
+  }
+
+  function toggleSync(cardId) {
+    const s = syncState[cardId];
+    if (!s) return;
+    s.enabled = !s.enabled;
+    const badge = document.getElementById(`sync-${cardId}`);
+    if (badge) badge.classList.toggle('active', s.enabled);
+    if (s.enabled) {
+      const container = document.getElementById(cardId);
+      if (container) {
+        container.querySelectorAll('.result-panel').forEach(p => {
+          p.classList.add('sync-flash');
+          setTimeout(() => p.classList.remove('sync-flash'), 400);
+        });
+      }
+      showToast('同步滾動：開啟 🔗');
+    } else {
+      showToast('同步滾動：關閉 🔓');
+    }
+  }
+
+  // ══════════════════════════════════
+  // ── Copy (with clipboard fallback) ──
+  // ══════════════════════════════════
+  async function copyResult(cardId, type) {
+    const panel = document.querySelector(`#${cardId} [data-type="${type}"]`);
+    if (!panel) return;
+    const content = panel.cloneNode(true);
+    content.querySelector('.result-panel-label')?.remove();
+    try {
+      if (window.ClipboardItem && navigator.clipboard?.write) {
+        const blob = new Blob([content.innerHTML], { type: 'text/html' });
+        const textBlob = new Blob([content.innerText], { type: 'text/plain' });
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'text/html': blob, 'text/plain': textBlob })
+        ]);
+      } else {
+        await navigator.clipboard.writeText(content.innerText);
+      }
+      showToast('已複製！📋');
+    } catch {
+      // Last-resort fallback
+      try { await navigator.clipboard.writeText(content.innerText); showToast('已複製！📋'); }
+      catch { showToast('複製失敗 😢'); }
+    }
+  }
+
+  // ══════════════════════════════════
+  // ── Fullscreen Viewer ──
+  // ══════════════════════════════════
+  const viewerOverlay = document.getElementById('viewer-overlay');
+  const viewerBody = document.getElementById('viewer-body');
+
+  function openViewer(panelEl) {
+    const content = panelEl.cloneNode(true);
+    // Remove label header from cloned content
+    content.querySelectorAll('.result-panel-label').forEach(el => el.remove());
+    viewerBody.innerHTML = content.innerHTML;
+    viewerOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    // Focus the close button for keyboard accessibility
+    const closeBtn = viewerOverlay.querySelector('.viewer-toolbar button');
+    if (closeBtn) closeBtn.focus();
+  }
+
+  function closeViewer() {
+    viewerOverlay.classList.remove('open');
+    viewerBody.innerHTML = '';
+    document.body.style.overflow = '';
+  }
+
+  async function shareViewerImage() {
+    const shareBtn = viewerOverlay.querySelector('.viewer-toolbar button:last-child');
+    if (shareBtn) { shareBtn.disabled = true; shareBtn.textContent = '處理中…'; }
+    try {
+      // Clone viewer body offscreen for safe capture
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:1000px;z-index:-1;background:#fff;padding:16px;';
+      const clone = viewerBody.cloneNode(true);
+      clone.style.cssText = 'font-family:"Noto Serif TC",serif;font-size:0.92rem;line-height:1.8;color:#1a1a1a;';
+      // Fix vertical text for html2canvas
+      flattenVerticalText(clone);
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+      await new Promise(r => setTimeout(r, 100));
+
+      let canvas;
+      try {
+        canvas = await html2canvas(clone, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          scrollX: 0,
+          scrollY: 0,
+          width: clone.scrollWidth,
+          height: clone.scrollHeight
+        });
+      } finally {
+        if (wrapper.parentNode) document.body.removeChild(wrapper);
+      }
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const file = new File([blob], 'OCR_result.png', { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'OCR 翻譯結果' });
+      } else {
+        // Fallback: download
+        const link = document.createElement('a');
+        link.download = 'OCR_result.png';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showToast('已下載圖片（此裝置不支援直接分享）');
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Share failed:', err);
+        showToast('分享失敗 😢');
+      }
+    }
+    if (shareBtn) { shareBtn.disabled = false; shareBtn.textContent = '📤 分享'; }
+  }
+
+  // Delegate: tap on result-panel content opens viewer
+  document.addEventListener('click', function(e) {
+    const panel = e.target.closest('.result-panel');
+    if (!panel) return;
+    // Don't trigger on buttons, labels, editable areas, or interactive elements
+    if (e.target.closest('button, .btn-polish, .result-panel-label, .polish-indicator, a, input, textarea, select, [contenteditable]')) return;
+    // Only on mobile
+    if (window.innerWidth > 860) return;
+    openViewer(panel);
+  });
+
+  // ══════════════════════════════════
+  // ── Download Result as Image ──
+  // ══════════════════════════════════
+
+  // Convert writing-mode:vertical elements to html2canvas-safe layout
+  function flattenVerticalText(el) {
+    el.querySelectorAll('*').forEach(node => {
+      // Prioritize inline style (Gemini outputs inline CSS), fallback to computed
+      const inlineWM = node.style.writingMode || '';
+      let wm = inlineWM;
+      if (!wm) {
+        try { wm = window.getComputedStyle(node).writingMode || ''; } catch(e) {}
+      }
+      if (wm.includes('vertical')) {
+        node.style.writingMode = 'horizontal-tb';
+        node.style.textOrientation = 'mixed';
+        // Preserve vertical appearance: render each character on its own line
+        const text = node.textContent;
+        if (text && node.children.length === 0 && text.trim().length > 0) {
+          node.innerHTML = text.split('').map(ch =>
+            ch === '\n' ? '<br>' : `<span style="display:block;text-align:center;line-height:1.3">${ch}</span>`
+          ).join('');
+          node.style.display = 'inline-block';
+          node.style.verticalAlign = 'top';
+        }
+      }
+    });
+  }
+
+  async function downloadResultImage(cardId, index, event) {
+    const container = document.getElementById(cardId);
+    if (!container) return;
+    const btn = event?.target?.closest('.btn-ghost');
+    if (btn) { btn.disabled = true; btn.textContent = '擷取中…'; }
+
+    // Create offscreen clone at desktop width for full capture
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:1200px;z-index:-1;background:#fff;';
+    const clone = container.cloneNode(true);
+    clone.id = '';
+    // Force desktop two-column layout
+    clone.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;min-height:auto;';
+    // Expand all panels
+    clone.querySelectorAll('.result-panel').forEach(p => {
+      p.style.maxHeight = 'none';
+      p.style.overflow = 'visible';
+      p.style.padding = '18px 20px';
+      p.style.fontSize = '0.86rem';
+    });
+    // 清掉 fitPanelContent 留下的 inline transform/height（對齊 captureCard）
+    clone.querySelectorAll('.panel-content').forEach(pc => {
+      pc.style.transform = '';
+      pc.style.transformOrigin = '';
+      pc.style.height = '';
+    });
+    // 移除 UI 元素（label、潤稿按鈕、已潤稿標記）
+    clone.querySelectorAll('.result-panel-label').forEach(el => el.remove());
+    clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+    // Fix vertical text for html2canvas
+    flattenVerticalText(clone);
+
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+
+    try {
+      // Wait for layout to settle
+      await new Promise(r => setTimeout(r, 100));
+
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
+        width: clone.scrollWidth,
+        height: clone.scrollHeight
+      });
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `OCR_result_${index}.png`;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast('圖片已下載！📥');
+    } catch (err) {
+      console.error('Download failed:', err);
+      showToast('下載失敗 😢');
+    }
+    document.body.removeChild(wrapper);
+    if (btn) { btn.disabled = false; btn.textContent = '📥 下載圖'; }
+  }
+
+  // ══════════════════════════════════
+  // ── Polish Translation ──
+  // ══════════════════════════════════
+  async function polishTranslation(cardId) {
+    if (isProcessing) {
+      showToast('批次處理中，請稍後再潤稿 ⏳');
+      return;
+    }
+    const btn = document.getElementById(`polish-btn-${cardId}`);
+    const container = document.getElementById(cardId);
+    if (!btn || !container) return;
+    if (!getApiKey()) {
+      showToast('先設定 API Key 啦！⚙️');
+      return;
+    }
+
+    const ocrPanel = container.querySelector('[data-type="ocr"]');
+    const transPanel = container.querySelector('[data-type="trans"]');
+    if (!ocrPanel || !transPanel) return;
+
+    const ocrPanelContent = ocrPanel.querySelector('.panel-content');
+    const transPanelContent = transPanel.querySelector('.panel-content');
+    const sourceHtml = ocrPanelContent ? ocrPanelContent.innerHTML.trim() : '';
+    const translatedHtml = transPanelContent ? transPanelContent.innerHTML.trim() : '';
+    if (!sourceHtml || !translatedHtml) return;
+
+    const card = container.closest('.result-card');
+    const lang = card?.dataset?.lang || lastUsedLang || 'Traditional Chinese (Taiwan usage)';
+
+    btn.classList.add('polishing');
+    btn.innerHTML = '<span class="polish-icon">✨</span> 潤稿中…';
+
+    showRobots();
+    clearAllBubbles();
+    await robotPolishStart();
+
+    try {
+      const polished = await callGeminiPolish(sourceHtml, translatedHtml, lang);
+      // ── Sanitize polished output ──
+      const safePolished = sanitizeHtml(polished);
+
+      const panelContent = transPanel.querySelector('.panel-content');
+      if (panelContent) {
+        panelContent.innerHTML = safePolished;
+      } else {
+        const label = transPanel.querySelector('.result-panel-label');
+        const labelHtml = label ? label.outerHTML : '';
+        transPanel.innerHTML = labelHtml + safePolished;
+      }
+
+      const newLabel = transPanel.querySelector('.result-panel-label');
+      if (newLabel) {
+        newLabel.style.justifyContent = 'space-between';
+        newLabel.innerHTML = `
+          <span style="display:flex;align-items:center;gap:6px;">
+            <span class="dot" style="background:var(--accent)"></span>譯文
+            <span class="polish-indicator visible" id="polish-ind-${cardId}">✨ 已潤稿</span>
+          </span>
+          <button class="btn-polish done-polish" id="polish-btn-${cardId}" onclick="polishTranslation('${cardId}')">
+            <span class="polish-icon">✨</span> 再次潤稿
+          </button>
+        `;
+      }
+
+      await robotPolishDone();
+      showToast('潤稿完成！品質再升級 💎');
+    } catch (err) {
+      btn.classList.remove('polishing');
+      btn.innerHTML = '<span class="polish-icon">✨</span> 潤稿';
+      showToast('潤稿失敗：' + err.message.substring(0, 30));
+      await robotPolishError();
+    }
+  }
+
+  // ── Robot Polish Dialogue ──
+  const polishStartPairs = [
+    [
+      { who: 'scanner', text: '再順一點？' },
+      { who: 'translator', text: '汪。好。' },
+    ],
+    [
+      { who: 'scanner', text: '喵——要漂亮。' },
+      { who: 'translator', text: '我盡量。' },
+    ],
+    [
+      { who: 'scanner', text: '(舔毛示範)' },
+      { who: 'translator', text: '夠了，我磨稿。' },
+    ],
+    [
+      { who: 'scanner', text: '潤一下。' },
+      { who: 'translator', text: '嗯。' },
+    ],
+    [
+      { who: 'scanner', text: '喵？再一次嗎？' },
+      { who: 'translator', text: '對。我接。' },
+    ],
+  ];
+
+  const polishDoneQuips_scanner = [
+    '喵。順了。',
+    '(蹭一下)',
+    '好看。',
+    '喵——亮。',
+    '你贏。',
+  ];
+
+  const polishDoneQuips_translator = [
+    '汪！梳完。',
+    '好了。',
+    '(尾巴搖)',
+    'OK。',
+    '汪汪！',
+  ];
+
+  async function robotPolishStart() {
+    const pair = randomPick(polishStartPairs);
+    for (const line of pair) {
+      await addSpeech(line.who, line.text, 2000);
+    }
+    setRobotMood(translatorBot, ['active', 'looking-left']);
+  }
+
+  async function robotPolishDone() {
+    clearAllBubbles();
+    setRobotMood(translatorBot, ['active', 'happy']);
+    await addSpeech('translator', randomPick(polishDoneQuips_translator), 2200);
+    setRobotMood(scannerBot, ['idle', 'happy', 'excited']);
+    await addSpeech('scanner', randomPick(polishDoneQuips_scanner), 2200);
+    setTimeout(() => hideRobots(), 3000);
+  }
+
+  async function robotPolishError() {
+    clearAllBubbles();
+    setRobotMood(translatorBot, ['active', 'surprised']);
+    await addSpeech('translator', '汪？沒接到。', 2000);
+    await addSpeech('scanner', '(轉頭裝沒看見)', 2000);
+    setTimeout(() => hideRobots(), 3000);
+  }
+
+  // ══════════════════════════════════
+  // ── Helpers ──
+  // ══════════════════════════════════
+  function setStatus(type, msg) {
+    if (type === 'spinner') {
+      statusText.innerHTML = `<div class="spinner"></div><span>${escapeHtml(msg)}</span>`;
+    } else if (type === 'error') {
+      statusText.innerHTML = `<span style="color:#c0392b">${escapeHtml(msg)}</span>`;
+    } else {
+      statusText.textContent = msg;
+    }
+  }
+
+  // ══════════════════════════════════
+  // ── Settings Modal ──
+  // ══════════════════════════════════
+  function openSettings() {
+    apiKeyInput.value = getApiKey();
+    apiKeyInput.type = 'password';
+    btnEye.textContent = '👁';
+    modelSelect.value = getModel();
+    if (polishToggleInput) polishToggleInput.checked = getPolishEnabled();
+    saveFeedback.classList.remove('show');
+    settingsModal.classList.add('open');
+    apiKeyInput.focus();
+  }
+
+  function closeSettings() { settingsModal.classList.remove('open'); }
+
+  function saveApiKey() {
+    const key = apiKeyInput.value.trim();
+    if (!key) { localStorage.removeItem(STORAGE_KEY); }
+    else { localStorage.setItem(STORAGE_KEY, key); }
+    localStorage.setItem(STORAGE_MODEL_KEY, modelSelect.value);
+    if (polishToggleInput) setPolishEnabled(polishToggleInput.checked);
+    saveFeedback.classList.add('show');
+    setTimeout(() => closeSettings(), 800);
+  }
+
+  function toggleKeyVisibility() {
+    const isHidden = apiKeyInput.type === 'password';
+    apiKeyInput.type = isHidden ? 'text' : 'password';
+    btnEye.textContent = isHidden ? '🙈' : '👁';
+  }
+
+  async function testApiKey() {
+    const key = apiKeyInput.value.trim();
+    if (!key) { btnTest.textContent = '請先輸入 Key'; setTimeout(() => btnTest.textContent = '測試連線', 1500); return; }
+    btnTest.disabled = true;
+    btnTest.textContent = '測試中…';
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 10000);
+    try {
+      const model = modelSelect.value || DEFAULT_MODEL;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: 'Hi' }] }] }),
+        signal: ac.signal
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        btnTest.textContent = '連線成功 ✓';
+        btnTest.style.color = 'var(--accent)';
+        btnTest.style.borderColor = 'var(--accent)';
+      } else {
+        const data = await res.json().catch(() => ({}));
+        btnTest.textContent = data?.error?.message?.slice(0, 20) || `失敗 (${res.status})`;
+        btnTest.style.color = '#c0392b';
+        btnTest.style.borderColor = '#c0392b';
+      }
+    } catch (err) {
+      clearTimeout(timer);
+      btnTest.textContent = err.name === 'AbortError' ? '連線逾時' : '網路錯誤';
+      btnTest.style.color = '#c0392b';
+      btnTest.style.borderColor = '#c0392b';
+    }
+    btnTest.disabled = false;
+    setTimeout(() => { btnTest.textContent = '測試連線'; btnTest.style.color = ''; btnTest.style.borderColor = ''; }, 2500);
+  }
+
+  settingsModal.addEventListener('click', e => { if (e.target === settingsModal) closeSettings(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (viewerOverlay.classList.contains('open')) { closeViewer(); return; }
+      if (settingsModal.classList.contains('open')) { closeSettings(); return; }
+    }
+  });
+
+  // ══════════════════════════════════
+  // ── Export Functions ──
+  // ══════════════════════════════════
+  const exportToolbar = document.getElementById('export-toolbar');
+
+  function updateExportToolbar() {
+    if (resultsSection.children.length > 0) {
+      exportToolbar.classList.add('visible');
+    } else {
+      exportToolbar.classList.remove('visible');
+    }
+  }
+
+  // Shared save — File System Access API avoids Windows MOTW
+  async function saveFile(blob, suggestedName, mimeType, extension) {
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await showSaveFilePicker({
+          suggestedName,
+          types: [{ description: suggestedName, accept: { [mimeType]: [extension] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        showToast('儲存成功！✅');
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        console.warn('File System Access failed, falling back to download:', err);
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = suggestedName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('已下載到預設資料夾 📥');
+  }
+
+  // Capture a single result card as canvas (transOnly: only translation panel)
+  async function captureCard(card, transOnly) {
+    const panels = card.querySelector('.result-panels');
+    if (!panels) return null;
+    const clone = panels.cloneNode(true);
+    if (transOnly) {
+      const ocrPanel = clone.querySelector('[data-type="ocr"]');
+      if (ocrPanel) ocrPanel.remove();
+      clone.style.cssText = 'display:block;min-height:auto;width:800px;';
+    } else {
+      clone.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;min-height:auto;width:1200px;';
+    }
+    clone.querySelectorAll('.result-panel').forEach(p => {
+      p.style.maxHeight = 'none';
+      p.style.overflow = 'visible';
+      p.style.padding = '18px 20px';
+      p.style.fontSize = '0.86rem';
+    });
+    // 清掉 fitPanelContent 留下的 inline transform/height
+    clone.querySelectorAll('.panel-content').forEach(pc => {
+      pc.style.transform = '';
+      pc.style.transformOrigin = '';
+      pc.style.height = '';
+    });
+    // 移除 UI 元素（label、潤稿按鈕、已潤稿標記）
+    clone.querySelectorAll('.result-panel-label').forEach(el => el.remove());
+    clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+    flattenVerticalText(clone);
+    const wrapW = transOnly ? 800 : 1200;
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${wrapW}px;z-index:-1;background:#fff;`;
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+    try {
+      await new Promise(r => setTimeout(r, 100));
+      const canvas = await html2canvas(clone, {
+        scale: 2, useCORS: true, backgroundColor: '#ffffff',
+        scrollX: 0, scrollY: 0, width: clone.scrollWidth, height: clone.scrollHeight
+      });
+      return canvas;
+    } finally {
+      if (wrapper.parentNode) document.body.removeChild(wrapper);
+    }
+  }
+
+  function getResultCards() {
+    return Array.from(resultsSection.querySelectorAll('.result-card'));
+  }
+
+  // --- Export: Merged Image ---
+  async function exportMergedImage(transOnly) {
+    const cards = getResultCards();
+    if (!cards.length) return;
+    showToast('合併大圖產生中…⏳');
+    try {
+      const canvases = [];
+      for (const card of cards) {
+        const c = await captureCard(card, transOnly);
+        if (c) canvases.push(c);
+      }
+      if (!canvases.length) { showToast('截圖失敗 ❌'); return; }
+      const totalW = Math.max(...canvases.map(c => c.width));
+      const totalH = canvases.reduce((sum, c) => sum + c.height, 0);
+      if (totalH > 16384) {
+        showToast('圖片過多，合併高度超出上限，請改用 PDF 或 ZIP 匯出 ⚠️');
+        return;
+      }
+      const merged = document.createElement('canvas');
+      merged.width = totalW;
+      merged.height = totalH;
+      const ctx = merged.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, totalW, totalH);
+      let y = 0;
+      for (const c of canvases) {
+        ctx.drawImage(c, 0, y);
+        y += c.height;
+      }
+      const blob = await new Promise(r => merged.toBlob(r, 'image/png'));
+      if (!blob) { showToast('圖片產生失敗 ❌'); return; }
+      const fname = transOnly ? 'OCR_translated_merged.png' : 'OCR_results_merged.png';
+      await saveFile(blob, fname, 'image/png', '.png');
+    } catch (err) {
+      console.error('Merged image export error:', err);
+      showToast('合併大圖匯出失敗 ❌ ' + err.message);
+    }
+  }
+
+  // --- Auto-download merged image (silent, no filename prompt) ---
+  function makeAutoMergedFilename() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+    return `辨譯_合併大圖_${stamp}.png`;
+  }
+
+  async function autoDownloadMergedImage() {
+    const cards = getResultCards();
+    if (!cards.length) return;
+    showToast('🖼️ 自動匯出合併大圖中…');
+    try {
+      const canvases = [];
+      for (const card of cards) {
+        const c = await captureCard(card, false);
+        if (c) canvases.push(c);
+      }
+      if (!canvases.length) return;
+      const totalW = Math.max(...canvases.map(c => c.width));
+      const totalH = canvases.reduce((sum, c) => sum + c.height, 0);
+      if (totalH > 16384) {
+        showToast('🖼️ 合併大圖過高，自動匯出已跳過 ⚠️');
+        return;
+      }
+      const merged = document.createElement('canvas');
+      merged.width = totalW;
+      merged.height = totalH;
+      const ctx = merged.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, totalW, totalH);
+      let y = 0;
+      for (const c of canvases) {
+        ctx.drawImage(c, 0, y);
+        y += c.height;
+      }
+      const blob = await new Promise(r => merged.toBlob(r, 'image/png'));
+      if (!blob) return;
+      const fname = makeAutoMergedFilename();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fname;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showToast(`📥 已下載：${fname}`);
+    } catch (err) {
+      console.error('Auto merged image error:', err);
+      showToast('🖼️ 合併大圖自動匯出失敗');
+    }
+  }
+
+  // --- Export: ZIP ---
+  async function exportZip(transOnly) {
+    const cards = getResultCards();
+    if (!cards.length) return;
+    showToast('ZIP 打包中…⏳');
+    try {
+      const zip = new JSZip();
+      for (let i = 0; i < cards.length; i++) {
+        const canvas = await captureCard(cards[i], transOnly);
+        if (!canvas) continue;
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        if (blob) zip.file(`OCR_result_${i + 1}.png`, blob);
+      }
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const zipName = transOnly ? 'OCR_translated.zip' : 'OCR_results.zip';
+      await saveFile(zipBlob, zipName, 'application/zip', '.zip');
+    } catch (err) {
+      console.error('ZIP export error:', err);
+      showToast('ZIP 匯出失敗 ❌ ' + err.message);
+    }
+  }
+
+  // --- Export: PDF (A4 landscape, auto-paginated) ---
+  async function exportPdf(transOnly) {
+    const cards = getResultCards();
+    if (!cards.length) return;
+    showToast('PDF 產生中…⏳');
+    try {
+      const jspdfModule = window.jspdf;
+      const jsPDF = jspdfModule?.jsPDF;
+      if (!jsPDF) { showToast('jsPDF 載入失敗 ❌'); return; }
+      // A4 landscape: 297 x 210 mm
+      const pageW = 297;
+      const pageH = 210;
+      const margin = 5; // mm
+      const usableW = pageW - margin * 2;
+      const usableH = pageH - margin * 2;
+      // canvas 像素面積安全門檻（約 4096×4096 = 16M pixels）
+      const MAX_CANVAS_AREA = 16_777_216;
+      let pdf = null;
+      let okCount = 0;
+      let failCount = 0;
+      for (let i = 0; i < cards.length; i++) {
+        try {
+          const canvas = await captureCard(cards[i], transOnly);
+          if (!canvas) { failCount++; continue; }
+          const imgW = canvas.width;
+          const imgH = canvas.height;
+          // 尺寸保護：若 canvas 過大，降 scale 重新截圖
+          let usedCanvas = canvas;
+          if (imgW * imgH > MAX_CANVAS_AREA) {
+            console.warn(`Card ${i + 1}: canvas ${imgW}x${imgH} (${(imgW * imgH / 1e6).toFixed(1)}M px) exceeds safe limit, re-capturing at scale:1`);
+            canvas.width = 0;
+            canvas.height = 0; // 先釋放大 canvas
+            const panels = cards[i].querySelector('.result-panels');
+            if (!panels) { failCount++; continue; }
+            const clone = panels.cloneNode(true);
+            if (transOnly) {
+              const ocrP = clone.querySelector('[data-type="ocr"]');
+              if (ocrP) ocrP.remove();
+              clone.style.cssText = 'display:block;min-height:auto;width:800px;';
+            } else {
+              clone.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;min-height:auto;width:1200px;';
+            }
+            clone.querySelectorAll('.result-panel').forEach(p => {
+              p.style.maxHeight = 'none';
+              p.style.overflow = 'visible';
+              p.style.padding = '18px 20px';
+              p.style.fontSize = '0.86rem';
+            });
+            clone.querySelectorAll('.panel-content').forEach(pc => {
+              pc.style.transform = '';
+              pc.style.transformOrigin = '';
+              pc.style.height = '';
+            });
+            clone.querySelectorAll('.result-panel-label').forEach(el => el.remove());
+            clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+            flattenVerticalText(clone);
+            const fallbackW = transOnly ? 800 : 1200;
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${fallbackW}px;z-index:-1;background:#fff;`;
+            wrapper.appendChild(clone);
+            document.body.appendChild(wrapper);
+            try {
+              await new Promise(r => setTimeout(r, 100));
+              usedCanvas = await html2canvas(clone, {
+                scale: 1, useCORS: true, backgroundColor: '#ffffff',
+                scrollX: 0, scrollY: 0, width: clone.scrollWidth, height: clone.scrollHeight
+              });
+            } finally {
+              if (wrapper.parentNode) document.body.removeChild(wrapper);
+            }
+            // 若降 scale 後仍超限，跳過
+            if (usedCanvas.width * usedCanvas.height > MAX_CANVAS_AREA * 2) {
+              console.warn(`Card ${i + 1}: still too large after scale:1, skipping`);
+              usedCanvas.width = 0;
+              usedCanvas.height = 0;
+              failCount++;
+              continue;
+            }
+          }
+          const finalW = usedCanvas.width;
+          const finalH = usedCanvas.height;
+          const scaledW = usableW;
+          const scaledH = (finalH / finalW) * usableW;
+          if (scaledH <= usableH) {
+            // 圖片不超過一頁：整張放入（僅此分支做 toDataURL）
+            const imgData = usedCanvas.toDataURL('image/jpeg', 0.92);
+            if (!pdf) { pdf = new jsPDF({ unit: 'mm', format: [pageW, pageH], orientation: 'landscape' }); }
+            else { pdf.addPage([pageW, pageH], 'landscape'); }
+            pdf.addImage(imgData, 'JPEG', margin, margin, scaledW, scaledH);
+          } else {
+            // 圖片超過一頁：裁切分頁（只對每個 slice 做 toDataURL）
+            const pxPerMm = finalW / usableW;
+            const sliceH = usableH * pxPerMm;
+            let srcY = 0;
+            while (srcY < finalH) {
+              const thisSliceH = Math.min(sliceH, finalH - srcY);
+              const sliceCanvas = document.createElement('canvas');
+              sliceCanvas.width = finalW;
+              sliceCanvas.height = thisSliceH;
+              const ctx = sliceCanvas.getContext('2d');
+              ctx.drawImage(usedCanvas, 0, srcY, finalW, thisSliceH, 0, 0, finalW, thisSliceH);
+              const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+              const sliceMmH = thisSliceH / pxPerMm;
+              if (!pdf) { pdf = new jsPDF({ unit: 'mm', format: [pageW, pageH], orientation: 'landscape' }); }
+              else { pdf.addPage([pageW, pageH], 'landscape'); }
+              pdf.addImage(sliceData, 'JPEG', margin, margin, scaledW, sliceMmH);
+              srcY += thisSliceH;
+              sliceCanvas.width = 0;
+              sliceCanvas.height = 0;
+            }
+          }
+          // 釋放原始 canvas 記憶體
+          usedCanvas.width = 0;
+          usedCanvas.height = 0;
+          okCount++;
+        } catch (cardErr) {
+          console.warn(`PDF: card ${i + 1} failed, skipping:`, cardErr);
+          failCount++;
+        }
+      }
+      if (!pdf) { showToast('所有卡片截圖均失敗 ❌'); return; }
+      const blob = pdf.output('blob');
+      const pdfName = transOnly ? 'OCR_translated.pdf' : 'OCR_results.pdf';
+      await saveFile(blob, pdfName, 'application/pdf', '.pdf');
+      if (failCount > 0) {
+        showToast(`PDF 已匯出（${okCount} 張成功，${failCount} 張跳過）⚠️`);
+      }
+    } catch (err) {
+      console.error('PDF export error:', err);
+      showToast('PDF 匯出失敗 ❌ ' + err.message);
+    }
+  }
+
+  // --- Export: PPTX ---
+  async function exportPptx(transOnly) {
+    const cards = getResultCards();
+    if (!cards.length) return;
+    showToast('PPTX 產生中…⏳');
+    try {
+      const slideW = 10;
+      // 第一輪：收集所有 canvas 資料
+      const slides = [];
+      for (const card of cards) {
+        const canvas = await captureCard(card, transOnly);
+        if (!canvas) continue;
+        const imgData = canvas.toDataURL('image/png');
+        const slideH = (canvas.height / canvas.width) * slideW;
+        slides.push({ imgData, slideH });
+      }
+      if (!slides.length) { showToast('截圖失敗 ❌'); return; }
+      // 用最大高度統一 layout
+      const maxH = Math.max(...slides.map(s => s.slideH), 5.63);
+      const pptx = new PptxGenJS();
+      pptx.defineLayout({ name: 'CUSTOM', width: slideW, height: maxH });
+      pptx.layout = 'CUSTOM';
+      // 第二輪：建立投影片
+      for (const s of slides) {
+        const slide = pptx.addSlide();
+        slide.addImage({ data: s.imgData, x: 0, y: 0, w: slideW, h: s.slideH });
+      }
+      const blob = await pptx.write({ outputType: 'blob' });
+      const pptxName = transOnly ? 'OCR_translated.pptx' : 'OCR_results.pptx';
+      await saveFile(blob, pptxName, 'application/vnd.openxmlformats-officedocument.presentationml.presentation', '.pptx');
+    } catch (err) {
+      console.error('PPTX export error:', err);
+      showToast('PPTX 匯出失敗 ❌ ' + err.message);
+    }
+  }
+
+  // --- Export: DOCX ---
+  async function exportDocx(transOnly) {
+    const cards = getResultCards();
+    if (!cards.length) return;
+    showToast('DOCX 產生中…⏳');
+    try {
+      const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, PageBreak } = docx;
+      const children = [];
+      for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const transPanel = card.querySelector('[data-type="trans"] .panel-content');
+        const transText = transPanel ? transPanel.innerText : '';
+        const transParas = transText.split('\n').filter(l => l.trim()).map(l => new Paragraph({ children: [new TextRun(l)] }));
+        if (transOnly) {
+          children.push(
+            new Paragraph({ children: [new TextRun({ text: `圖片 #${i + 1}`, bold: true, size: 28 })] }),
+            ...(transParas.length ? transParas : [new Paragraph('')])
+          );
+        } else {
+          const ocrPanel = card.querySelector('[data-type="ocr"] .panel-content');
+          const ocrText = ocrPanel ? ocrPanel.innerText : '';
+          const ocrParas = ocrText.split('\n').filter(l => l.trim()).map(l => new Paragraph({ children: [new TextRun(l)] }));
+          const headerRow = new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '原文 OCR', bold: true })] })], width: { size: 50, type: WidthType.PERCENTAGE } }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '譯文', bold: true })] })], width: { size: 50, type: WidthType.PERCENTAGE } }),
+            ]
+          });
+          const contentRow = new TableRow({
+            children: [
+              new TableCell({ children: ocrParas.length ? ocrParas : [new Paragraph('')], width: { size: 50, type: WidthType.PERCENTAGE } }),
+              new TableCell({ children: transParas.length ? transParas : [new Paragraph('')], width: { size: 50, type: WidthType.PERCENTAGE } }),
+            ]
+          });
+          children.push(
+            new Paragraph({ children: [new TextRun({ text: `圖片 #${i + 1}`, bold: true, size: 28 })] }),
+            new Table({ rows: [headerRow, contentRow], width: { size: 100, type: WidthType.PERCENTAGE } })
+          );
+        }
+        if (i < cards.length - 1) {
+          children.push(new Paragraph({ children: [new PageBreak()] }));
+        }
+      }
+      const doc = new Document({ sections: [{ children }] });
+      const blob = await Packer.toBlob(doc);
+      const docxName = transOnly ? 'OCR_translated.docx' : 'OCR_results.docx';
+      await saveFile(blob, docxName, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', '.docx');
+    } catch (err) {
+      console.error('DOCX export error:', err);
+      showToast('DOCX 匯出失敗 ❌ ' + err.message);
+    }
+  }
+
+  // --- Export: XLSX ---
+  async function exportXlsx(transOnly) {
+    const cards = getResultCards();
+    if (!cards.length) return;
+    showToast('XLSX 產生中…⏳');
+    try {
+      const header = transOnly ? ['圖片編號', '譯文'] : ['圖片編號', '原文', '譯文'];
+      const data = [header];
+      cards.forEach((card, i) => {
+        const transPanel = card.querySelector('[data-type="trans"] .panel-content');
+        const transText = transPanel ? transPanel.innerText : '';
+        if (transOnly) {
+          data.push([`#${i + 1}`, transText]);
+        } else {
+          const ocrPanel = card.querySelector('[data-type="ocr"] .panel-content');
+          data.push([`#${i + 1}`, ocrPanel ? ocrPanel.innerText : '', transText]);
+        }
+      });
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      ws['!cols'] = transOnly ? [{ wch: 10 }, { wch: 80 }] : [{ wch: 10 }, { wch: 60 }, { wch: 60 }];
+      XLSX.utils.book_append_sheet(wb, ws, transOnly ? 'Translated' : 'OCR Results');
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const xlsxName = transOnly ? 'OCR_translated.xlsx' : 'OCR_results.xlsx';
+      await saveFile(blob, xlsxName, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', '.xlsx');
+    } catch (err) {
+      console.error('XLSX export error:', err);
+      showToast('XLSX 匯出失敗 ❌ ' + err.message);
+    }
+  }
+
+  // ══════════════════════════════════
+  // ── File / Paste / Drop Events ──
+  // ══════════════════════════════════
+  function handleFiles(files) {
+    if (isProcessing) {
+      showToast('批次處理中，請稍後再加入圖片 ⏳');
+      return;
+    }
+    for (const file of files) {
+      if (file.type.startsWith('image/')) {
+        addToQueue(file);
+      }
+    }
+  }
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', e => {
+    handleFiles(e.target.files);
+    fileInput.value = '';
+  });
+  document.addEventListener('paste', e => {
+    if (isProcessing) return;
+    // Don't intercept paste when editing result panels
+    if (e.target.closest('[contenteditable]')) return;
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    let intercepted = false;
+    for (const item of items) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        addToQueue(item.getAsFile());
+        intercepted = true;
+      }
+    }
+    if (intercepted) e.preventDefault();
+  });
+
+  // ── Keyboard shortcut: Ctrl+Enter to translate with last-used language ──
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isProcessing && imageQueue.length > 0) {
+      e.preventDefault();
+      const lang = lastUsedLang || 'Traditional Chinese (Taiwan usage)';
+      startBatch(lang);
+    }
+  });
+
+  // Initial state
+  updateQueueUI();
+  syncPolishUi();
+</script>
+</body>
+</html>

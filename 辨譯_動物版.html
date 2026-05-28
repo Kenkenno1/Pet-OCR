@@ -2895,6 +2895,8 @@ Revise the translation along these three axes:
     if (pct) pct.textContent = Math.round(state.scale * 100) + '%';
     const slider = bar.querySelector('.zoom-slider');
     if (slider && state.zoomMode === 'manual') slider.value = Math.round(state.scale * 100);
+    const hint = bar.querySelector('.edit-hint');
+    if (hint && state.scale >= 1) hint.classList.remove('show');
   }
 
   window.addEventListener('resize', () => {
@@ -2923,6 +2925,15 @@ Revise the translation along these three axes:
       applyCardZoom(cardId);
       return;
     }
+    const eh = e.target.closest('.card-toolbar .edit-hint');
+    if (eh) {
+      const cardId = eh.closest('.card-toolbar').dataset.card;
+      if (!cardViewState[cardId]) return;
+      cardViewState[cardId].zoomMode = 'fit-width';
+      applyCardZoom(cardId);
+      eh.classList.remove('show');
+      return;
+    }
   });
   document.addEventListener('input', (e) => {
     const slider = e.target.closest('.card-toolbar .zoom-slider');
@@ -2934,6 +2945,16 @@ Revise the translation along these three axes:
       st.scale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, slider.value / 100));
       applyCardZoom(cardId);
     }
+  });
+
+  document.addEventListener('focusin', (e) => {
+    const pc = e.target.closest('.panel-content');
+    if (!pc) return;
+    const panels = pc.closest('.result-panels');
+    if (!panels || !cardViewState[panels.id]) return;
+    const bar = document.querySelector(`.card-toolbar[data-card="${panels.id}"]`);
+    const hint = bar?.querySelector('.edit-hint');
+    if (hint) hint.classList.toggle('show', cardViewState[panels.id].scale < 1);
   });
 
   // ══════════════════════════════════

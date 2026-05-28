@@ -1492,9 +1492,9 @@
     <div class="field-row-model">
       <div class="field-label">Model</div>
       <select class="field-input-select" id="model-select">
-        <option value="gemini-3.1-flash-lite-preview">gemini-3.1-flash-lite-preview</option>
+        <option value="gemini-3.5-flash">gemini-3.5-flash</option>
+        <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite</option>
         <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
-        <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
       </select>
     </div>
     <div class="field-row-polish">
@@ -1582,7 +1582,12 @@
   const STORAGE_KEY = 'ocr_gemini_api_key';
   const STORAGE_MODEL_KEY = 'ocr_gemini_model';
   const STORAGE_POLISH_KEY = 'ocr_polish_enabled';
-  const DEFAULT_MODEL = 'gemini-3.1-flash-lite-preview';
+  const DEFAULT_MODEL = 'gemini-3.5-flash';
+  const VALID_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview'];
+  const MODEL_MIGRATION = {
+    'gemini-3.1-flash-lite-preview': 'gemini-3.1-flash-lite',
+    'gemini-3-flash-preview': 'gemini-3.5-flash',
+  };
   const MAX_FILES = 30;
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
   const MAX_RETRIES = 3;
@@ -1701,7 +1706,16 @@
   // ── Centralized Gemini API Caller (with retries & backoff) ──
   // ══════════════════════════════════
   function getApiKey() { return localStorage.getItem(STORAGE_KEY) || ''; }
-  function getModel() { return localStorage.getItem(STORAGE_MODEL_KEY) || DEFAULT_MODEL; }
+  function getModel() {
+    const stored = localStorage.getItem(STORAGE_MODEL_KEY);
+    if (!stored) return DEFAULT_MODEL;
+    const migrated = MODEL_MIGRATION[stored];
+    if (migrated) {
+      localStorage.setItem(STORAGE_MODEL_KEY, migrated);
+      return migrated;
+    }
+    return VALID_MODELS.includes(stored) ? stored : DEFAULT_MODEL;
+  }
   function getPolishEnabled() {
     const v = localStorage.getItem(STORAGE_POLISH_KEY);
     return v === null ? true : v === '1';
@@ -2493,7 +2507,7 @@ Revise the translation along these three axes:
 2. Only modify the visible text content
 3. Return ONLY the revised raw HTML string. No markdown, no code fences, no explanations.`;
 
-    return callGemini([{ text: prompt }], { signal, model: 'gemini-3-flash-preview', systemInstruction: sysInstr });
+    return callGemini([{ text: prompt }], { signal, model: 'gemini-3.5-flash', systemInstruction: sysInstr });
   }
 
   // ══════════════════════════════════

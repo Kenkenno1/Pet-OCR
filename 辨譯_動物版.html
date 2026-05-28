@@ -473,6 +473,28 @@
   .result-panel::-webkit-scrollbar { width: 4px; }
   .result-panel::-webkit-scrollbar-track { background: transparent; }
   .result-panel::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+  /* ── 檢視工具列 + 版面切換 ── */
+  .card-toolbar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 8px 18px; border-bottom: 1px solid var(--line); background: var(--bg);
+    font-size: 0.72rem; color: var(--ink2);
+  }
+  .card-toolbar .zoom-btn, .card-toolbar .layout-btn {
+    border: 1px solid var(--line); background: var(--white); border-radius: 6px;
+    padding: 3px 8px; cursor: pointer; color: var(--ink2); font-size: 0.72rem;
+  }
+  .card-toolbar .zoom-btn.active { border-color: var(--accent); color: var(--accent); }
+  .card-toolbar .zoom-slider { width: 90px; }
+  .card-toolbar .zoom-pct { min-width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
+  .card-toolbar .edit-hint {
+    display: none; margin-left: auto; border: 1px solid var(--accent); color: var(--accent);
+    background: var(--accent-l); border-radius: 6px; padding: 3px 8px; cursor: pointer;
+  }
+  .card-toolbar .edit-hint.show { display: inline-block; }
+  .result-panels[data-layout="tb"] { grid-template-columns: 1fr; }
+  .result-panels[data-layout="tb"] .result-panel + .result-panel {
+    border-left: none; border-top: 1px solid var(--line);
+  }
   /* ── Fullscreen Viewer ── */
   .viewer-overlay {
     display: none;
@@ -2766,7 +2788,16 @@ Revise the translation along these three axes:
           <button class="btn-ghost" onclick="downloadResultImage('${cardId}', ${index}, event)">📥 下載圖</button>
         </div>
       </div>
-      <div class="result-panels" id="${cardId}">
+      <div class="card-toolbar" data-card="${cardId}">
+        <button type="button" class="zoom-btn" data-mode="fit-page">符合頁面</button>
+        <button type="button" class="zoom-btn" data-mode="fit-width">符合寬度</button>
+        <button type="button" class="zoom-btn" data-mode="actual">1:1</button>
+        <input type="range" class="zoom-slider" min="50" max="200" step="5" value="100" aria-label="縮放">
+        <span class="zoom-pct">100%</span>
+        <button type="button" class="layout-btn" data-act="toggle-layout">⇆ / ⇅</button>
+        <button type="button" class="edit-hint" data-act="edit-fit">放大以編輯</button>
+      </div>
+      <div class="result-panels" id="${cardId}" data-layout="lr">
         <div class="result-panel" data-type="ocr">
           <div class="result-panel-label"><span class="dot" style="background:#aaa"></span>原文 OCR</div>
           <div class="panel-content" contenteditable="true" role="textbox" aria-label="原文 OCR" aria-multiline="true">${safeOcrHtml}</div>
@@ -2791,6 +2822,10 @@ Revise the translation along these three axes:
     setupSyncScroll(cardId);
     updateExportToolbar();
   }
+
+  // ── 檢視/縮放狀態（per-card）──
+  const cardViewState = {};
+  const ZOOM_MIN = 0.5, ZOOM_MAX = 2.0, FIT_FLOOR = 0.2, AUTO_TB_THRESHOLD = 0.6;
 
   function fitPanelContent(card) {
     card.querySelectorAll('.panel-content').forEach(pc => {

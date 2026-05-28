@@ -2827,8 +2827,28 @@ Revise the translation along these three axes:
   const cardViewState = {};
   const ZOOM_MIN = 0.5, ZOOM_MAX = 2.0, FIT_FLOOR = 0.2, AUTO_TB_THRESHOLD = 0.6;
 
-  // recomputeSync 由 Task 7 實作；先 stub 避免 ReferenceError
-  function recomputeSync(cardId) { /* Task 7 實作 */ }
+  function recomputeSync(cardId) {
+    const panels = document.getElementById(cardId);
+    if (!panels) return;
+    const ps = panels.querySelectorAll('.result-panel');
+    const st = syncState[cardId];
+    // 同步開啟時：取 source 側比例 → 套到對側，維持兩欄同步（不能只 clamp）
+    if (st && st.enabled && ps.length >= 2) {
+      const src = (st.lastSource === 'trans') ? ps[1] : ps[0]; // 預設以 OCR(左) 為 source
+      const dst = (src === ps[0]) ? ps[1] : ps[0];
+      const srcMax = src.scrollHeight - src.clientHeight;
+      const ratio = srcMax > 0 ? src.scrollTop / srcMax : 0;
+      const dstMax = Math.max(0, dst.scrollHeight - dst.clientHeight);
+      st.busy = true;
+      dst.scrollTop = ratio * dstMax;
+      requestAnimationFrame(() => { st.busy = false; });
+    }
+    // 最後 clamp 兩側 scrollTop 回合法範圍
+    ps.forEach(p => {
+      const max = Math.max(0, p.scrollHeight - p.clientHeight);
+      if (p.scrollTop > max) p.scrollTop = max;
+    });
+  }
 
   function initCardView(cardId) {
     if (!cardViewState[cardId]) {
@@ -2984,6 +3004,7 @@ Revise the translation along these three axes:
       const s = syncState[cardId];
       if (!s || !s.enabled || s.busy) return;
       s.busy = true;
+      s.lastSource = 'ocr';
       const ratio = getScrollRatio(ocrPanel);
       applyScrollRatio(transPanel, ratio);
       requestAnimationFrame(() => { s.busy = false; });
@@ -2992,6 +3013,7 @@ Revise the translation along these three axes:
       const s = syncState[cardId];
       if (!s || !s.enabled || s.busy) return;
       s.busy = true;
+      s.lastSource = 'trans';
       const ratio = getScrollRatio(transPanel);
       applyScrollRatio(ocrPanel, ratio);
       requestAnimationFrame(() => { s.busy = false; });

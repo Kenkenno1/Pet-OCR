@@ -2933,8 +2933,7 @@ Revise the translation along these three axes:
       wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:1000px;z-index:-1;background:#fff;padding:16px;';
       const clone = viewerBody.cloneNode(true);
       clone.style.cssText = 'font-family:"Noto Serif TC",serif;font-size:0.92rem;line-height:1.8;color:#1a1a1a;';
-      // Fix vertical text for html2canvas
-      flattenVerticalText(clone);
+      prepareCloneForCapture(clone);
       wrapper.appendChild(clone);
       document.body.appendChild(wrapper);
       await new Promise(r => setTimeout(r, 100));
@@ -3017,6 +3016,25 @@ Revise the translation along these three axes:
     });
   }
 
+  // ── 共用：把離螢幕截圖 clone 還原成「無縮放、可完整截圖」狀態 ──
+  // 統一處理所有 html2canvas 匯出路徑，避免某條路徑漏清 live-view 的 transform。
+  function prepareCloneForCapture(clone) {
+    clone.querySelectorAll('.result-panel').forEach(p => {
+      p.style.maxHeight = 'none';
+      p.style.overflow = 'visible';
+      p.style.padding = '18px 20px';
+      p.style.fontSize = '0.86rem';
+    });
+    clone.querySelectorAll('.panel-content').forEach(pc => {
+      pc.style.transform = '';
+      pc.style.transformOrigin = '';
+      pc.style.height = '';
+    });
+    clone.querySelectorAll('.result-panel-label').forEach(el => el.remove());
+    clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+    flattenVerticalText(clone);
+  }
+
   async function downloadResultImage(cardId, index, event) {
     const container = document.getElementById(cardId);
     if (!container) return;
@@ -3031,23 +3049,7 @@ Revise the translation along these three axes:
     // Force desktop two-column layout
     clone.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;min-height:auto;';
     // Expand all panels
-    clone.querySelectorAll('.result-panel').forEach(p => {
-      p.style.maxHeight = 'none';
-      p.style.overflow = 'visible';
-      p.style.padding = '18px 20px';
-      p.style.fontSize = '0.86rem';
-    });
-    // 清掉 fitPanelContent 留下的 inline transform/height（對齊 captureCard）
-    clone.querySelectorAll('.panel-content').forEach(pc => {
-      pc.style.transform = '';
-      pc.style.transformOrigin = '';
-      pc.style.height = '';
-    });
-    // 移除 UI 元素（label、潤稿按鈕、已潤稿標記）
-    clone.querySelectorAll('.result-panel-label').forEach(el => el.remove());
-    clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
-    // Fix vertical text for html2canvas
-    flattenVerticalText(clone);
+    prepareCloneForCapture(clone);
 
     wrapper.appendChild(clone);
     document.body.appendChild(wrapper);
@@ -3366,22 +3368,7 @@ Revise the translation along these three axes:
     } else {
       clone.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;min-height:auto;width:1200px;';
     }
-    clone.querySelectorAll('.result-panel').forEach(p => {
-      p.style.maxHeight = 'none';
-      p.style.overflow = 'visible';
-      p.style.padding = '18px 20px';
-      p.style.fontSize = '0.86rem';
-    });
-    // 清掉 fitPanelContent 留下的 inline transform/height
-    clone.querySelectorAll('.panel-content').forEach(pc => {
-      pc.style.transform = '';
-      pc.style.transformOrigin = '';
-      pc.style.height = '';
-    });
-    // 移除 UI 元素（label、潤稿按鈕、已潤稿標記）
-    clone.querySelectorAll('.result-panel-label').forEach(el => el.remove());
-    clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
-    flattenVerticalText(clone);
+    prepareCloneForCapture(clone);
     const wrapW = transOnly ? 800 : 1200;
     const wrapper = document.createElement('div');
     wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${wrapW}px;z-index:-1;background:#fff;`;
@@ -3561,20 +3548,7 @@ Revise the translation along these three axes:
             } else {
               clone.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;min-height:auto;width:1200px;';
             }
-            clone.querySelectorAll('.result-panel').forEach(p => {
-              p.style.maxHeight = 'none';
-              p.style.overflow = 'visible';
-              p.style.padding = '18px 20px';
-              p.style.fontSize = '0.86rem';
-            });
-            clone.querySelectorAll('.panel-content').forEach(pc => {
-              pc.style.transform = '';
-              pc.style.transformOrigin = '';
-              pc.style.height = '';
-            });
-            clone.querySelectorAll('.result-panel-label').forEach(el => el.remove());
-            clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
-            flattenVerticalText(clone);
+            prepareCloneForCapture(clone);
             const fallbackW = transOnly ? 800 : 1200;
             const wrapper = document.createElement('div');
             wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${fallbackW}px;z-index:-1;background:#fff;`;

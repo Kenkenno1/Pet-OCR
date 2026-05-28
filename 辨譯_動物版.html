@@ -2850,7 +2850,13 @@ Revise the translation along these three axes:
       contents.forEach(pc => { cW = Math.max(cW, pc.scrollWidth); cH = Math.max(cH, pc.scrollHeight); });
       if (cW <= 0) return;
       const viewH = Math.max(window.innerHeight * 0.8, 240);
-      // ===== SCALE-CALC BLOCK（Task 5 會整段取代以加入 auto-switch）=====
+      // 自動切版：用「假設左右兩欄的半欄寬」判斷（layout-independent → 不震盪）
+      if (state.autoLayout && (state.zoomMode === 'fit-page' || state.zoomMode === 'fit-width')) {
+        const lrHalfW = (panels.clientWidth / 2) - 40;
+        const want = (Math.min(1, lrHalfW / cW) < AUTO_TB_THRESHOLD) ? 'tb' : 'lr';
+        if (want !== state.layout) { state.layout = want; panels.dataset.layout = want; }
+      }
+      // 切版後再讀實際 panel 寬，算最終 scale
       const panelW = (panels.querySelector('.result-panel')?.clientWidth || panels.clientWidth) - 40;
       let scale;
       switch (state.zoomMode) {
@@ -2859,7 +2865,6 @@ Revise the translation along these three axes:
         case 'fit-width': scale = Math.min(1, panelW / cW); break;
         default: scale = Math.max(FIT_FLOOR, Math.min(1, panelW / cW, viewH / cH)); // fit-page
       }
-      // ===== END SCALE-CALC BLOCK =====
       state.scale = scale;
       contents.forEach(pc => {
         if (scale === 1) { pc.style.transform = ''; pc.style.transformOrigin = ''; pc.style.height = ''; }
@@ -2904,6 +2909,17 @@ Revise the translation along these three axes:
       const cardId = zb.closest('.card-toolbar').dataset.card;
       if (!cardViewState[cardId]) return;
       cardViewState[cardId].zoomMode = zb.dataset.mode;
+      applyCardZoom(cardId);
+      return;
+    }
+    const lb = e.target.closest('.card-toolbar .layout-btn');
+    if (lb) {
+      const cardId = lb.closest('.card-toolbar').dataset.card;
+      const st = cardViewState[cardId];
+      if (!st) return;
+      st.layout = (st.layout === 'lr') ? 'tb' : 'lr';
+      st.autoLayout = false; // 手動切換後不再自動切（尊重使用者）
+      document.getElementById(cardId).dataset.layout = st.layout;
       applyCardZoom(cardId);
       return;
     }

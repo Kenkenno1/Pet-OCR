@@ -2817,7 +2817,7 @@ Revise the translation along these three axes:
       </div>
     `;
     resultsSection.appendChild(card);
-    fitPanelContent(card);
+    initCardView(cardId);
     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setupSyncScroll(cardId);
     updateExportToolbar();
@@ -2827,25 +2827,75 @@ Revise the translation along these three axes:
   const cardViewState = {};
   const ZOOM_MIN = 0.5, ZOOM_MAX = 2.0, FIT_FLOOR = 0.2, AUTO_TB_THRESHOLD = 0.6;
 
-  function fitPanelContent(card) {
-    card.querySelectorAll('.panel-content').forEach(pc => {
-      pc.style.transform = '';
-      pc.style.height = '';
-      requestAnimationFrame(() => {
-        const panelWidth = pc.parentElement.clientWidth - 24;
-        const contentWidth = pc.scrollWidth;
-        if (contentWidth > panelWidth && contentWidth > 0) {
-          const scale = panelWidth / contentWidth;
+  // recomputeSync 由 Task 7 實作；先 stub 避免 ReferenceError
+  function recomputeSync(cardId) { /* Task 7 實作 */ }
+
+  function initCardView(cardId) {
+    if (!cardViewState[cardId]) {
+      cardViewState[cardId] = { zoomMode: 'fit-page', scale: 1, layout: 'lr', autoLayout: true };
+    }
+    applyCardZoom(cardId);
+  }
+
+  function applyCardZoom(cardId) {
+    const panels = document.getElementById(cardId);
+    const state = cardViewState[cardId];
+    if (!panels || !state) return;
+    const contents = panels.querySelectorAll('.panel-content');
+    if (!contents.length) return;
+    // 先還原 → 量測內容原始尺寸
+    contents.forEach(pc => { pc.style.transform = ''; pc.style.transformOrigin = ''; pc.style.height = ''; });
+    requestAnimationFrame(() => {
+      let cW = 0, cH = 0;
+      contents.forEach(pc => { cW = Math.max(cW, pc.scrollWidth); cH = Math.max(cH, pc.scrollHeight); });
+      if (cW <= 0) return;
+      const viewH = Math.max(window.innerHeight * 0.8, 240);
+      // ===== SCALE-CALC BLOCK（Task 5 會整段取代以加入 auto-switch）=====
+      const panelW = (panels.querySelector('.result-panel')?.clientWidth || panels.clientWidth) - 40;
+      let scale;
+      switch (state.zoomMode) {
+        case 'actual': scale = 1; break;
+        case 'manual': scale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, state.scale)); break;
+        case 'fit-width': scale = Math.min(1, panelW / cW); break;
+        default: scale = Math.max(FIT_FLOOR, Math.min(1, panelW / cW, viewH / cH)); // fit-page
+      }
+      // ===== END SCALE-CALC BLOCK =====
+      state.scale = scale;
+      contents.forEach(pc => {
+        if (scale === 1) { pc.style.transform = ''; pc.style.transformOrigin = ''; pc.style.height = ''; }
+        else {
           pc.style.transform = `scale(${scale})`;
           pc.style.transformOrigin = 'top left';
           pc.style.height = (pc.scrollHeight * scale) + 'px';
         }
       });
+      // max-height 規則（§4.2）：fit-* 展開全高、由頁面捲；actual/manual 保留 80vh 內捲
+      const innerScroll = (state.zoomMode === 'actual' || state.zoomMode === 'manual');
+      panels.querySelectorAll('.result-panel').forEach(p => {
+        p.style.maxHeight = innerScroll ? '80vh' : 'none';
+        p.style.overflowY = innerScroll ? 'auto' : 'visible';
+      });
+      updateZoomUI(cardId);
+      if (typeof recomputeSync === 'function') recomputeSync(cardId);
     });
   }
 
+  function updateZoomUI(cardId) {
+    const state = cardViewState[cardId];
+    const bar = document.querySelector(`.card-toolbar[data-card="${cardId}"]`);
+    if (!state || !bar) return;
+    bar.querySelectorAll('.zoom-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.mode === state.zoomMode));
+    const pct = bar.querySelector('.zoom-pct');
+    if (pct) pct.textContent = Math.round(state.scale * 100) + '%';
+    const slider = bar.querySelector('.zoom-slider');
+    if (slider && state.zoomMode === 'manual') slider.value = Math.round(state.scale * 100);
+  }
+
   window.addEventListener('resize', () => {
-    document.querySelectorAll('.result-card').forEach(fitPanelContent);
+    document.querySelectorAll('.result-panels').forEach(p => {
+      if (p.id && cardViewState[p.id]) applyCardZoom(p.id);
+    });
   });
 
   // ══════════════════════════════════

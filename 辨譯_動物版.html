@@ -2898,6 +2898,28 @@ Revise the translation along these three axes:
     });
   });
 
+  document.addEventListener('click', (e) => {
+    const zb = e.target.closest('.card-toolbar .zoom-btn');
+    if (zb) {
+      const cardId = zb.closest('.card-toolbar').dataset.card;
+      if (!cardViewState[cardId]) return;
+      cardViewState[cardId].zoomMode = zb.dataset.mode;
+      applyCardZoom(cardId);
+      return;
+    }
+  });
+  document.addEventListener('input', (e) => {
+    const slider = e.target.closest('.card-toolbar .zoom-slider');
+    if (slider) {
+      const cardId = slider.closest('.card-toolbar').dataset.card;
+      const st = cardViewState[cardId];
+      if (!st) return;
+      st.zoomMode = 'manual';
+      st.scale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, slider.value / 100));
+      applyCardZoom(cardId);
+    }
+  });
+
   // ══════════════════════════════════
   // ── Sync Scroll System ──
   // ══════════════════════════════════

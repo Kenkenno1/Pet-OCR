@@ -3196,7 +3196,7 @@ Revise the translation along these three axes:
       pc.style.transformOrigin = '';
       pc.style.height = '';
     });
-    clone.querySelectorAll('.result-panel-label').forEach(el => el.remove());
+    clone.querySelectorAll('.result-panel-label, .card-toolbar').forEach(el => el.remove());
     clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
     flattenVerticalText(clone);
   }
@@ -3214,7 +3214,6 @@ Revise the translation along these three axes:
     clone.id = '';
     // Force desktop two-column layout
     clone.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;min-height:auto;';
-    // Expand all panels
     prepareCloneForCapture(clone);
 
     wrapper.appendChild(clone);

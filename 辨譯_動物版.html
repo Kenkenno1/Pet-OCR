@@ -2750,8 +2750,9 @@ Revise the translation along these three axes:
     while (resultsSection.children.length >= MAX_RESULT_CARDS) {
       const oldest = resultsSection.children[0];
       const oldPanels = oldest.querySelector('.result-panels');
-      if (oldPanels?.id && syncState[oldPanels.id]) {
+      if (oldPanels?.id) {
         delete syncState[oldPanels.id];
+        delete cardViewState[oldPanels.id];
       }
       // Revoke blob URL used by this card to free memory
       const oldThumb = oldest.querySelector('.result-thumb');
@@ -2964,6 +2965,17 @@ Revise the translation along these three axes:
       st.zoomMode = 'manual';
       st.scale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, slider.value / 100));
       applyCardZoom(cardId);
+      return;
+    }
+    // 手動編輯 contenteditable：內容變高時，於縮放模式(scale<1)下重算該 panel 高度。
+    // 只調高度、不重設 transform → 不打斷打字 caret；scale=1 時高度為 auto，自然增長免處理。
+    const pc = e.target.closest('.panel-content');
+    if (pc) {
+      const panels = pc.closest('.result-panels');
+      const st = panels && cardViewState[panels.id];
+      if (st && st.scale < 1) {
+        requestAnimationFrame(() => { pc.style.height = (pc.scrollHeight * st.scale) + 'px'; });
+      }
     }
   });
 
@@ -3298,6 +3310,8 @@ Revise the translation along these three axes:
         const labelHtml = label ? label.outerHTML : '';
         transPanel.innerHTML = labelHtml + safePolished;
       }
+      // 潤稿改寫了譯文內容 → 重算縮放（避免 fit 模式下沿用舊高度而溢出/截斷）
+      requestAnimationFrame(() => applyCardZoom(cardId));
 
       const newLabel = transPanel.querySelector('.result-panel-label');
       if (newLabel) {

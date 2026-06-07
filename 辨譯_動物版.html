@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OCR 翻譯 — 貓狗值班版</title>
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Noto+Serif+TC:wght@300;400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
@@ -31,12 +32,14 @@
     --ja-grad1: #c0321f;
     --ja-grad2: #f05c42;
   }
+  html, body {
+    overflow-x: hidden;
+  }
   body {
     font-family: 'DM Sans', 'Zen Kaku Gothic New', 'Microsoft JhengHei', sans-serif;
     background: var(--bg);
     color: var(--ink);
     min-height: 100vh;
-    overflow-x: hidden;
   }
   /* ── Header ── */
   header {
@@ -143,7 +146,7 @@
   .main-content {
     flex: 1;
     padding: 28px 36px 120px;
-    max-width: calc(100% - 110px);
+    max-width: calc(100% - 190px);
   }
   /* ── Upload zone ── */
   .upload-zone {
@@ -403,7 +406,7 @@
   }
   .result-panels {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     min-height: 200px;
   }
   @media (max-width: 860px) {
@@ -411,6 +414,7 @@
   }
   .result-panel {
     padding: 18px 20px;
+    min-width: 0;
     overflow-y: auto;
     max-height: 60vh;
     font-size: 0.86rem;
@@ -418,9 +422,17 @@
     font-family: 'Noto Serif TC', serif;
     color: var(--ink);
   }
-  .result-panel + .result-panel { border-left: 1px solid var(--line); }
+  .result-panel + .result-panel { border-left: none; border-top: 1px solid var(--line); }
   @media (max-width: 860px) {
     .result-card { overflow: visible; }
+    .result-header { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+    .result-meta { min-width: 0; }
+    .result-header > div:last-child {
+      flex: 1 1 100%;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      min-width: 0;
+    }
     .result-panel + .result-panel { border-left: none; border-top: 1px solid var(--line); }
     .result-panel {
       max-height: none;
@@ -479,7 +491,7 @@
     padding: 8px 18px; border-bottom: 1px solid var(--line); background: var(--bg);
     font-size: 0.72rem; color: var(--ink2);
   }
-  .card-toolbar .zoom-btn, .card-toolbar .layout-btn {
+  .card-toolbar .zoom-btn {
     border: 1px solid var(--line); background: var(--white); border-radius: 6px;
     padding: 3px 8px; cursor: pointer; color: var(--ink2); font-size: 0.72rem;
   }
@@ -491,6 +503,12 @@
     background: var(--accent-l); border-radius: 6px; padding: 3px 8px; cursor: pointer;
   }
   .card-toolbar .edit-hint.show { display: inline-block; }
+  .result-panels[data-layout="lr"] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .result-panels[data-layout="lr"] .result-panel + .result-panel {
+    border-left: 1px solid var(--line); border-top: none;
+  }
   .result-panels[data-layout="tb"] { grid-template-columns: 1fr; }
   .result-panels[data-layout="tb"] .result-panel + .result-panel {
     border-left: none; border-top: 1px solid var(--line);
@@ -652,7 +670,7 @@
     border-radius: 10px;
   }
   .polish-indicator.visible { display: inline-flex; }
-  /* ── Fixed Right Sidebar Buttons ── */
+  /* ── Fixed Right Language Control ── */
   .side-actions {
     position: fixed;
     right: 0;
@@ -663,23 +681,67 @@
     flex-direction: column;
     gap: 0;
   }
+  .language-panel {
+    position: relative;
+    width: 170px;
+    padding: 13px 12px 12px;
+    border-radius: 16px 0 0 16px;
+    color: #fff;
+    background: linear-gradient(180deg, #265f4a, #2f8a63 58%, #246a7c);
+    box-shadow: -10px 0 30px rgba(22, 44, 39, 0.22);
+    overflow: hidden;
+  }
+  .language-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(108deg, transparent 28%, rgba(255,255,255,0.2) 50%, transparent 72%);
+    background-size: 250% 100%;
+    animation: shimmer 3s linear infinite;
+    pointer-events: none;
+  }
+  .language-label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    opacity: 0.88;
+  }
+  .target-lang-select {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    min-height: 34px;
+    border: 1px solid rgba(255,255,255,0.55);
+    border-radius: 8px;
+    padding: 6px 8px;
+    color: #10271f;
+    background: rgba(255,255,255,0.94);
+    font: 700 0.8rem 'Zen Kaku Gothic New', 'DM Sans', sans-serif;
+    outline: none;
+  }
   .action-btn {
     position: relative;
-    width: 96px;
-    padding: 22px 8px 18px;
+    z-index: 1;
+    width: 100%;
+    margin-top: 9px;
+    padding: 9px 10px;
     border: none;
+    border-radius: 9px;
     cursor: pointer;
     font-family: 'Zen Kaku Gothic New', 'DM Sans', sans-serif;
-    display: flex;
-    flex-direction: column;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     overflow: hidden;
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-    color: #fff;
+    color: #174232;
+    background: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 800;
   }
-  .action-btn:first-child { border-radius: 18px 0 0 0; }
-  .action-btn:last-child { border-radius: 0 0 0 18px; }
   .action-btn::after {
     content: '';
     position: absolute;
@@ -693,29 +755,40 @@
     0%   { background-position: -250% center; }
     100% { background-position: 250% center; }
   }
-  .action-btn.zh { background: linear-gradient(180deg, var(--zh-grad1), var(--zh-grad2)); }
-  .action-btn.en { background: linear-gradient(180deg, var(--en-grad1), var(--en-grad2)); }
-  .action-btn.ja { background: linear-gradient(180deg, var(--ja-grad1), var(--ja-grad2)); }
   .action-btn:hover {
-    width: 110px;
-    box-shadow: -8px 0 32px rgba(0,0,0,0.25);
+    transform: translateX(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
   }
   .action-btn:active { transform: scale(0.92); }
-  .action-flag { font-size: 1.8rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); transition: transform 0.3s; }
-  .action-btn:hover .action-flag { transform: scale(1.15) rotate(-5deg); }
-  .action-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
+  .action-icon { font-size: 1rem; line-height: 1; }
+  .action-label { white-space: nowrap; }
   .action-sub { font-size: 0.55rem; opacity: 0.7; letter-spacing: 0.02em; }
   .action-btn.disabled {
-    opacity: 0.4;
+    opacity: 0.55;
     pointer-events: none;
-    filter: grayscale(0.5);
   }
   .action-btn.processing-btn {
     pointer-events: none;
   }
-  .action-btn.processing-btn .action-flag {
+  .action-btn.processing-btn .action-icon {
     animation: flagSpin 0.6s ease-in-out infinite;
   }
+  /* ── 兩顆模式 CTA（快速 / 精緻）：大顆、好點擊 ── */
+  .mode-btn {
+    flex-direction: column;
+    gap: 2px;
+    padding: 11px 10px;
+    min-height: 56px;
+    font-size: 0.88rem;
+  }
+  .mode-btn .action-icon { font-size: 1.18rem; }
+  .mode-btn .action-label { letter-spacing: 0.04em; }
+  .mode-btn.mode-active {
+    color: #fff;
+    background: linear-gradient(135deg, #1f5a44, #2f8a63);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.7) inset, 0 6px 16px rgba(16,39,31,0.28);
+  }
+  .mode-btn.mode-active .action-sub { opacity: 0.9; }
   @keyframes flagSpin {
     0%, 100% { transform: rotate(0deg); }
     25% { transform: rotate(15deg); }
@@ -812,7 +885,7 @@
     position: fixed;
     bottom: 0;
     left: 0;
-    right: 110px;
+    right: 170px;
     height: 4px;
     background: var(--line);
     z-index: 300;
@@ -1054,14 +1127,25 @@
     color: var(--ink3);
     line-height: 1.5;
   }
-  /* ── Responsive Header / Side Buttons ── */
+  /* ── Responsive Header / Language Panel ── */
   @media (max-width: 700px) {
-    .main-content { padding: 20px 16px 120px; max-width: calc(100% - 72px); }
-    .side-actions { gap: 0; }
-    .action-btn { width: 68px; padding: 16px 6px 14px; }
-    .action-btn:hover { width: 76px; }
-    .action-flag { font-size: 1.4rem; }
+    header { padding: 14px 16px; gap: 10px; }
+    .header-left { min-width: 0; gap: 8px; }
+    header h1 { font-size: 1.05rem; white-space: nowrap; }
+    .badge, .batch-count, .polish-chip-label { display: none; }
+    .header-right { gap: 6px; flex-shrink: 0; }
+    .polish-chip { padding: 6px 8px; }
+    .btn-cancel-batch.visible { padding: 6px 8px; font-size: 0.68rem; }
+    .main-content { padding: 20px 16px 120px; max-width: calc(100% - 124px); }
+    .side-actions { gap: 0; right: max(0px, calc(100vw - 100%)); }
+    .language-panel { width: 118px; padding: 10px 9px; }
+    .progress-bar-container { right: 118px; }
+    .target-lang-select { font-size: 0.72rem; padding: 5px 6px; }
+    .action-btn { padding: 8px 6px; font-size: 0.72rem; }
     .action-label { font-size: 0.6rem; }
+    .mode-btn { min-height: 0; padding: 7px 6px; font-size: 0.68rem; }
+    .mode-btn .action-icon { font-size: 0.95rem; }
+    .mode-btn .action-sub { display: none; }
     .action-sub { display: none; }
     .queue-item { width: 200px; height: 152px; }
   }
@@ -1107,10 +1191,10 @@
     50% { transform: scale(0.84); opacity: 0.06; }
   }
   .robot-svg {
-    width: 84px;
-    height: 84px;
+    width: 90px;
+    height: 90px;
     overflow: visible;
-    filter: drop-shadow(0 7px 16px rgba(17, 24, 22, 0.1));
+    filter: drop-shadow(0 9px 18px rgba(17, 24, 22, 0.14));
     transition: transform 0.22s ease, filter 0.22s ease;
   }
   .robot-shell {
@@ -1126,6 +1210,22 @@
     stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
+  }
+  .robot-shine,
+  .anime-sparkle,
+  .eye-highlight {
+    fill: #fff;
+    pointer-events: none;
+  }
+  .robot-shine { opacity: 0.62; }
+  .anime-sparkle {
+    opacity: 0.86;
+    filter: drop-shadow(0 0 4px rgba(255,255,255,0.8));
+  }
+  .anime-blush {
+    fill: #ff9caf;
+    opacity: 0.42;
+    pointer-events: none;
   }
   .robot-antenna,
   .robot-wave,
@@ -1151,7 +1251,7 @@
     transform-origin: center;
     transition: transform 0.18s ease;
     transform: translate(var(--eye-x), var(--eye-y)) scaleY(var(--eye-blink));
-    fill: #1a2621;
+    fill: #16221e;
   }
   .robot-eye.blinking { --eye-blink: 0.16; }
   .robot .robot-mouth { stroke: #1a2621; }
@@ -1187,10 +1287,7 @@
     stroke-width: 0.8;
     stroke-linejoin: round;
   }
-  .cat-eye-shine {
-    fill: #fff;
-    pointer-events: none;
-  }
+  .cat-eye-shine { fill: #fff; pointer-events: none; }
   /* Cat blinking is more frequent — eyes go to slits when surprised */
   .robot.scanner.surprised .robot-eye {
     --eye-blink: 1.15;
@@ -1210,10 +1307,7 @@
     fill: #2a2018;
     stroke: none;
   }
-  .dog-eye-shine {
-    fill: #fff;
-    pointer-events: none;
-  }
+  .dog-eye-shine { fill: #fff; pointer-events: none; }
   .dog-tongue {
     fill: #ff7a8a;
     stroke: #c25868;
@@ -1403,23 +1497,47 @@
     <button class="btn-settings" onclick="openSettings()" title="設定" aria-label="設定">⚙</button>
   </div>
 </header>
-<!-- Fixed Side Buttons -->
+<!-- Fixed Language Selector -->
 <div class="side-actions" id="side-actions">
-  <button class="action-btn zh disabled" id="btn-zh" onclick="startBatch('Traditional Chinese (Taiwan usage)')">
-    <span class="action-flag">🇹🇼</span>
-    <span class="action-label">繁體中文</span>
-    <span class="action-sub">翻譯</span>
-  </button>
-  <button class="action-btn en disabled" id="btn-en" onclick="startBatch('English')">
-    <span class="action-flag">🇺🇸</span>
-    <span class="action-label">English</span>
-    <span class="action-sub">Translate</span>
-  </button>
-  <button class="action-btn ja disabled" id="btn-ja" onclick="startBatch('Japanese')">
-    <span class="action-flag">🇯🇵</span>
-    <span class="action-label">日本語</span>
-    <span class="action-sub">翻訳</span>
-  </button>
+  <div class="language-panel">
+    <label class="language-label" for="target-lang-select">目標語言</label>
+    <select class="target-lang-select" id="target-lang-select" aria-label="選擇目標語言">
+      <option value="Traditional Chinese (Taiwan usage)">繁體中文（台灣）</option>
+      <option value="Simplified Chinese">简体中文</option>
+      <option value="English">English</option>
+      <option value="Japanese">日本語</option>
+      <option value="Korean">한국어</option>
+      <option value="Vietnamese">Tiếng Việt</option>
+      <option value="Thai">ไทย</option>
+      <option value="Indonesian">Bahasa Indonesia</option>
+      <option value="Malay">Bahasa Melayu</option>
+      <option value="Hindi">हिन्दी</option>
+      <option value="Arabic">العربية</option>
+      <option value="Turkish">Türkçe</option>
+      <option value="French">Français</option>
+      <option value="Spanish">Español</option>
+      <option value="Portuguese">Português</option>
+      <option value="German">Deutsch</option>
+      <option value="Italian">Italiano</option>
+      <option value="Dutch">Nederlands</option>
+      <option value="Polish">Polski</option>
+      <option value="Russian">Русский</option>
+      <option value="Ukrainian">Українська</option>
+      <option value="Greek">Ελληνικά</option>
+      <option value="Swedish">Svenska</option>
+      <option value="Finnish">Suomi</option>
+    </select>
+    <button class="action-btn mode-btn disabled" id="btn-mode-quick" data-mode="quick" onclick="startSelectedLanguageBatch('quick')" title="快速模式：速度優先">
+      <span class="action-icon">⚡</span>
+      <span class="action-label">快速模式</span>
+      <span class="action-sub">速度優先</span>
+    </button>
+    <button class="action-btn mode-btn disabled" id="btn-mode-refined" data-mode="refined" onclick="startSelectedLanguageBatch('refined')" title="精緻模式：品質優先">
+      <span class="action-icon">✨</span>
+      <span class="action-label">精緻模式</span>
+      <span class="action-sub">品質優先</span>
+    </button>
+  </div>
 </div>
 <!-- Progress bar -->
 <div class="progress-bar-container" id="progress-container">
@@ -1428,7 +1546,7 @@
 <!-- Toast container -->
 <div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
 <!-- Robot Mascot Stage -->
-<div class="robot-stage" id="robot-stage">
+<div class="robot-stage visible" id="robot-stage">
   <div class="robot-stage-inner">
     <div class="robot-col">
       <div class="robot scanner idle" id="robot-scanner">
@@ -1443,8 +1561,10 @@
           <path class="cat-ear-inner" d="M71 28 L74 16 L65 24 Z"></path>
           <!-- Head shell -->
           <ellipse class="robot-shell" cx="48" cy="50" rx="28" ry="26"></ellipse>
+          <path class="robot-shine" d="M30 38 q8 -10 21 -10 q-12 3 -18 13 q-3 5 -8 5 q1 -5 5 -8 Z"></path>
           <!-- Face panel -->
           <ellipse class="robot-face" cx="48" cy="48" rx="22" ry="16"></ellipse>
+          <path class="anime-sparkle" d="M25 29 l2 4 l4 2 l-4 2 l-2 4 l-2 -4 l-4 -2 l4 -2 Z"></path>
           <!-- Whiskers -->
           <path class="cat-whisker" d="M14 53 H30"></path>
           <path class="cat-whisker" d="M14 58 H30"></path>
@@ -1456,6 +1576,10 @@
           <!-- Pupil highlights -->
           <circle class="cat-eye-shine" cx="40.5" cy="44.5" r="1.1"></circle>
           <circle class="cat-eye-shine" cx="58.5" cy="44.5" r="1.1"></circle>
+          <circle class="eye-highlight" cx="38" cy="43" r="1.8"></circle>
+          <circle class="eye-highlight" cx="56" cy="43" r="1.8"></circle>
+          <ellipse class="anime-blush" cx="34" cy="55" rx="4" ry="2"></ellipse>
+          <ellipse class="anime-blush" cx="62" cy="55" rx="4" ry="2"></ellipse>
           <!-- Pink nose (triangle) -->
           <path class="cat-nose" d="M45 56 L51 56 L48 60 Z"></path>
           <!-- Mouth states (cat-style "ω") -->
@@ -1477,8 +1601,10 @@
           <path class="robot-accent dog-ear" d="M72 28 q8 4 8 22 q0 8 -6 10 q-5 -4 -6 -16 q0 -8 4 -16 Z"></path>
           <!-- Head shell -->
           <rect class="robot-shell" x="26" y="22" width="44" height="48" rx="20"></rect>
+          <path class="robot-shine" d="M35 29 q7 -6 19 -5 q-9 3 -13 10 q-3 5 -8 5 q0 -6 2 -10 Z"></path>
           <!-- Snout area -->
           <ellipse class="robot-face" cx="48" cy="58" rx="14" ry="10"></ellipse>
+          <path class="anime-sparkle" d="M72 30 l2 4 l4 2 l-4 2 l-2 4 l-2 -4 l-4 -2 l4 -2 Z"></path>
           <!-- Forehead marking -->
           <path class="dog-marking" d="M44 30 q4 -6 8 0 q-2 4 -4 4 q-2 0 -4 -4 Z"></path>
           <!-- Eyes -->
@@ -1487,6 +1613,10 @@
           <!-- Eye shine -->
           <circle class="dog-eye-shine" cx="40" cy="43.5" r="1"></circle>
           <circle class="dog-eye-shine" cx="58" cy="43.5" r="1"></circle>
+          <circle class="eye-highlight" cx="38" cy="42" r="1.7"></circle>
+          <circle class="eye-highlight" cx="56" cy="42" r="1.7"></circle>
+          <ellipse class="anime-blush" cx="34" cy="53" rx="4" ry="2"></ellipse>
+          <ellipse class="anime-blush" cx="62" cy="53" rx="4" ry="2"></ellipse>
           <!-- Black nose -->
           <ellipse class="dog-nose" cx="48" cy="55" rx="3.6" ry="2.7"></ellipse>
           <!-- Tongue (visible only when happy/talking) -->
@@ -1510,15 +1640,7 @@
       <input class="field-input" id="api-key-input" type="password" placeholder="貼上你的 API Key" autocomplete="off" spellcheck="false">
       <button class="btn-eye" id="btn-eye" onclick="toggleKeyVisibility()" title="顯示/隱藏" aria-label="顯示或隱藏 API Key">👁</button>
     </div>
-    <div class="key-hint">⚠ Key 僅存於本機瀏覽器，不會傳送至第三方</div>
-    <div class="field-row-model">
-      <div class="field-label">Model</div>
-      <select class="field-input-select" id="model-select">
-        <option value="gemini-3.5-flash">gemini-3.5-flash</option>
-        <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite</option>
-        <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
-      </select>
-    </div>
+    <div class="key-hint">⚠ Key 會自動記憶於本機，僅在你發出請求時直接傳給 Google Gemini API。</div>
     <div class="field-row-polish">
       <div class="polish-info">
         <div class="polish-label">✨ 自動潤稿</div>
@@ -1604,12 +1726,15 @@
   const STORAGE_KEY = 'ocr_gemini_api_key';
   const STORAGE_MODEL_KEY = 'ocr_gemini_model';
   const STORAGE_POLISH_KEY = 'ocr_polish_enabled';
+  const STORAGE_LANG_KEY = 'ocr_target_language';
   const DEFAULT_MODEL = 'gemini-3.5-flash';
-  const VALID_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview'];
+  const VALID_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite'];
   const MODEL_MIGRATION = {
     'gemini-3.1-flash-lite-preview': 'gemini-3.1-flash-lite',
     'gemini-3-flash-preview': 'gemini-3.5-flash',
   };
+  // 使用者只看到「快速 / 精緻」模式，技術型號對應在此（不在 UI 顯示型號）
+  const MODE_MODELS = { quick: 'gemini-3.1-flash-lite', refined: 'gemini-3.5-flash' };
   const MAX_FILES = 30;
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
   const MAX_RETRIES = 3;
@@ -1631,7 +1756,6 @@
   const toastContainer = document.getElementById('toast-container');
   const settingsModal = document.getElementById('settings-modal');
   const apiKeyInput = document.getElementById('api-key-input');
-  const modelSelect = document.getElementById('model-select');
   const saveFeedback = document.getElementById('save-feedback');
   const btnTest = document.getElementById('btn-test');
   const btnEye = document.getElementById('btn-eye');
@@ -1639,6 +1763,7 @@
   const polishToggleInput = document.getElementById('polish-toggle');
   const polishChip = document.getElementById('polish-chip');
   const polishChipLabel = document.getElementById('polish-chip-label');
+  const targetLangSelect = document.getElementById('target-lang-select');
 
   // ══════════════════════════════════
   // ── State ──
@@ -1650,47 +1775,60 @@
   let queueEpoch = 0; // incremented on clearQueue to invalidate pending readers
   let pendingReaders = 0; // number of FileReaders still in-flight
   let lastUsedLang = '';
+  let lastUsedModel = ''; // 最近一次批次使用的型號（供單卡再次潤稿沿用同模式）
   let batchAbortController = null; // AbortController for cancelling batch
 
   // ══════════════════════════════════
   // ── HTML Sanitizer (XSS Protection) ──
   // ══════════════════════════════════
-  function sanitizeHtml(dirty) {
-    // Create an inert document fragment via <template>
-    const template = document.createElement('template');
-    template.innerHTML = dirty;
+  function sanitizeUrlAttribute(value, attrName) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (attrName === 'src' && /^\s*data\s*:\s*image\//i.test(raw)) return raw;
+    try {
+      const url = new URL(raw, window.location.href);
+      const allowed = attrName === 'href' || attrName === 'xlink:href'
+        ? ['http:', 'https:', 'mailto:', 'tel:']
+        : ['http:', 'https:', 'blob:'];
+      return allowed.includes(url.protocol) ? raw : '';
+    } catch {
+      return '';
+    }
+  }
 
-    // Remove dangerous tags
-    const dangerousTags = 'script,iframe,object,embed,form,input,textarea,select,button,link,meta,base,applet,style';
+  function sanitizeInlineStyle(value) {
+    const css = String(value || '');
+    if (/expression\s*\(|behavior\s*:|@import/i.test(css)) return '';
+    // OCR layout relies on inline CSS, but CSS url() can leak via remote beacons.
+    return css.replace(/url\s*\((?:[^)(]|\([^)]*\))*\)/gi, '');
+  }
+
+  function sanitizeHtml(dirty) {
+    const template = document.createElement('template');
+    template.innerHTML = dirty || '';
+
+    const dangerousTags = 'script,iframe,object,embed,form,input,textarea,select,button,link,meta,base,applet,style,noscript,template,svg,math';
     template.content.querySelectorAll(dangerousTags).forEach(el => el.remove());
 
-    // Scrub dangerous attributes from all elements
     template.content.querySelectorAll('*').forEach(el => {
-      const attrs = [...el.attributes];
-      for (const attr of attrs) {
+      [...el.attributes].forEach(attr => {
         const name = attr.name.toLowerCase();
-        const value = (attr.value || '').toLowerCase().trim();
-        // Remove all event handlers
         if (name.startsWith('on')) {
           el.removeAttribute(attr.name);
-          continue;
+          return;
         }
-        // Remove javascript: URLs
-        if ((name === 'src' || name === 'href' || name === 'action' || name === 'xlink:href') &&
-            /^\s*javascript\s*:/i.test(attr.value)) {
-          el.removeAttribute(attr.name);
-          continue;
+        if (['src', 'href', 'action', 'xlink:href'].includes(name)) {
+          const clean = sanitizeUrlAttribute(attr.value, name);
+          if (clean) el.setAttribute(attr.name, clean);
+          else el.removeAttribute(attr.name);
+          return;
         }
-        // Remove data: URLs on src (except images)
-        if (name === 'src' && /^\s*data\s*:/i.test(attr.value) && !/^\s*data\s*:\s*image\//i.test(attr.value)) {
-          el.removeAttribute(attr.name);
-          continue;
+        if (name === 'style') {
+          const clean = sanitizeInlineStyle(attr.value);
+          if (clean.trim()) el.setAttribute(attr.name, clean);
+          else el.removeAttribute(attr.name);
         }
-      }
-      // Remove SVG dangerous elements inside SVG
-      if (el.tagName && ['FOREIGNOBJECT', 'SET', 'ANIMATE', 'ANIMATETRANSFORM'].includes(el.tagName.toUpperCase())) {
-        el.remove();
-      }
+      });
     });
 
     return template.innerHTML;
@@ -1738,6 +1876,15 @@
     }
     return VALID_MODELS.includes(stored) ? stored : DEFAULT_MODEL;
   }
+  // 由已儲存型號推回「模式」：3.5→精緻；flash-lite / 無 / 無效 / 舊 pro-preview → 快速
+  function getMode() {
+    const stored = localStorage.getItem(STORAGE_MODEL_KEY);
+    const resolved = MODEL_MIGRATION[stored] || stored;
+    return resolved === 'gemini-3.5-flash' ? 'refined' : 'quick';
+  }
+  function getModeModel(mode) {
+    return MODE_MODELS[mode] || MODE_MODELS.quick;
+  }
   function getPolishEnabled() {
     const v = localStorage.getItem(STORAGE_POLISH_KEY);
     return v === null ? true : v === '1';
@@ -1772,7 +1919,7 @@
   async function callGemini(parts, { signal, model: modelOverride, systemInstruction } = {}) {
     const key = getApiKey();
     const model = modelOverride || getModel();
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
     let lastError;
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -1785,7 +1932,7 @@
         }
         const res = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
           body: JSON.stringify(reqBody),
           signal,
         });
@@ -1872,6 +2019,25 @@
     }
   };
 
+  function getReaction(lang) {
+    if (reactions[lang]) return reactions[lang];
+    const label = targetLangSelect?.selectedOptions?.[0]?.textContent?.trim() || lang;
+    return {
+      start: [
+        `${label} 模式啟動，穩穩翻。`,
+        `目標：${label}。貓狗小隊開工。`,
+        `收到，翻成 ${label}。節奏走起。`,
+        `${label} 接線完成，開始處理。`,
+      ],
+      done: [
+        `${label} 版本完成，漂亮收工。`,
+        `完成！${label} 已上桌。`,
+        `翻譯完成，這波很順。`,
+        `任務完成，品質在線。`,
+      ]
+    };
+  }
+
   // ══════════════════════════════════
   // ── Queue Management ──
   // ══════════════════════════════════
@@ -1931,6 +2097,7 @@
       el.className = 'queue-item';
       el.id = `queue-item-${id}`;
       const img = document.createElement('img');
+      img.onload = () => recordItemSourceDimensions(item, img);
       img.src = blobUrl;
       img.alt = `圖片 ${id}`;
       const removeBtn = document.createElement('button');
@@ -2197,80 +2364,80 @@
   // ══════════════════════════════════
   const greetingPairs = [
     [
-      { who: 'scanner', text: '喵？' },
-      { who: 'translator', text: '汪！上工。' },
+      { who: 'scanner', text: '喵，掃描雷達開機。' },
+      { who: 'translator', text: '汪，翻譯引擎熱身完畢。' },
     ],
     [
-      { who: 'scanner', text: '(瞳孔放大)' },
-      { who: 'translator', text: '好，我衝。' },
+      { who: 'scanner', text: '今天也要把字抓得漂漂亮亮。' },
+      { who: 'translator', text: '收到，語感我來顧。' },
     ],
     [
-      { who: 'scanner', text: '字...來了。' },
-      { who: 'translator', text: '汪汪！' },
+      { who: 'scanner', text: '文件上桌，肉球就位。' },
+      { who: 'translator', text: '狗狗端出專業模式。' },
     ],
     [
-      { who: 'scanner', text: '喵——準備。' },
-      { who: 'translator', text: '我也是。' },
+      { who: 'scanner', text: '喵，先看清楚再出手。' },
+      { who: 'translator', text: '穩，翻譯界的安全駕駛。' },
     ],
     [
-      { who: 'scanner', text: '紙的味道。' },
-      { who: 'translator', text: '汪。出發。' },
+      { who: 'scanner', text: '這批字有精神。' },
+      { who: 'translator', text: '那就翻得更有精神。' },
     ],
     [
-      { who: 'scanner', text: '(盯)' },
-      { who: 'translator', text: '盯歸盯，要做事。' },
+      { who: 'scanner', text: '我盯字，你盯品質。' },
+      { who: 'translator', text: '成交，雙核心運轉。' },
     ],
     [
-      { who: 'scanner', text: '今天的字好像比較肥。' },
-      { who: 'translator', text: '肥就肥，翻就對。' },
+      { who: 'scanner', text: '遇到密密麻麻也不慌。' },
+      { who: 'translator', text: '對，排隊進來，一個一個翻。' },
     ],
     [
-      { who: 'scanner', text: '我先撥一下。喵。' },
-      { who: 'translator', text: '撥完換我接。' },
+      { who: 'scanner', text: '開始吧，今天不當卡關仔。' },
+      { who: 'translator', text: '汪，直接把進度條推過去。' },
     ],
   ];
 
   // ── Idle chatter while waiting ──
   const idleChatPairs = [
     [
-      { who: 'scanner', text: '喵...' },
-      { who: 'translator', text: '嗯。' },
+      { who: 'scanner', text: '喵，等檔案也要保持優雅。' },
+      { who: 'translator', text: '汪，優雅但不拖稿。' },
     ],
     [
-      { who: 'scanner', text: '(發呆)' },
-      { who: 'translator', text: '你發呆，我警戒。' },
+      { who: 'scanner', text: '我先存一點專注力。' },
+      { who: 'translator', text: '好，我幫你看著進度。' },
     ],
     [
-      { who: 'scanner', text: '好像有東西在動。' },
-      { who: 'translator', text: '灰塵。' },
+      { who: 'scanner', text: '待命中，瞳孔已校準。' },
+      { who: 'translator', text: '待命中，尾巴已同步。' },
     ],
     [
-      { who: 'scanner', text: '陽光。' },
-      { who: 'translator', text: '別走神。' },
+      { who: 'scanner', text: '如果字很多，我們就分段吃。' },
+      { who: 'translator', text: '一口一口，最後也是清盤。' },
     ],
     [
-      { who: 'scanner', text: '(舔爪子)' },
-      { who: 'translator', text: '你舔，我等。' },
+      { who: 'scanner', text: '這工具今天有點帥。' },
+      { who: 'translator', text: '主要是使用者會用。' },
     ],
     [
-      { who: 'scanner', text: '尾巴自己在動。' },
-      { who: 'translator', text: '正常。' },
+      { who: 'scanner', text: '我負責看字不漏拍。' },
+      { who: 'translator', text: '我負責翻譯不出戲。' },
     ],
     [
-      { who: 'scanner', text: '喵——好慢。' },
-      { who: 'translator', text: '我也覺得。' },
+      { who: 'scanner', text: '慢一點也沒事，準比較重要。' },
+      { who: 'translator', text: '品質派，懂。' },
     ],
     [
-      { who: 'scanner', text: '他在挑哪張啊。' },
-      { who: 'translator', text: '我也想知道。汪。' },
+      { who: 'scanner', text: '下一張會不會很難？' },
+      { who: 'translator', text: '難才有成就感。' },
     ],
     [
-      { who: 'scanner', text: '肚子...' },
-      { who: 'translator', text: '我也餓。等等。' },
+      { who: 'scanner', text: '進度條是我的逗貓棒。' },
+      { who: 'translator', text: '那就讓它動起來。' },
     ],
     [
-      { who: 'translator', text: '汪。' },
-      { who: 'scanner', text: '嗯？' },
+      { who: 'translator', text: '今日目標：少一點卡，多一點順。' },
+      { who: 'scanner', text: '喵，這句可以貼牆上。' },
     ],
   ];
 
@@ -2307,27 +2474,23 @@
   }
 
   const scannerOcrQuips = [
-    '喵！',
-    '(瞳孔放大)',
-    '字。',
-    '看到了。',
-    '喵——',
-    '這張...有點擠。',
-    '(盯)',
-    '字字字。',
-    '嗯？',
-    '有黑點。',
+    '喵，字形鎖定。',
+    '瞳孔放大，細節進來。',
+    '這張我罩。',
+    '掃描中，漏字退散。',
+    '喵，版面有戲。',
+    '密也沒關係，我慢慢抓。',
+    '邊角也看到了。',
+    '這不是亂碼，是挑戰。',
   ];
 
   const scannerDoneQuips = [
-    '喵。看完。',
-    '拿去。',
-    '字都在。',
-    '好了。',
-    '(尾巴一甩)',
-    '搞定。喵。',
-    '換你。',
-    '喵——',
+    'OCR 完成，字都排隊好了。',
+    '喵，原文交棒。',
+    '抓完，沒有偷懶。',
+    '這張整理好了。',
+    '尾巴一甩，任務交接。',
+    '換你翻，穩穩來。',
   ];
 
   function scannerPageQuip(idx, total) {
@@ -2335,63 +2498,59 @@
     const pageWord = idx <= 10 ? ordinal[idx - 1] : `第${idx}`;
     const remaining = total - idx;
     const quips = [
-      `${pageWord}張。喵。`,
-      `${pageWord}張。還有 ${remaining}。`,
-      `(瞳孔放大)${pageWord}張。`,
-      `${pageWord}張...看一下。`,
-      `下一張...啊，${pageWord}張。`,
-      `${pageWord}張。有點難。`,
+      `${pageWord}張進場，我先抓重點。`,
+      `${pageWord}張收到，還有 ${remaining} 張也不怕。`,
+      `${pageWord}張，瞳孔開到專業模式。`,
+      `${pageWord}張先看版面，再抓文字。`,
+      `${pageWord}張，這波節奏很好。`,
+      `${pageWord}張，有難度但可解。`,
     ];
     return randomPick(quips);
   }
 
   const translatorStartQuips = [
-    '汪！',
-    '好，我來。',
-    '汪汪！',
-    '拿到。翻。',
-    '嗯。',
-    '看我的。',
-    '(尾巴搖)',
-    '汪——',
-    'OK。',
-    '翻。',
+    '汪，語感上線。',
+    '拿到，我來翻得順。',
+    '翻譯引擎已暖機。',
+    '這句交給我。',
+    '尾巴搖，品質顧。',
+    'OK，開始轉換語氣。',
+    '把意思帶過去，不硬翻。',
+    '汪，讓句子變自然。',
   ];
 
   const translatorDoneQuips = [
-    '汪！好了。',
-    '翻完。',
-    '拿去。',
-    '好了。汪。',
-    '(尾巴搖)',
-    '汪汪！',
-    '搞定。',
-    'OK。',
+    '翻好了，讀起來順。',
+    '這段可以交差。',
+    '意思到了，語氣也到了。',
+    '汪，完成一段漂亮助攻。',
+    '翻譯完成，尾巴認證。',
+    '這句不卡，過關。',
   ];
 
   const scannerCheersQuips = [
-    '喵！厲害。',
-    '(拍拍肉球)',
-    '你贏。',
-    '喵——讚。',
-    '我服。',
-    '對嘛。喵。',
+    '喵，這翻得有料。',
+    '肉球鼓掌。',
+    '這波配合漂亮。',
+    '讚，句子變順了。',
+    '我宣布：可讀性上升。',
+    '很好，下一張繼續。',
   ];
 
   const allDoneScannerQuips = [
-    '全部好了。喵。',
-    '下班！喵——',
-    '(伸懶腰)',
-    '我去睡了。',
-    '喵。完。',
+    '全部完成，貓爪蓋章。',
+    '收工，今天很有效率。',
+    '伸懶腰，成果很可以。',
+    '喵，這批整理得漂亮。',
+    '完成，沒有留下尾巴。',
   ];
 
   const allDoneTranslatorQuips = [
-    '汪汪！',
-    '下班！',
-    '(尾巴搖搖)結束。',
-    '我去喝水。',
-    '汪——好累。',
+    '汪，翻譯全數到位。',
+    '收工，品質在線。',
+    '尾巴搖，任務成功。',
+    '完成！可以安心交付。',
+    '這波沒有白忙，漂亮。',
   ];
 
   // ── Robot dialogue controllers ──
@@ -2453,22 +2612,24 @@
   // ══════════════════════════════════
   // ── API Calls (OCR / Translate / Polish) ──
   // ══════════════════════════════════
-  async function callGeminiOCR(base64Data, mimeType, signal) {
+  async function callGeminiOCR(base64Data, mimeType, signal, modelOverride) {
     const sysInstr = `You are an expert Frontend Developer specializing in converting images to high-fidelity HTML.`;
     const prompt = `Convert this image to high-fidelity HTML.
 Rules:
 1. Use inline CSS for layout (flex/grid).
 2. Match colors, fonts, and positions as closely as possible.
-3. If the text in the image is written vertically (top-to-bottom), you MUST use CSS "writing-mode: vertical-rl" on those text elements to preserve the vertical layout.
-4. Return ONLY raw HTML string. No markdown, no code fences.`;
+3. Preserve horizontal text as horizontal text. Japanese/Chinese/Korean language alone is NOT evidence of vertical writing.
+4. Use CSS "writing-mode: vertical-rl" ONLY when the source image visibly shows top-to-bottom vertical columns. For ordinary news pages, lists, headlines, cards, captions, and paragraphs arranged in left-to-right horizontal rows, DO NOT use writing-mode or narrow one-character columns.
+5. Avoid artificial narrow columns: give each text block enough width for normal words/phrases to wrap naturally.
+6. Return ONLY raw HTML string. No markdown, no code fences.`;
 
     return callGemini([
       { text: prompt },
       { inline_data: { mime_type: mimeType, data: base64Data } }
-    ], { signal, systemInstruction: sysInstr });
+    ], { signal, model: modelOverride, systemInstruction: sysInstr });
   }
 
-  async function callGeminiTranslate(html, lang, signal) {
+  async function callGeminiTranslate(html, lang, signal, modelOverride) {
     let localeRule = '';
     if (/chinese/i.test(lang)) {
       localeRule = '\n3. Use Taiwan Traditional Chinese phrasing (not Mainland China/HK usage).';
@@ -2488,10 +2649,10 @@ Rules:
 2. Only translate visible text content.${localeRule}
 4. Return ONLY raw HTML string. No markdown, no code fences.`;
 
-    return callGemini([{ text: prompt }], { signal, systemInstruction: sysInstr });
+    return callGemini([{ text: prompt }], { signal, model: modelOverride, systemInstruction: sysInstr });
   }
 
-  async function callGeminiPolish(sourceHtml, translatedHtml, lang, signal) {
+  async function callGeminiPolish(sourceHtml, translatedHtml, lang, signal, modelOverride) {
     const sysInstr = `You are a senior translation editor and quality assurance specialist. Your job is to polish and elevate existing translations through deep revision along three axes: Precision, Localization, and Fluency.`;
     const prompt = `## Step 1: Deep Comprehension
 First, carefully re-read the source text to fully understand:
@@ -2529,7 +2690,7 @@ Revise the translation along these three axes:
 2. Only modify the visible text content
 3. Return ONLY the revised raw HTML string. No markdown, no code fences, no explanations.`;
 
-    return callGemini([{ text: prompt }], { signal, model: 'gemini-3.5-flash', systemInstruction: sysInstr });
+    return callGemini([{ text: prompt }], { signal, model: modelOverride, systemInstruction: sysInstr });
   }
 
   // ══════════════════════════════════
@@ -2542,7 +2703,28 @@ Revise the translation along these three axes:
     }
   }
 
-  async function startBatch(lang) {
+  function getSelectedLanguage() {
+    return targetLangSelect?.value || lastUsedLang || 'Traditional Chinese (Taiwan usage)';
+  }
+
+  // 在語言面板高亮目前模式（讓使用者辨識最近 / Ctrl+Enter 會用哪個模式）
+  function syncModeUi(mode) {
+    const active = (mode === 'quick' || mode === 'refined') ? mode : getMode();
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.classList.toggle('mode-active', btn.dataset.mode === active);
+    });
+  }
+
+  // 兩顆主要 CTA：先選語言 → 點模式開始。mode 省略時（Ctrl+Enter）沿用最近 / 預設模式
+  function startSelectedLanguageBatch(mode) {
+    const chosen = (mode === 'quick' || mode === 'refined') ? mode : getMode();
+    const model = getModeModel(chosen);
+    localStorage.setItem(STORAGE_MODEL_KEY, model); // 記住模式對應型號（沿用舊 key，向後相容）
+    syncModeUi(chosen);
+    startBatch(getSelectedLanguage(), model);
+  }
+
+  async function startBatch(lang, modelOverride) {
     if (imageQueue.length === 0 || isProcessing) return;
     if (!getApiKey()) {
       showToast('先設定 API Key 啦！⚙️');
@@ -2552,9 +2734,11 @@ Revise the translation along these three axes:
 
     isProcessing = true;
     lastUsedLang = lang;
+    lastUsedModel = modelOverride || getModel();
+    if (targetLangSelect) localStorage.setItem(STORAGE_LANG_KEY, lang);
     batchAbortController = new AbortController();
     const signal = batchAbortController.signal;
-    const r = reactions[lang];
+    const r = getReaction(lang);
     const polishEnabled = getPolishEnabled();
     const stepsPerImage = polishEnabled ? 3 : 2; // OCR + Translate (+ Polish)
     const totalSteps = imageQueue.length * stepsPerImage;
@@ -2566,7 +2750,6 @@ Revise the translation along these three axes:
     // Epic start reaction
     showToast(randomPick(r.start));
     shakeScreen();
-    emojiRain(r.emoji, 6);
 
     document.querySelectorAll('.action-btn').forEach(btn => {
       btn.classList.add('disabled', 'processing-btn');
@@ -2596,7 +2779,7 @@ Revise the translation along these three axes:
 
       let ocrHtml = '';
       try {
-        ocrHtml = await callGeminiOCR(item.base64, item.mimeType, signal);
+        ocrHtml = await callGeminiOCR(item.base64, item.mimeType, signal, lastUsedModel);
         completedSteps++;
         progressBar.style.width = `${(completedSteps / totalSteps) * 100}%`;
       } catch (err) {
@@ -2626,7 +2809,7 @@ Revise the translation along these three axes:
       let transHtml = '';
       let translationOk = false;
       try {
-        transHtml = await callGeminiTranslate(ocrHtml, lang, signal);
+        transHtml = await callGeminiTranslate(ocrHtml, lang, signal, lastUsedModel);
         translationOk = true;
         completedSteps++;
         progressBar.style.width = `${(completedSteps / totalSteps) * 100}%`;
@@ -2650,7 +2833,7 @@ Revise the translation along these three axes:
         // Robot: Polish start (fire-and-forget)
         robotPolishStart();
         try {
-          const polishedHtml = await callGeminiPolish(finalOcr, transHtml, lang, signal);
+          const polishedHtml = await callGeminiPolish(finalOcr, transHtml, lang, signal, lastUsedModel);
           transHtml = polishedHtml;
           polished = true;
         } catch (err) {
@@ -2775,6 +2958,7 @@ Revise the translation along these three axes:
     card.className = 'result-card';
     const cardId = `result-${Date.now()}-${index}`;
     card.dataset.lang = lastUsedLang;
+    card.dataset.model = lastUsedModel; // 供單卡「再次潤稿」沿用同一模式型號
 
     card.innerHTML = `
       <div class="result-header">
@@ -2795,10 +2979,9 @@ Revise the translation along these three axes:
         <button type="button" class="zoom-btn" data-mode="actual">1:1</button>
         <input type="range" class="zoom-slider" min="50" max="200" step="5" value="100" aria-label="縮放">
         <span class="zoom-pct">100%</span>
-        <button type="button" class="layout-btn" data-act="toggle-layout">⇆ / ⇅</button>
         <button type="button" class="edit-hint" data-act="edit-fit">放大以編輯</button>
       </div>
-      <div class="result-panels" id="${cardId}" data-layout="lr">
+      <div class="result-panels" id="${cardId}" data-layout="tb">
         <div class="result-panel" data-type="ocr">
           <div class="result-panel-label"><span class="dot" style="background:#aaa"></span>原文 OCR</div>
           <div class="panel-content" contenteditable="true" role="textbox" aria-label="原文 OCR" aria-multiline="true">${safeOcrHtml}</div>
@@ -2818,6 +3001,8 @@ Revise the translation along these three axes:
       </div>
     `;
     resultsSection.appendChild(card);
+    const sourceWidth = rememberCardSourceDimensions(card, item);
+    stabilizeGeneratedLayout(card, sourceWidth);
     initCardView(cardId);
     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setupSyncScroll(cardId);
@@ -2826,16 +3011,135 @@ Revise the translation along these three axes:
 
   // ── 檢視/縮放狀態（per-card）──
   const cardViewState = {};
-  const ZOOM_MIN = 0.5, ZOOM_MAX = 2.0, FIT_FLOOR = 0.2, AUTO_TB_THRESHOLD = 0.6;
+  const ZOOM_MIN = 0.5, ZOOM_MAX = 2.0, FIT_FLOOR = 0.05;
+  const AUTO_LR_MIN_SCALE = 0.45;
+  const AUTO_LR_TO_TB_SCALE = 0.43;
+  const AUTO_TB_TO_LR_SCALE = 0.5;
+  const LAYOUT_MOBILE_QUERY = '(max-width: 860px)';
+  const SOURCE_LAYOUT_MIN_W = 320;
+  const SOURCE_LAYOUT_MAX_W = 2200;
+  const CAPTURE_PANEL_X_PADDING = 40;
+  const FALLBACK_CAPTURE_SINGLE_W = 800;
+
+  function normalizeSourceLayoutWidth(value) {
+    const width = Number(value);
+    if (!Number.isFinite(width) || width <= 0) return 0;
+    return Math.max(SOURCE_LAYOUT_MIN_W, Math.min(SOURCE_LAYOUT_MAX_W, Math.round(width)));
+  }
+
+  function normalizeSourceLayoutHeight(value) {
+    const height = Number(value);
+    return Number.isFinite(height) && height > 0 ? Math.round(height) : 0;
+  }
+
+  function recordItemSourceDimensions(item, img) {
+    if (!item || !img) return 0;
+    const sourceWidth = normalizeSourceLayoutWidth(img.naturalWidth);
+    if (!sourceWidth) return 0;
+    item.sourceWidth = sourceWidth;
+    const sourceHeight = normalizeSourceLayoutHeight(img.naturalHeight);
+    if (sourceHeight) item.sourceHeight = sourceHeight;
+    return sourceWidth;
+  }
+
+  function findResultPanels(scope) {
+    return scope?.matches?.('.result-panels')
+      ? scope
+      : scope?.closest?.('.result-panels') || scope?.querySelector?.('.result-panels') || null;
+  }
+
+  function findResultCard(scope) {
+    return scope?.matches?.('.result-card')
+      ? scope
+      : scope?.closest?.('.result-card') || scope?.querySelector?.('.result-card') || null;
+  }
+
+  function getSourceLayoutWidth(scope) {
+    const panels = findResultPanels(scope);
+    const card = findResultCard(scope);
+    return normalizeSourceLayoutWidth(panels?.dataset.sourceWidth || card?.dataset.sourceWidth);
+  }
+
+  function setCardSourceDimensions(card, width, height) {
+    const sourceWidth = normalizeSourceLayoutWidth(width);
+    if (!card || !sourceWidth) return 0;
+    const sourceHeight = normalizeSourceLayoutHeight(height);
+    card.dataset.sourceWidth = String(sourceWidth);
+    if (sourceHeight) card.dataset.sourceHeight = String(sourceHeight);
+    const panels = card.querySelector('.result-panels');
+    if (panels) {
+      panels.dataset.sourceWidth = String(sourceWidth);
+      if (sourceHeight) panels.dataset.sourceHeight = String(sourceHeight);
+    }
+    return sourceWidth;
+  }
+
+  function rememberCardSourceDimensions(card, item) {
+    const knownWidth = setCardSourceDimensions(card, item?.sourceWidth, item?.sourceHeight);
+    const thumb = card.querySelector('.result-thumb');
+    const applyFromThumb = () => {
+      const sourceWidth = recordItemSourceDimensions(item, thumb);
+      if (!sourceWidth) return;
+      setCardSourceDimensions(card, item.sourceWidth, item.sourceHeight);
+      stabilizeGeneratedLayout(card, sourceWidth);
+      const panels = card.querySelector('.result-panels');
+      if (panels?.id && cardViewState[panels.id]) applyCardZoom(panels.id);
+    };
+    if (thumb) {
+      if (thumb.complete && thumb.naturalWidth) applyFromThumb();
+      else thumb.addEventListener('load', applyFromThumb, { once: true });
+    }
+    return knownWidth || getSourceLayoutWidth(card);
+  }
+
+  function isMobileLayout() {
+    return window.matchMedia(LAYOUT_MOBILE_QUERY).matches;
+  }
+
+  function chooseAutoLayout(panels, contentWidth, currentLayout) {
+    if (!panels || isMobileLayout()) return 'tb';
+    const sourceWidth = getSourceLayoutWidth(panels);
+    const layoutWidth = Math.max(contentWidth || 0, sourceWidth || 0);
+    const availableHalfWidth = Math.max(1, panels.clientWidth / 2 - CAPTURE_PANEL_X_PADDING);
+    const lrScale = Math.min(1, availableHalfWidth / Math.max(1, layoutWidth));
+    if (currentLayout === 'lr') return lrScale < AUTO_LR_TO_TB_SCALE ? 'tb' : 'lr';
+    if (currentLayout === 'tb') return lrScale > AUTO_TB_TO_LR_SCALE ? 'lr' : 'tb';
+    return lrScale >= AUTO_LR_MIN_SCALE ? 'lr' : 'tb';
+  }
+
+  function getEffectiveLayout(scope, transOnly) {
+    if (transOnly) return 'tb';
+    const panels = findResultPanels(scope);
+    return panels?.dataset.layout === 'lr' ? 'lr' : 'tb';
+  }
+
+  function getCaptureFrameWidth(scope, transOnly) {
+    const layout = getEffectiveLayout(scope, transOnly);
+    const sourceWidth = getSourceLayoutWidth(scope);
+    const panelWidth = sourceWidth ? sourceWidth + CAPTURE_PANEL_X_PADDING : FALLBACK_CAPTURE_SINGLE_W;
+    return layout === 'lr' ? panelWidth * 2 : panelWidth;
+  }
+
+  function applyCaptureLayoutStyle(clone, layout, width, transOnly) {
+    if (transOnly) {
+      clone.dataset.layout = 'tb';
+      clone.style.cssText = `display:block;min-height:auto;width:${width}px;`;
+      return;
+    }
+    const effective = layout === 'lr' ? 'lr' : 'tb';
+    clone.dataset.layout = effective;
+    const columns = effective === 'lr' ? '1fr 1fr' : '1fr';
+    clone.style.cssText = `display:grid;grid-template-columns:${columns};min-height:auto;width:${width}px;`;
+  }
 
   function recomputeSync(cardId) {
     const panels = document.getElementById(cardId);
     if (!panels) return;
     const ps = panels.querySelectorAll('.result-panel');
     const st = syncState[cardId];
-    // 同步開啟時：取 source 側比例 → 套到對側，維持兩欄同步（不能只 clamp）
+    // 同步開啟時：取 source 側比例 → 套到對側，維持兩區同步（不能只 clamp）
     if (st && st.enabled && ps.length >= 2) {
-      const src = (st.lastSource === 'trans') ? ps[1] : ps[0]; // 預設以 OCR(左) 為 source
+      const src = (st.lastSource === 'trans') ? ps[1] : ps[0]; // 預設以 OCR(上) 為 source
       const dst = (src === ps[0]) ? ps[1] : ps[0];
       const srcMax = src.scrollHeight - src.clientHeight;
       const ratio = srcMax > 0 ? src.scrollTop / srcMax : 0;
@@ -2853,7 +3157,8 @@ Revise the translation along these three axes:
 
   function initCardView(cardId) {
     if (!cardViewState[cardId]) {
-      cardViewState[cardId] = { zoomMode: 'fit-page', scale: 1, layout: 'lr', autoLayout: true };
+      const zoomMode = isMobileLayout() ? 'fit-width' : 'fit-page';
+      cardViewState[cardId] = { zoomMode, scale: 1, layout: 'auto' };
     }
     applyCardZoom(cardId);
   }
@@ -2870,14 +3175,12 @@ Revise the translation along these three axes:
       let cW = 0, cH = 0;
       contents.forEach(pc => { cW = Math.max(cW, pc.scrollWidth); cH = Math.max(cH, pc.scrollHeight); });
       if (cW <= 0) return;
+      state.layout = chooseAutoLayout(panels, cW, state.layout);
+      panels.dataset.layout = state.layout;
+      cW = 0; cH = 0;
+      contents.forEach(pc => { cW = Math.max(cW, pc.scrollWidth); cH = Math.max(cH, pc.scrollHeight); });
       const viewH = Math.max(window.innerHeight * 0.8, 240);
-      // 自動切版：用「假設左右兩欄的半欄寬」判斷（layout-independent → 不震盪）
-      if (state.autoLayout && (state.zoomMode === 'fit-page' || state.zoomMode === 'fit-width')) {
-        const lrHalfW = (panels.clientWidth / 2) - 40;
-        const want = (Math.min(1, lrHalfW / cW) < AUTO_TB_THRESHOLD) ? 'tb' : 'lr';
-        if (want !== state.layout) { state.layout = want; panels.dataset.layout = want; }
-      }
-      // 切版後再讀實際 panel 寬，算最終 scale
+      // 固定使用 effective layout 後的 panel 寬算 scale，避免 live/export 不一致。
       const panelW = (panels.querySelector('.result-panel')?.clientWidth || panels.clientWidth) - 40;
       let scale;
       switch (state.zoomMode) {
@@ -2920,6 +3223,29 @@ Revise the translation along these three axes:
     if (hint && state.scale >= 1) hint.classList.remove('show');
   }
 
+  function cssPx(value) {
+    const match = String(value || '').trim().match(/^([\d.]+)px$/);
+    return match ? Number(match[1]) : 0;
+  }
+
+  function stabilizeGeneratedLayout(scope, targetWidth) {
+    const layoutWidth = normalizeSourceLayoutWidth(targetWidth) || getSourceLayoutWidth(scope);
+    const contents = scope?.matches?.('.panel-content')
+      ? [scope]
+      : Array.from(scope?.querySelectorAll?.('.panel-content') || []);
+    contents.forEach(pc => {
+      Array.from(pc.children).forEach(child => {
+        const stableWidth = Math.max(cssPx(child.style.width), cssPx(child.style.maxWidth));
+        if (stableWidth >= 600) {
+          const lockWidth = layoutWidth || stableWidth;
+          child.style.width = `${lockWidth}px`;
+          child.style.maxWidth = `${lockWidth}px`;
+          if (!child.style.boxSizing) child.style.boxSizing = 'border-box';
+        }
+      });
+    });
+  }
+
   window.addEventListener('resize', () => {
     document.querySelectorAll('.result-panels').forEach(p => {
       if (p.id && cardViewState[p.id]) applyCardZoom(p.id);
@@ -2932,17 +3258,6 @@ Revise the translation along these three axes:
       const cardId = zb.closest('.card-toolbar').dataset.card;
       if (!cardViewState[cardId]) return;
       cardViewState[cardId].zoomMode = zb.dataset.mode;
-      applyCardZoom(cardId);
-      return;
-    }
-    const lb = e.target.closest('.card-toolbar .layout-btn');
-    if (lb) {
-      const cardId = lb.closest('.card-toolbar').dataset.card;
-      const st = cardViewState[cardId];
-      if (!st) return;
-      st.layout = (st.layout === 'lr') ? 'tb' : 'lr';
-      st.autoLayout = false; // 手動切換後不再自動切（尊重使用者）
-      document.getElementById(cardId).dataset.layout = st.layout;
       applyCardZoom(cardId);
       return;
     }
@@ -3131,7 +3446,9 @@ Revise the translation along these three axes:
         if (wrapper.parentNode) document.body.removeChild(wrapper);
       }
 
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const blob = await canvasToPngBlob(canvas, '分享圖片');
+      if (!blob) { releaseCanvas(canvas); return; }
+      releaseCanvas(canvas);
       const file = new File([blob], 'OCR_result.png', { type: 'image/png' });
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -3197,6 +3514,7 @@ Revise the translation along these three axes:
   // ── 共用：把離螢幕截圖 clone 還原成「無縮放、可完整截圖」狀態 ──
   // 統一處理所有 html2canvas 匯出路徑，避免某條路徑漏清 live-view 的 transform。
   function prepareCloneForCapture(clone) {
+    stabilizeGeneratedLayout(clone);
     clone.querySelectorAll('.result-panel').forEach(p => {
       p.style.maxHeight = 'none';
       p.style.overflow = 'visible';
@@ -3213,6 +3531,49 @@ Revise the translation along these three axes:
     flattenVerticalText(clone);
   }
 
+  const MAX_EXPORT_CANVAS_AREA = 16_777_216; // roughly 4096 x 4096
+  const MAX_EXPORT_CANVAS_EDGE = 16384;
+
+  function canvasPixelArea(width, height) {
+    return Math.max(0, width || 0) * Math.max(0, height || 0);
+  }
+
+  function releaseCanvas(canvas) {
+    if (!canvas) return;
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+
+  function releaseCanvases(canvases) {
+    canvases.forEach(releaseCanvas);
+  }
+
+  function isExportCanvasTooLarge(width, height) {
+    return width > MAX_EXPORT_CANVAS_EDGE ||
+      height > MAX_EXPORT_CANVAS_EDGE ||
+      canvasPixelArea(width, height) > MAX_EXPORT_CANVAS_AREA;
+  }
+
+  function showCanvasTooLarge(label, width, height) {
+    console.warn(`${label}: canvas ${width}x${height} exceeds export limit`);
+    showToast(`${label} 圖片尺寸過大，請改用 PDF、ZIP 或僅匯出譯文 ⚠️`);
+  }
+
+  async function canvasToPngBlob(canvas, label) {
+    if (!canvas) return null;
+    if (isExportCanvasTooLarge(canvas.width, canvas.height)) {
+      showCanvasTooLarge(label, canvas.width, canvas.height);
+      return null;
+    }
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) {
+      console.warn(`${label}: canvas.toBlob returned null for ${canvas.width}x${canvas.height}`);
+      showToast(`${label} 圖片產生失敗，可能是瀏覽器記憶體不足 ⚠️`);
+      return null;
+    }
+    return blob;
+  }
+
   async function downloadResultImage(cardId, index, event) {
     const container = document.getElementById(cardId);
     if (!container) return;
@@ -3221,11 +3582,11 @@ Revise the translation along these three axes:
 
     // Create offscreen clone at desktop width for full capture
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:1200px;z-index:-1;background:#fff;';
+    const wrapW = getCaptureFrameWidth(container, false);
+    wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${wrapW}px;z-index:-1;background:#fff;`;
     const clone = container.cloneNode(true);
     clone.id = '';
-    // Force desktop two-column layout
-    clone.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;min-height:auto;';
+    applyCaptureLayoutStyle(clone, getEffectiveLayout(container, false), wrapW, false);
     prepareCloneForCapture(clone);
 
     wrapper.appendChild(clone);
@@ -3245,7 +3606,9 @@ Revise the translation along these three axes:
         height: clone.scrollHeight
       });
 
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const blob = await canvasToPngBlob(canvas, '下載圖');
+      if (!blob) { releaseCanvas(canvas); return; }
+      releaseCanvas(canvas);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = `OCR_result_${index}.png`;
@@ -3289,6 +3652,7 @@ Revise the translation along these three axes:
 
     const card = container.closest('.result-card');
     const lang = card?.dataset?.lang || lastUsedLang || 'Traditional Chinese (Taiwan usage)';
+    const model = card?.dataset?.model || getModel();
 
     btn.classList.add('polishing');
     btn.innerHTML = '<span class="polish-icon">✨</span> 潤稿中…';
@@ -3298,13 +3662,14 @@ Revise the translation along these three axes:
     await robotPolishStart();
 
     try {
-      const polished = await callGeminiPolish(sourceHtml, translatedHtml, lang);
+      const polished = await callGeminiPolish(sourceHtml, translatedHtml, lang, undefined, model);
       // ── Sanitize polished output ──
       const safePolished = sanitizeHtml(polished);
 
       const panelContent = transPanel.querySelector('.panel-content');
       if (panelContent) {
         panelContent.innerHTML = safePolished;
+        stabilizeGeneratedLayout(panelContent);
       } else {
         const label = transPanel.querySelector('.result-panel-label');
         const labelHtml = label ? label.outerHTML : '';
@@ -3340,41 +3705,41 @@ Revise the translation along these three axes:
   // ── Robot Polish Dialogue ──
   const polishStartPairs = [
     [
-      { who: 'scanner', text: '再順一點？' },
-      { who: 'translator', text: '汪。好。' },
+      { who: 'scanner', text: '再把語氣打亮一點？' },
+      { who: 'translator', text: '汪，細修模式開。' },
     ],
     [
-      { who: 'scanner', text: '喵——要漂亮。' },
-      { who: 'translator', text: '我盡量。' },
+      { who: 'scanner', text: '喵，讓它像人寫的。' },
+      { who: 'translator', text: '收到，翻譯腔下線。' },
     ],
     [
-      { who: 'scanner', text: '(舔毛示範)' },
-      { who: 'translator', text: '夠了，我磨稿。' },
+      { who: 'scanner', text: '我示範一下精修精神。' },
+      { who: 'translator', text: '懂，字句也要順毛。' },
     ],
     [
-      { who: 'scanner', text: '潤一下。' },
-      { who: 'translator', text: '嗯。' },
+      { who: 'scanner', text: '這段值得更亮。' },
+      { who: 'translator', text: '汪，幫它升級。' },
     ],
     [
-      { who: 'scanner', text: '喵？再一次嗎？' },
-      { who: 'translator', text: '對。我接。' },
+      { who: 'scanner', text: '再拋光一次？' },
+      { who: 'translator', text: '可以，細節我來。' },
     ],
   ];
 
   const polishDoneQuips_scanner = [
-    '喵。順了。',
-    '(蹭一下)',
-    '好看。',
-    '喵——亮。',
-    '你贏。',
+    '喵，順很多。',
+    '這段發光了。',
+    '好看，肉球認證。',
+    '可讀性加分。',
+    '這就對味。',
   ];
 
   const polishDoneQuips_translator = [
-    '汪！梳完。',
-    '好了。',
-    '(尾巴搖)',
-    'OK。',
-    '汪汪！',
+    '汪，潤完。',
+    '語氣更自然了。',
+    '尾巴搖，完成。',
+    'OK，這版更穩。',
+    '漂亮收尾。',
   ];
 
   async function robotPolishStart() {
@@ -3422,7 +3787,6 @@ Revise the translation along these three axes:
     apiKeyInput.value = getApiKey();
     apiKeyInput.type = 'password';
     btnEye.textContent = '👁';
-    modelSelect.value = getModel();
     if (polishToggleInput) polishToggleInput.checked = getPolishEnabled();
     saveFeedback.classList.remove('show');
     settingsModal.classList.add('open');
@@ -3431,12 +3795,24 @@ Revise the translation along these three axes:
 
   function closeSettings() { settingsModal.classList.remove('open'); }
 
-  function saveApiKey() {
+  function persistApiSettings() {
     const key = apiKeyInput.value.trim();
     if (!key) { localStorage.removeItem(STORAGE_KEY); }
     else { localStorage.setItem(STORAGE_KEY, key); }
-    localStorage.setItem(STORAGE_MODEL_KEY, modelSelect.value);
+  }
+
+  let autoSaveFeedbackTimer = null;
+  function showAutoSaveFeedback(text = '已自動儲存 ✓') {
+    saveFeedback.textContent = text;
+    saveFeedback.classList.add('show');
+    if (autoSaveFeedbackTimer) clearTimeout(autoSaveFeedbackTimer);
+    autoSaveFeedbackTimer = setTimeout(() => saveFeedback.classList.remove('show'), 1400);
+  }
+
+  function saveApiKey() {
+    persistApiSettings();
     if (polishToggleInput) setPolishEnabled(polishToggleInput.checked);
+    saveFeedback.textContent = '已儲存 ✓';
     saveFeedback.classList.add('show');
     setTimeout(() => closeSettings(), 800);
   }
@@ -3455,11 +3831,11 @@ Revise the translation along these three axes:
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), 10000);
     try {
-      const model = modelSelect.value || DEFAULT_MODEL;
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+      const model = getModel();
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify({ contents: [{ parts: [{ text: 'Hi' }] }] }),
         signal: ac.signal
       });
@@ -3484,6 +3860,10 @@ Revise the translation along these three axes:
     setTimeout(() => { btnTest.textContent = '測試連線'; btnTest.style.color = ''; btnTest.style.borderColor = ''; }, 2500);
   }
 
+  apiKeyInput.addEventListener('input', () => {
+    persistApiSettings();
+    showAutoSaveFeedback(apiKeyInput.value.trim() ? 'Key 已自動記憶 ✓' : 'Key 已清除');
+  });
   settingsModal.addEventListener('click', e => { if (e.target === settingsModal) closeSettings(); });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
@@ -3540,15 +3920,13 @@ Revise the translation along these three axes:
     const panels = card.querySelector('.result-panels');
     if (!panels) return null;
     const clone = panels.cloneNode(true);
+    const wrapW = getCaptureFrameWidth(panels, transOnly);
     if (transOnly) {
       const ocrPanel = clone.querySelector('[data-type="ocr"]');
       if (ocrPanel) ocrPanel.remove();
-      clone.style.cssText = 'display:block;min-height:auto;width:800px;';
-    } else {
-      clone.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;min-height:auto;width:1200px;';
     }
+    applyCaptureLayoutStyle(clone, getEffectiveLayout(panels, transOnly), wrapW, transOnly);
     prepareCloneForCapture(clone);
-    const wrapW = transOnly ? 800 : 1200;
     const wrapper = document.createElement('div');
     wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${wrapW}px;z-index:-1;background:#fff;`;
     wrapper.appendChild(clone);
@@ -3574,8 +3952,9 @@ Revise the translation along these three axes:
     const cards = getResultCards();
     if (!cards.length) return;
     showToast('合併大圖產生中…⏳');
+    const canvases = [];
+    let merged = null;
     try {
-      const canvases = [];
       for (const card of cards) {
         const c = await captureCard(card, transOnly);
         if (c) canvases.push(c);
@@ -3587,7 +3966,11 @@ Revise the translation along these three axes:
         showToast('圖片過多，合併高度超出上限，請改用 PDF 或 ZIP 匯出 ⚠️');
         return;
       }
-      const merged = document.createElement('canvas');
+      if (isExportCanvasTooLarge(totalW, totalH)) {
+        showCanvasTooLarge('合併大圖', totalW, totalH);
+        return;
+      }
+      merged = document.createElement('canvas');
       merged.width = totalW;
       merged.height = totalH;
       const ctx = merged.getContext('2d');
@@ -3598,13 +3981,16 @@ Revise the translation along these three axes:
         ctx.drawImage(c, 0, y);
         y += c.height;
       }
-      const blob = await new Promise(r => merged.toBlob(r, 'image/png'));
-      if (!blob) { showToast('圖片產生失敗 ❌'); return; }
+      const blob = await canvasToPngBlob(merged, '合併大圖');
+      if (!blob) return;
       const fname = transOnly ? 'OCR_translated_merged.png' : 'OCR_results_merged.png';
       await saveFile(blob, fname, 'image/png', '.png');
     } catch (err) {
       console.error('Merged image export error:', err);
       showToast('合併大圖匯出失敗 ❌ ' + err.message);
+    } finally {
+      releaseCanvases(canvases);
+      releaseCanvas(merged);
     }
   }
 
@@ -3620,8 +4006,9 @@ Revise the translation along these three axes:
     const cards = getResultCards();
     if (!cards.length) return;
     showToast('🖼️ 自動匯出合併大圖中…');
+    const canvases = [];
+    let merged = null;
     try {
-      const canvases = [];
       for (const card of cards) {
         const c = await captureCard(card, false);
         if (c) canvases.push(c);
@@ -3633,7 +4020,11 @@ Revise the translation along these three axes:
         showToast('🖼️ 合併大圖過高，自動匯出已跳過 ⚠️');
         return;
       }
-      const merged = document.createElement('canvas');
+      if (isExportCanvasTooLarge(totalW, totalH)) {
+        showCanvasTooLarge('自動合併大圖', totalW, totalH);
+        return;
+      }
+      merged = document.createElement('canvas');
       merged.width = totalW;
       merged.height = totalH;
       const ctx = merged.getContext('2d');
@@ -3644,7 +4035,7 @@ Revise the translation along these three axes:
         ctx.drawImage(c, 0, y);
         y += c.height;
       }
-      const blob = await new Promise(r => merged.toBlob(r, 'image/png'));
+      const blob = await canvasToPngBlob(merged, '自動合併大圖');
       if (!blob) return;
       const fname = makeAutoMergedFilename();
       const url = URL.createObjectURL(blob);
@@ -3660,6 +4051,9 @@ Revise the translation along these three axes:
     } catch (err) {
       console.error('Auto merged image error:', err);
       showToast('🖼️ 合併大圖自動匯出失敗');
+    } finally {
+      releaseCanvases(canvases);
+      releaseCanvas(merged);
     }
   }
 
@@ -3670,12 +4064,18 @@ Revise the translation along these three axes:
     showToast('ZIP 打包中…⏳');
     try {
       const zip = new JSZip();
+      let addedCount = 0;
       for (let i = 0; i < cards.length; i++) {
         const canvas = await captureCard(cards[i], transOnly);
         if (!canvas) continue;
-        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-        if (blob) zip.file(`OCR_result_${i + 1}.png`, blob);
+        const blob = await canvasToPngBlob(canvas, `ZIP 第 ${i + 1} 張`);
+        if (blob) {
+          zip.file(`OCR_result_${i + 1}.png`, blob);
+          addedCount++;
+        }
+        releaseCanvas(canvas);
       }
+      if (!addedCount) { showToast('ZIP 沒有可匯出的圖片 ❌'); return; }
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const zipName = transOnly ? 'OCR_translated.zip' : 'OCR_results.zip';
       await saveFile(zipBlob, zipName, 'application/zip', '.zip');
@@ -3701,7 +4101,7 @@ Revise the translation along these three axes:
       const usableW = pageW - margin * 2;
       const usableH = pageH - margin * 2;
       // canvas 像素面積安全門檻（約 4096×4096 = 16M pixels）
-      const MAX_CANVAS_AREA = 16_777_216;
+      const MAX_CANVAS_AREA = MAX_EXPORT_CANVAS_AREA;
       let pdf = null;
       let okCount = 0;
       let failCount = 0;
@@ -3720,15 +4120,13 @@ Revise the translation along these three axes:
             const panels = cards[i].querySelector('.result-panels');
             if (!panels) { failCount++; continue; }
             const clone = panels.cloneNode(true);
+            const fallbackW = getCaptureFrameWidth(panels, transOnly);
             if (transOnly) {
               const ocrP = clone.querySelector('[data-type="ocr"]');
               if (ocrP) ocrP.remove();
-              clone.style.cssText = 'display:block;min-height:auto;width:800px;';
-            } else {
-              clone.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;min-height:auto;width:1200px;';
             }
+            applyCaptureLayoutStyle(clone, getEffectiveLayout(panels, transOnly), fallbackW, transOnly);
             prepareCloneForCapture(clone);
-            const fallbackW = transOnly ? 800 : 1200;
             const wrapper = document.createElement('div');
             wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${fallbackW}px;z-index:-1;background:#fff;`;
             wrapper.appendChild(clone);
@@ -3817,9 +4215,15 @@ Revise the translation along these three axes:
       for (const card of cards) {
         const canvas = await captureCard(card, transOnly);
         if (!canvas) continue;
+        if (isExportCanvasTooLarge(canvas.width, canvas.height)) {
+          showCanvasTooLarge('PPTX', canvas.width, canvas.height);
+          releaseCanvas(canvas);
+          continue;
+        }
         const imgData = canvas.toDataURL('image/png');
         const slideH = (canvas.height / canvas.width) * slideW;
         slides.push({ imgData, slideH });
+        releaseCanvas(canvas);
       }
       if (!slides.length) { showToast('截圖失敗 ❌'); return; }
       // 用最大高度統一 layout
@@ -3968,18 +4372,31 @@ Revise the translation along these three axes:
     if (intercepted) e.preventDefault();
   });
 
-  // ── Keyboard shortcut: Ctrl+Enter to translate with last-used language ──
+  // ── Keyboard shortcut: Ctrl+Enter to translate with selected language ──
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isProcessing && imageQueue.length > 0) {
       e.preventDefault();
-      const lang = lastUsedLang || 'Traditional Chinese (Taiwan usage)';
-      startBatch(lang);
+      startSelectedLanguageBatch();
     }
   });
 
   // Initial state
+  if (targetLangSelect) {
+    const savedLang = localStorage.getItem(STORAGE_LANG_KEY);
+    if (savedLang && [...targetLangSelect.options].some(opt => opt.value === savedLang)) {
+      targetLangSelect.value = savedLang;
+      lastUsedLang = savedLang;
+    } else {
+      lastUsedLang = targetLangSelect.value;
+    }
+    targetLangSelect.addEventListener('change', () => {
+      lastUsedLang = targetLangSelect.value;
+      localStorage.setItem(STORAGE_LANG_KEY, targetLangSelect.value);
+    });
+  }
   updateQueueUI();
   syncPolishUi();
+  syncModeUi();
 </script>
 </body>
 </html>

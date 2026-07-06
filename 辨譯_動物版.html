@@ -1423,6 +1423,7 @@ Revise the translation along these three axes:
   const AUTO_LR_MIN_SCALE = 0.45;
   const AUTO_LR_TO_TB_SCALE = 0.43;
   const AUTO_TB_TO_LR_SCALE = 0.5;
+  const MOBILE_FIT_MIN_SCALE = 0.65;
   const LAYOUT_MOBILE_QUERY = '(max-width: 860px)';
   const SOURCE_LAYOUT_MIN_W = 320;
   const SOURCE_LAYOUT_MAX_W = 2200;
@@ -1595,10 +1596,17 @@ Revise the translation along these three axes:
       // 固定使用 effective layout 後的 panel 寬算 scale，避免 live/export 不一致。
       const panelW = (panels.querySelector('.result-panel')?.clientWidth || panels.clientWidth) - 40;
       let scale;
+      let fitWidthNeedsPan = false;
       switch (state.zoomMode) {
         case 'actual': scale = 1; break;
         case 'manual': scale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, state.scale)); break;
-        case 'fit-width': scale = Math.min(1, panelW / cW); break;
+        case 'fit-width':
+          scale = Math.min(1, panelW / cW);
+          if (isMobileLayout() && scale < MOBILE_FIT_MIN_SCALE) {
+            scale = MOBILE_FIT_MIN_SCALE;
+            fitWidthNeedsPan = true;
+          }
+          break;
         default: scale = Math.max(FIT_FLOOR, Math.min(1, panelW / cW, viewH / cH)); // fit-page
       }
       state.scale = scale;
@@ -1614,6 +1622,7 @@ Revise the translation along these three axes:
       const innerScroll = (state.zoomMode === 'actual' || state.zoomMode === 'manual');
       panels.querySelectorAll('.result-panel').forEach(p => {
         p.style.maxHeight = 'none';
+        p.style.overflowX = (innerScroll || fitWidthNeedsPan) ? 'auto' : 'visible';
         p.style.overflowY = innerScroll ? 'auto' : 'visible';
       });
       updateZoomUI(cardId);

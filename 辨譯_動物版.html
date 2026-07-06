@@ -3286,6 +3286,7 @@ Revise the translation along these three axes:
       ? [scope]
       : Array.from(scope?.querySelectorAll?.('.panel-content') || []);
     contents.forEach(pc => {
+      let lockedChild = false;
       Array.from(pc.children).forEach(child => {
         const stableWidth = Math.max(cssPx(child.style.width), cssPx(child.style.maxWidth));
         if (stableWidth >= 600) {
@@ -3293,8 +3294,14 @@ Revise the translation along these three axes:
           child.style.width = `${lockWidth}px`;
           child.style.maxWidth = `${lockWidth}px`;
           if (!child.style.boxSizing) child.style.boxSizing = 'border-box';
+          lockedChild = true;
         }
       });
+      if (layoutWidth && !lockedChild) {
+        pc.style.width = `${layoutWidth}px`;
+        pc.style.maxWidth = `${layoutWidth}px`;
+        if (!pc.style.boxSizing) pc.style.boxSizing = 'border-box';
+      }
     });
   }
 

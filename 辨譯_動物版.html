@@ -320,6 +320,45 @@
     gap: 6px;
     margin: 16px 0;
   }
+  #status-text.status-active {
+    width: min(520px, 100%);
+    min-height: 64px;
+    margin: 20px auto;
+    padding: 14px 22px;
+    border: 1px solid rgba(47,138,99,0.22);
+    border-radius: 18px;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.95), rgba(241,248,244,0.92)),
+      radial-gradient(circle at 12% 0%, rgba(47,138,99,0.18), transparent 34%);
+    box-shadow: 0 16px 42px rgba(31, 90, 68, 0.14);
+    color: var(--accent);
+  }
+  #status-text.status-active .status-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  #status-text.status-active .status-main {
+    font-family: 'Noto Serif TC', 'Zen Kaku Gothic New', serif;
+    font-size: clamp(1.28rem, 3.6vw, 1.8rem);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.15;
+    color: #1f5a44;
+  }
+  #status-text.status-active.status-translate .status-main {
+    background: linear-gradient(135deg, #1f5a44, #2f8a63 54%, #246a7c);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  #status-text.status-active .status-detail {
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--ink3);
+  }
   .spinner {
     width: 13px; height: 13px;
     border: 1.5px solid var(--line);
@@ -327,6 +366,12 @@
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
     flex-shrink: 0;
+  }
+  #status-text.status-active .spinner {
+    width: 28px;
+    height: 28px;
+    border-width: 3px;
+    box-shadow: 0 0 0 6px rgba(47,138,99,0.08);
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   /* ── Results area ── */
@@ -1532,10 +1577,10 @@
       <span class="action-label">快速模式</span>
       <span class="action-sub">速度優先</span>
     </button>
-    <button class="action-btn mode-btn disabled" id="btn-mode-refined" data-mode="refined" onclick="startSelectedLanguageBatch('refined')" title="精緻模式：品質優先">
+    <button class="action-btn mode-btn disabled" id="btn-mode-refined" data-mode="refined" onclick="startSelectedLanguageBatch('refined')" title="精緻模式：品質優先，約需 3~5 分鐘">
       <span class="action-icon">✨</span>
       <span class="action-label">精緻模式</span>
-      <span class="action-sub">品質優先</span>
+      <span class="action-sub">約 3~5 分鐘</span>
     </button>
   </div>
 </div>
@@ -2749,6 +2794,9 @@ Revise the translation along these three axes:
 
     // Epic start reaction
     showToast(randomPick(r.start));
+    if ((lastUsedModel || getModel()) === MODE_MODELS.refined) {
+      showToast('精緻模式約需 3~5 分鐘，請稍候一下 ✨');
+    }
     shakeScreen();
 
     document.querySelectorAll('.action-btn').forEach(btn => {
@@ -3776,10 +3824,22 @@ Revise the translation along these three axes:
   // ══════════════════════════════════
   function setStatus(type, msg) {
     if (type === 'spinner') {
-      statusText.innerHTML = `<div class="spinner"></div><span>${escapeHtml(msg)}</span>`;
+      const raw = String(msg || '');
+      const match = raw.match(/^(.+?)…?\s*(\(.+\))?$/);
+      const main = match ? match[1] : raw;
+      const detail = match?.[2] || '';
+      statusText.className = `status-active${main.startsWith('翻譯中') ? ' status-translate' : ''}`;
+      statusText.innerHTML = `
+        <div class="spinner"></div>
+        <span class="status-copy">
+          <span class="status-main">${escapeHtml(main)}</span>
+          ${detail ? `<span class="status-detail">${escapeHtml(detail)}</span>` : ''}
+        </span>`;
     } else if (type === 'error') {
+      statusText.className = '';
       statusText.innerHTML = `<span style="color:#c0392b">${escapeHtml(msg)}</span>`;
     } else {
+      statusText.className = '';
       statusText.textContent = msg;
     }
   }

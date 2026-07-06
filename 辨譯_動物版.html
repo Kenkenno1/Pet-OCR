@@ -1914,8 +1914,8 @@ Revise the translation along these three axes:
 
   const MAX_EXPORT_CANVAS_AREA = 16_777_216; // roughly 4096 x 4096
   const MAX_EXPORT_CANVAS_EDGE = 16384;
-  const PDF_CAPTURE_TARGET_PX = 1600;
-  const IMAGE_CAPTURE_TARGET_PX = 2000;
+  const PDF_CAPTURE_TARGET_PX = 1000;
+  const IMAGE_CAPTURE_TARGET_PX = 1200;
 
   function canvasPixelArea(width, height) {
     return Math.max(0, width || 0) * Math.max(0, height || 0);
@@ -1932,6 +1932,27 @@ Revise the translation along these three axes:
 
   function yieldToUi(ms = 30) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  let exportQueue = Promise.resolve();
+  let exportQueueActive = false;
+  let exportQueuePending = 0;
+
+  function queueExportJob(label, task) {
+    const shouldWait = exportQueueActive || exportQueuePending > 0;
+    exportQueuePending++;
+    if (shouldWait) showToast(`${label} 已排入下載佇列，請稍候…`);
+    const run = exportQueue.catch(() => {}).then(async () => {
+      exportQueuePending = Math.max(0, exportQueuePending - 1);
+      exportQueueActive = true;
+      try {
+        return await task();
+      } finally {
+        exportQueueActive = false;
+      }
+    });
+    exportQueue = run.catch(() => {});
+    return run;
   }
 
   async function renderCloneToCanvas(clone, wrapW, { label = '截圖', targetPx = IMAGE_CAPTURE_TARGET_PX, maxScale = 2 } = {}) {
@@ -2413,7 +2434,11 @@ Revise the translation along these three axes:
   }
 
   // --- Export: Merged Image ---
-  async function exportMergedImage(transOnly) {
+  function exportMergedImage(transOnly) {
+    return queueExportJob(transOnly ? '譯文大圖' : '合併大圖', () => runExportMergedImage(transOnly));
+  }
+
+  async function runExportMergedImage(transOnly) {
     const cards = getResultCards();
     if (!cards.length) return;
     showToast('合併大圖產生中…⏳');
@@ -2452,7 +2477,11 @@ Revise the translation along these three axes:
     return `辨譯_合併大圖_${stamp}.png`;
   }
 
-  async function autoDownloadMergedImage() {
+  function autoDownloadMergedImage() {
+    return queueExportJob('自動合併大圖', runAutoDownloadMergedImage);
+  }
+
+  async function runAutoDownloadMergedImage() {
     const cards = getResultCards();
     if (!cards.length) return;
     showToast('🖼️ 自動匯出合併大圖中…');
@@ -2580,7 +2609,11 @@ Revise the translation along these three axes:
   }
 
   // --- Export: PDF (one source panel page, then one translation panel page) ---
-  async function exportPdf(transOnly) {
+  function exportPdf(transOnly) {
+    return queueExportJob(transOnly ? '譯文 PDF' : 'PDF', () => runExportPdf(transOnly));
+  }
+
+  async function runExportPdf(transOnly) {
     const cards = getResultCards();
     if (!cards.length) return;
     showToast('PDF 產生中…⏳');

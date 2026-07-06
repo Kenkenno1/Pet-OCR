@@ -3157,7 +3157,7 @@ Revise the translation along these three axes:
 
   function initCardView(cardId) {
     if (!cardViewState[cardId]) {
-      const zoomMode = isMobileLayout() ? 'fit-width' : 'fit-page';
+      const zoomMode = isMobileLayout() ? 'fit-width' : 'actual';
       cardViewState[cardId] = { zoomMode, scale: 1, layout: 'auto' };
     }
     applyCardZoom(cardId);
@@ -3175,8 +3175,12 @@ Revise the translation along these three axes:
       let cW = 0, cH = 0;
       contents.forEach(pc => { cW = Math.max(cW, pc.scrollWidth); cH = Math.max(cH, pc.scrollHeight); });
       if (cW <= 0) return;
-      state.layout = chooseAutoLayout(panels, cW, state.layout);
-      panels.dataset.layout = state.layout;
+      // 只有 fit-page/fit-width 這種本來就會自動縮放的模式才允許排版跟著 resize 切換；
+      // actual/manual 模式下版面要對齊使用者貼上的原圖尺寸，resize 不應改變左右/上下排列。
+      if (state.zoomMode === 'fit-page' || state.zoomMode === 'fit-width') {
+        state.layout = chooseAutoLayout(panels, cW, state.layout);
+        panels.dataset.layout = state.layout;
+      }
       cW = 0; cH = 0;
       contents.forEach(pc => { cW = Math.max(cW, pc.scrollWidth); cH = Math.max(cH, pc.scrollHeight); });
       const viewH = Math.max(window.innerHeight * 0.8, 240);

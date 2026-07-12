@@ -1049,8 +1049,15 @@ Rules:
   }
 
   async function callGeminiPolish(sourceHtml, translatedHtml, lang, signal, modelOverride) {
-    const sysInstr = `You are a senior translation editor and quality assurance specialist. Your job is to polish and elevate existing translations through deep revision along three axes: Precision, Localization, and Fluency.`;
-    const prompt = `## Step 1: Deep Comprehension
+    const sysInstr = `You are a senior translation editor and quality assurance specialist. Your job is to polish and elevate existing translations through deep revision along three axes: Precision, Localization, and Fluency. You always keep the translation in its designated target language — never switch languages.`;
+    let localeRule = '';
+    if (/Traditional Chinese/i.test(lang)) {
+      localeRule = '\n- For Traditional Chinese (Taiwan): use Taiwan-standard vocabulary, measure words, and expressions; strictly avoid Mainland China or Hong Kong phrasing';
+    }
+    const prompt = `Target language: ${lang}.
+The revised translation MUST remain entirely in ${lang}. Never rewrite it into any other language. If any part of the current translation is in the wrong language, translate that part into ${lang}.
+
+## Step 1: Deep Comprehension
 First, carefully re-read the source text to fully understand:
 - The overall meaning, intent, and nuance of the original
 - Any domain-specific terminology or context
@@ -1059,24 +1066,23 @@ First, carefully re-read the source text to fully understand:
 ## Source HTML (original text):
 ${sourceHtml}
 
-## Current Translation (${lang}):
+## Current Translation (target language: ${lang}):
 ${translatedHtml}
 
 ## Step 2: Three-Axis Quality Enhancement
 Revise the translation along these three axes:
 
-### Axis 1 — Precision (精準度)
+### Axis 1 — Precision
 - Fix any mistranslations, omissions, or additions
 - Ensure numbers, proper nouns, and technical terms are correct
 - Verify that the meaning faithfully reflects the source
 
-### Axis 2 — Localization (在地化)
-- Use natural phrasing for the target locale
-- For Traditional Chinese (Taiwan): use Taiwan-standard vocabulary, measure words, and expressions; strictly avoid Mainland China or Hong Kong phrasing
+### Axis 2 — Localization
+- Use natural phrasing for the target locale of ${lang}${localeRule}
 - Adapt cultural references, units, or idioms appropriately for the target audience
 
-### Axis 3 — Fluency & Naturalness (流暢自然度)
-- Ensure the text reads as if originally written in the target language
+### Axis 3 — Fluency & Naturalness
+- Ensure the text reads as if originally written in ${lang}
 - Improve sentence rhythm, flow, and cohesion
 - Remove translationese — awkward calques, unnatural word order, or overly literal constructions
 - Maintain consistency in style and tone throughout
@@ -1084,7 +1090,8 @@ Revise the translation along these three axes:
 ## Output Rules:
 1. Keep ALL HTML structure, tags, classes, and inline styles EXACTLY the same as the current translation
 2. Only modify the visible text content
-3. Return ONLY the revised raw HTML string. No markdown, no code fences, no explanations.`;
+3. The output language MUST be ${lang}
+4. Return ONLY the revised raw HTML string. No markdown, no code fences, no explanations.`;
 
     return callGemini([{ text: prompt }], { signal, model: modelOverride, systemInstruction: sysInstr });
   }

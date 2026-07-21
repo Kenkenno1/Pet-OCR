@@ -1300,8 +1300,6 @@ Revise the translation along these three axes:
       // Robot: All done (awaited)
       await robotAllDone(items.length);
       setStatus('', `✓ 全部完成！共 ${items.length} 張`);
-      // Auto-download merged image (silent, no filename prompt)
-      autoDownloadMergedImage();
     }
 
     progressBar.style.width = '100%';
@@ -2636,59 +2634,6 @@ Revise the translation along these three axes:
     } catch (err) {
       console.error('Merged image export error:', err);
       showToast('合併大圖匯出失敗 ❌ ' + err.message);
-    } finally {
-      releaseCanvases(canvases);
-      releaseCanvas(merged);
-    }
-  }
-
-  // --- Auto-download merged image (silent, no filename prompt) ---
-  function makeAutoMergedFilename() {
-    const d = new Date();
-    const pad = n => String(n).padStart(2, '0');
-    const stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-    return `辨譯_合併大圖_${stamp}.png`;
-  }
-
-  function autoDownloadMergedImage() {
-    return queueExportJob('自動合併大圖', runAutoDownloadMergedImage);
-  }
-
-  async function runAutoDownloadMergedImage() {
-    const cards = getResultCards();
-    if (!cards.length) return;
-    showToast('🖼️ 自動匯出合併大圖中…');
-    const canvases = [];
-    let merged = null;
-    try {
-      for (let i = 0; i < cards.length; i++) {
-        if (cards.length > 1) showToast(`🖼️ 自動匯出合併大圖中… ${i + 1}/${cards.length}`);
-        const c = await captureCard(cards[i], false, {
-          label: `自動合併大圖 #${i + 1}`,
-          targetPx: IMAGE_CAPTURE_TARGET_PX
-        });
-        if (c) canvases.push(c);
-        await yieldToUi(20);
-      }
-      if (!canvases.length) return;
-      merged = await buildMergedCanvas(canvases, '自動合併大圖');
-      if (!merged) return;
-      const blob = await canvasToPngBlob(merged, '自動合併大圖');
-      if (!blob) return;
-      const fname = makeAutoMergedFilename();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fname;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showToast(`📥 已下載：${fname}`);
-    } catch (err) {
-      console.error('Auto merged image error:', err);
-      showToast('🖼️ 合併大圖自動匯出失敗');
     } finally {
       releaseCanvases(canvases);
       releaseCanvas(merged);

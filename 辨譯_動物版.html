@@ -616,14 +616,17 @@
         return;
       }
       const base64 = reader.result.split(',')[1];
-      const item = { id, file, base64, mimeType: file.type, blobUrl };
+      let resolveSourceDimensions;
+      const sourceDimensionsReady = new Promise(resolve => { resolveSourceDimensions = resolve; });
+      const item = { id, file, base64, mimeType: file.type, blobUrl, sourceDimensionsReady };
       imageQueue.push(item);
       onQueueItemAdded();
       const el = document.createElement('div');
       el.className = 'queue-item';
       el.id = `queue-item-${id}`;
       const img = document.createElement('img');
-      img.onload = () => recordItemSourceDimensions(item, img);
+      img.onload = () => resolveSourceDimensions(recordItemSourceDimensions(item, img));
+      img.onerror = () => resolveSourceDimensions(0);
       img.src = blobUrl;
       img.alt = `圖片 ${id}`;
       const removeBtn = document.createElement('button');
@@ -1008,16 +1011,21 @@
   // ══════════════════════════════════
   // ── API Calls (OCR / Translate / Polish) ──
   // ══════════════════════════════════
-  async function callGeminiOCR(base64Data, mimeType, signal, modelOverride) {
+  async function callGeminiOCR(base64Data, mimeType, signal, modelOverride, sourceWidth) {
     const sysInstr = `You are an expert Frontend Developer specializing in converting images to high-fidelity HTML.`;
+    const normalizedSourceWidth = normalizeSourceLayoutWidth(sourceWidth);
+    const widthContract = normalizedSourceWidth
+      ? `\n6. The source image is ${normalizedSourceWidth}px wide. Wrap the entire reconstruction in exactly one outermost wrapper element with inline style="width: ${normalizedSourceWidth}px; margin: 0; box-sizing: border-box;". Use this exact pixel width and zero outer margins on that wrapper. Lay out the reconstruction across the available wrapper width according to the source image proportions; do not place the document inside a narrower column or leave artificial unused horizontal whitespace. Do not use %, vw, max-width, fit-content, or a narrower centered wrapper for the outermost document.`
+      : '';
+    const outputRuleNumber = normalizedSourceWidth ? 7 : 6;
     const prompt = `Convert this image to high-fidelity HTML.
 Rules:
 1. Use inline CSS for layout (flex/grid).
 2. Match colors, fonts, and positions as closely as possible.
 3. Preserve horizontal text as horizontal text. Japanese/Chinese/Korean language alone is NOT evidence of vertical writing.
 4. Use CSS "writing-mode: vertical-rl" ONLY when the source image visibly shows top-to-bottom vertical columns. For ordinary news pages, lists, headlines, cards, captions, and paragraphs arranged in left-to-right horizontal rows, DO NOT use writing-mode or narrow one-character columns.
-5. Avoid artificial narrow columns: give each text block enough width for normal words/phrases to wrap naturally.
-6. Return ONLY raw HTML string. No markdown, no code fences.`;
+5. Avoid artificial narrow columns: give each text block enough width for normal words/phrases to wrap naturally.${widthContract}
+${outputRuleNumber}. Return ONLY raw HTML string. No markdown, no code fences.`;
 
     return callGemini([
       { text: prompt },
@@ -1196,7 +1204,9 @@ Revise the translation along these three axes:
 
       let ocrHtml = '';
       try {
-        ocrHtml = await callGeminiOCR(item.base64, item.mimeType, signal, lastUsedModel);
+        const sourceWidth = await getItemSourceWidthForOcr(item);
+        console.info(`[ocr] source-width contract: ${sourceWidth ? `${sourceWidth}px` : 'omitted (dimension unavailable)'}`);
+        ocrHtml = await callGeminiOCR(item.base64, item.mimeType, signal, lastUsedModel, sourceWidth);
         completedSteps++;
         progressBar.style.width = `${(completedSteps / totalSteps) * 100}%`;
       } catch (err) {
@@ -1458,6 +1468,16 @@ Revise the translation along these three axes:
     const sourceHeight = normalizeSourceLayoutHeight(img.naturalHeight);
     if (sourceHeight) item.sourceHeight = sourceHeight;
     return sourceWidth;
+  }
+
+  async function getItemSourceWidthForOcr(item) {
+    let sourceWidth = normalizeSourceLayoutWidth(item?.sourceWidth);
+    if (!sourceWidth && item?.sourceDimensionsReady) {
+      try {
+        sourceWidth = normalizeSourceLayoutWidth(await item.sourceDimensionsReady);
+      } catch(e) {}
+    }
+    return sourceWidth || normalizeSourceLayoutWidth(item?.sourceWidth) || undefined;
   }
 
   function findResultPanels(scope) {
@@ -1948,7 +1968,23 @@ Revise the translation along these three axes:
 
   // ── 共用：把離螢幕截圖 clone 還原成「無縮放、可完整截圖」狀態 ──
   // 統一處理所有 html2canvas 匯出路徑，避免某條路徑漏清 live-view 的 transform。
+  function relaxCaptureSourceWidthWrappers(clone) {
+    clone.querySelectorAll('.panel-content').forEach(pc => {
+      const sourceWidth = getSourceLayoutWidth(pc);
+      if (!sourceWidth) return;
+      Array.from(pc.children).forEach(child => {
+        const declaredWidth = cssPx(child.style.width);
+        if (!declaredWidth || Math.abs(declaredWidth - sourceWidth) > 2) return;
+        child.style.width = '100%';
+        child.style.maxWidth = '100%';
+        child.style.marginLeft = '0';
+        child.style.marginRight = '0';
+      });
+    });
+  }
+
   function prepareCloneForCapture(clone) {
+    relaxCaptureSourceWidthWrappers(clone);
     stabilizeGeneratedLayout(clone);
     clone.querySelectorAll('.result-panel').forEach(p => {
       p.style.maxHeight = 'none';

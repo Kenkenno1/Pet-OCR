@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OCR 翻譯 — 貓狗值班版</title>
-<link rel="icon" href="data:,">
+<meta name="theme-color" content="#0a2720">
+<link rel="icon" type="image/png" sizes="512x512" href="pet-ocr-logo.png">
+<link rel="apple-touch-icon" sizes="180x180" href="pet-ocr-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Noto+Serif+TC:wght@300;400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
@@ -18,10 +20,15 @@
 <style>
 .api-key-callout[hidden]{display:none!important}.api-key-callout{display:flex;align-items:center;gap:16px;margin:0 0 20px;padding:18px 20px;border:1px solid rgba(192,57,43,.28);border-left:5px solid #c0392b;border-radius:16px;background:linear-gradient(135deg,#fff8f3,#fff);box-shadow:0 16px 36px rgba(192,57,43,.12);animation:flowFadeIn .25s ease both}.api-key-callout-icon{font-size:1.8rem;line-height:1}.api-key-callout-copy{flex:1;min-width:0}.api-key-callout-title{font-family:'Noto Serif TC',serif;font-size:1.08rem;font-weight:700;color:#8f2e25;margin-bottom:3px}.api-key-callout-text{font-size:.82rem;color:var(--ink2);line-height:1.5}.api-key-callout-btn{border:none;border-radius:12px;background:#c0392b;color:#fff;font-family:inherit;font-size:.84rem;font-weight:800;padding:10px 16px;cursor:pointer;white-space:nowrap;box-shadow:0 10px 22px rgba(192,57,43,.18)}.api-key-callout-btn:hover{background:#a93226}.key-link-row{margin-top:8px;font-size:.76rem}.key-link-row a{color:var(--accent);font-weight:800;text-decoration:none}.key-link-row a:hover{text-decoration:underline}body[data-flow="mode"] .api-key-callout,body[data-flow="busy"] .api-key-callout,body[data-flow="done"] .api-key-callout{display:none!important}@media (max-width:700px){.api-key-callout{align-items:flex-start;flex-direction:column;gap:10px;padding:16px}.api-key-callout-btn{width:100%}}
 </style>
+<style>
+.app-logo{display:block;width:36px;height:36px;object-fit:cover;border-radius:10px;flex-shrink:0;box-shadow:0 4px 12px rgba(10,39,32,.22)}
+@media (max-width:700px){.app-logo{width:32px;height:32px;border-radius:9px}}
+</style>
 </head>
 <body data-flow="empty">
 <header>
   <div class="header-left">
+    <img class="app-logo" src="pet-ocr-logo.png" alt="" width="36" height="36" aria-hidden="true">
     <h1>OCR 翻譯</h1>
     <span class="badge">Batch</span>
   </div>

@@ -1,4 +1,5 @@
 {
   "seed": 31004,
+  "copy": ["pet-ocr-logo.png"],
   "html": ["辨譯_動物版.html"]
 }

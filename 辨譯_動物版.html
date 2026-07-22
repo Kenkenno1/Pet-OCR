@@ -2629,24 +2629,9 @@ Revise the translation along these three axes:
     }
   }
 
-  // Shared save — File System Access API avoids Windows MOTW
+  // Shared save — always use the browser's direct-download path
   async function saveFile(blob, suggestedName, mimeType, extension) {
-    if (window.showSaveFilePicker) {
-      try {
-        const handle = await showSaveFilePicker({
-          suggestedName,
-          types: [{ description: suggestedName, accept: { [mimeType]: [extension] } }]
-        });
-        const writable = await handle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        showToast('儲存成功！✅');
-        return;
-      } catch (err) {
-        if (err.name === 'AbortError') return;
-        console.warn('File System Access failed, falling back to download:', err);
-      }
-    }
+    // 一律走瀏覽器直接下載，檔案落在預設「下載」資料夾，不彈出選擇位置對話框
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

@@ -2224,8 +2224,21 @@ Revise the translation along these three axes:
     let refinedContentWidth = low;
     let refinedWrapW = setCaptureTrialWidth(clone, wrapper, layout, transOnly, refinedContentWidth);
     let layoutPreserved = captureTrialPreservesLayout(clone, wrapper, candidates, refinedContentWidth, refinedWrapW);
-    if (!layoutPreserved && bestPassing != null && bestPassing !== refinedContentWidth) {
-      refinedContentWidth = bestPassing;
+    if (!layoutPreserved && bestPassing != null && bestPassing > refinedContentWidth) {
+      let retryLow = refinedContentWidth + 1;
+      let retryHigh = bestPassing;
+      let retryBest = bestPassing;
+      while (retryLow <= retryHigh) {
+        const mid = Math.floor((retryLow + retryHigh) / 2);
+        const trialFrame = setCaptureTrialWidth(clone, wrapper, layout, transOnly, mid);
+        if (captureTrialPreservesLayout(clone, wrapper, candidates, mid, trialFrame)) {
+          retryBest = mid;
+          retryHigh = mid - 1;
+        } else {
+          retryLow = mid + 1;
+        }
+      }
+      refinedContentWidth = retryBest;
       refinedWrapW = setCaptureTrialWidth(clone, wrapper, layout, transOnly, refinedContentWidth);
       layoutPreserved = captureTrialPreservesLayout(clone, wrapper, candidates, refinedContentWidth, refinedWrapW);
     }

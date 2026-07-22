@@ -1435,6 +1435,7 @@ Revise the translation along these three axes:
   const CAPTURE_PANEL_X_PADDING = 40;
   const FALLBACK_CAPTURE_SINGLE_W = 800;
   const CAPTURE_CONTENT_MIN_W = 600;
+  const CAPTURE_BBOX_MIN_INK_W = 64;
   const CAPTURE_CROP_MIN_GAIN = 0.10;
   const CAPTURE_CONTENT_COVERAGE = 0.98;
 
@@ -1834,11 +1835,17 @@ Revise the translation along these three axes:
   // ══════════════════════════════════
   const viewerOverlay = document.getElementById('viewer-overlay');
   const viewerBody = document.getElementById('viewer-body');
+  let viewerSourceCard = null;
+  let viewerSourceType = 'trans';
 
   function openViewer(panelEl) {
+    const sourcePanel = panelEl?.closest?.('.result-panel') || panelEl;
+    viewerSourceCard = sourcePanel?.closest?.('.result-card') || null;
+    viewerSourceType = sourcePanel?.dataset?.type === 'ocr' ? 'ocr' : 'trans';
     const content = panelEl.cloneNode(true);
     // Remove label header from cloned content
     content.querySelectorAll('.result-panel-label').forEach(el => el.remove());
+    content.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
     viewerBody.innerHTML = content.innerHTML;
     viewerOverlay.classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -1850,6 +1857,8 @@ Revise the translation along these three axes:
   function closeViewer() {
     viewerOverlay.classList.remove('open');
     viewerBody.innerHTML = '';
+    viewerSourceCard = null;
+    viewerSourceType = 'trans';
     document.body.style.overflow = '';
   }
 
@@ -1857,11 +1866,20 @@ Revise the translation along these three axes:
     const shareBtn = viewerOverlay.querySelector('.viewer-toolbar button:last-child');
     if (shareBtn) { shareBtn.disabled = true; shareBtn.textContent = '處理中…'; }
     try {
-      // Clone viewer body offscreen for safe capture
-      const clone = viewerBody.cloneNode(true);
-      clone.style.cssText = 'font-family:"Noto Serif TC",serif;font-size:0.92rem;line-height:1.8;color:#1a1a1a;';
-      prepareCloneForCapture(clone);
-      const canvas = await renderCloneToCanvas(clone, 1000, { label: '分享圖片', targetPx: IMAGE_CAPTURE_TARGET_PX });
+      let canvas = null;
+      if (viewerSourceCard?.isConnected) {
+        canvas = await capturePanel(viewerSourceCard, viewerSourceType, {
+          label: '分享圖片',
+          targetPx: IMAGE_CAPTURE_TARGET_PX
+        });
+      }
+      if (!canvas) {
+        // Source card may have been removed while the viewer was open; keep the legacy viewer clone as a fallback.
+        const clone = viewerBody.cloneNode(true);
+        clone.style.cssText = 'font-family:"Noto Serif TC",serif;font-size:0.92rem;line-height:1.8;color:#1a1a1a;';
+        prepareCloneForCapture(clone);
+        canvas = await renderCloneToCanvas(clone, 1000, { label: '分享圖片', targetPx: IMAGE_CAPTURE_TARGET_PX });
+      }
 
       const blob = await canvasToPngBlob(canvas, '分享圖片');
       if (!blob) { releaseCanvas(canvas); return; }
@@ -1983,10 +2001,98 @@ Revise the translation along these three axes:
       if (!textCovered || !visualsCovered) return;
 
       if (!best || rect.width > best.width) {
-        best = { element: el, width: rect.width, height: rect.height, panel: pc, panelHeight: pc.scrollHeight };
+        best = { kind: 'declared', element: el, width: rect.width, height: rect.height, panel: pc, panelHeight: pc.scrollHeight };
       }
     });
     return best;
+  }
+
+  function pxNumber(value) {
+    const number = Number.parseFloat(value);
+    return Number.isFinite(number) ? number : 0;
+  }
+
+  function captureContentBoxLeft(pc) {
+    const rect = pc.getBoundingClientRect();
+    const computed = getComputedStyle(pc);
+    return rect.left + pxNumber(computed.borderLeftWidth) + pxNumber(computed.paddingLeft);
+  }
+
+  function isCaptureInkElement(el, panelContentWidth = 0) {
+    if (el.matches?.('pre')) return false;
+    if (el.matches?.(CAPTURE_VISUAL_SELECTOR)) return true;
+    const computed = getComputedStyle(el);
+    const outOfFlow = computed.position === 'absolute' || computed.position === 'fixed';
+    const explicitPxWidth = cssPx(el.style.width) > 0 || cssPx(el.style.maxWidth) > 0;
+    const shrinkToFit = ['inline-block', 'inline-flex', 'inline-grid', 'inline-table', 'table'].includes(computed.display);
+    const hasBackground = computed.backgroundImage !== 'none' ||
+      (computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)' && computed.backgroundColor !== 'transparent');
+    const decorated = hasBackground ||
+      pxNumber(computed.borderLeftWidth) > 0 || pxNumber(computed.borderRightWidth) > 0 ||
+      pxNumber(computed.borderTopWidth) > 0 || pxNumber(computed.borderBottomWidth) > 0 ||
+      (computed.boxShadow && computed.boxShadow !== 'none');
+    const isFullWidthFlowBackground = hasBackground && !outOfFlow && !explicitPxWidth && !shrinkToFit &&
+      panelContentWidth > 0 && el.getBoundingClientRect().width >= panelContentWidth - 2;
+    if (isFullWidthFlowBackground) return false;
+    return hasBackground || (decorated && (outOfFlow || explicitPxWidth || shrinkToFit));
+  }
+
+  function createCaptureInkProbe(pc, baselineContentWidth) {
+    const ranges = [];
+    const walker = document.createTreeWalker(pc, NodeFilter.SHOW_TEXT);
+    let textNode;
+    while ((textNode = walker.nextNode())) {
+      const text = String(textNode.nodeValue || '');
+      if (!text.trim() && !text.includes('\u00a0')) continue;
+      const range = document.createRange();
+      range.selectNodeContents(textNode);
+      ranges.push(range);
+    }
+    const elements = Array.from(pc.querySelectorAll('*'))
+      .filter(el => isCaptureInkElement(el, baselineContentWidth));
+
+    const measure = () => {
+      let minLeft = Infinity;
+      let minTop = Infinity;
+      let maxRight = -Infinity;
+      let maxBottom = -Infinity;
+      const includeRect = rect => {
+        if (!rect || rect.width <= 0 || rect.height <= 0) return;
+        minLeft = Math.min(minLeft, rect.left);
+        minTop = Math.min(minTop, rect.top);
+        maxRight = Math.max(maxRight, rect.right);
+        maxBottom = Math.max(maxBottom, rect.bottom);
+      };
+      ranges.forEach(range => Array.from(range.getClientRects()).forEach(includeRect));
+      elements.forEach(el => includeRect(el.getBoundingClientRect()));
+      if (!Number.isFinite(minLeft) || !Number.isFinite(maxRight)) return null;
+      return {
+        minLeft,
+        minTop,
+        maxRight,
+        maxBottom,
+        width: maxRight - minLeft,
+        height: maxBottom - minTop,
+        requiredWidth: maxRight - captureContentBoxLeft(pc)
+      };
+    };
+    return { measure };
+  }
+
+  function findCaptureInkCandidate(pc, baselineContentWidth) {
+    const probe = createCaptureInkProbe(pc, baselineContentWidth);
+    const ink = probe.measure();
+    if (!ink || ink.width < CAPTURE_BBOX_MIN_INK_W || ink.requiredWidth <= 0) return null;
+    if (ink.requiredWidth >= baselineContentWidth * (1 - CAPTURE_CROP_MIN_GAIN)) return null;
+    return {
+      kind: 'bbox',
+      probe,
+      width: Math.ceil(ink.width),
+      inkWidth: ink.width,
+      inkHeight: ink.height,
+      panel: pc,
+      panelHeight: pc.scrollHeight
+    };
   }
 
   function setCaptureTrialWidth(clone, wrapper, layout, transOnly, contentWidth) {
@@ -2006,6 +2112,15 @@ Revise the translation along these three axes:
   function captureTrialPreservesLayout(clone, wrapper, candidates, contentWidth, frameWidth) {
     const contents = Array.from(clone.querySelectorAll('.panel-content'));
     const candidatesStable = candidates.every(candidate => {
+      if (candidate.kind === 'bbox') {
+        const ink = candidate.probe.measure();
+        candidate.trialRequiredWidth = ink?.requiredWidth ?? Infinity;
+        return ink &&
+          Math.abs(ink.width - candidate.inkWidth) <= 0.5 &&
+          Math.abs(ink.height - candidate.inkHeight) <= 1 &&
+          ink.requiredWidth <= contentWidth + 1 &&
+          Math.abs(candidate.panel.scrollHeight - candidate.panelHeight) <= 1;
+      }
       const rect = candidate.element.getBoundingClientRect();
       return rect.width >= candidate.width - 0.25 &&
         Math.abs(rect.height - candidate.height) <= 0.5 &&
@@ -2017,6 +2132,7 @@ Revise the translation along these three axes:
 
   async function refineCaptureFrame(clone, wrapper, baselineWrapW, { layout = 'tb', transOnly = false } = {}) {
     delete clone.dataset.captureFrameCropped;
+    delete clone.dataset.captureFrameMode;
     const contents = Array.from(clone.querySelectorAll('.panel-content'));
     if (!contents.length) return baselineWrapW;
 
@@ -2025,8 +2141,11 @@ Revise the translation along these three axes:
       CAPTURE_CONTENT_MIN_W,
       Math.round(baselineWrapW / columns - CAPTURE_PANEL_X_PADDING)
     );
-    const candidates = contents.map(pc => findCaptureDocumentCandidate(pc, baselineContentWidth));
+    const candidates = contents.map(pc =>
+      findCaptureDocumentCandidate(pc, baselineContentWidth) || findCaptureInkCandidate(pc, baselineContentWidth)
+    );
     if (candidates.some(candidate => !candidate)) return baselineWrapW;
+    const cropMode = candidates.every(candidate => candidate.kind === 'declared') ? 'declared' : 'bbox';
 
     const originalCloneStyle = clone.style.cssText;
     const originalLayout = clone.dataset.layout;
@@ -2045,33 +2164,50 @@ Revise the translation along these three axes:
         pc.style.maxWidth = originalContentStyles[index].maxWidth;
         pc.style.boxSizing = originalContentStyles[index].boxSizing;
       });
+      delete clone.dataset.captureFrameMode;
       void clone.offsetWidth;
     };
 
-    let low = Math.max(CAPTURE_CONTENT_MIN_W, Math.ceil(Math.max(...candidates.map(candidate => candidate.width))));
+    let low = Math.ceil(Math.max(...candidates.map(candidate => candidate.width)));
     let high = baselineContentWidth;
+    let bestPassing = null;
     while (low < high) {
       const mid = Math.floor((low + high) / 2);
       const trialFrame = setCaptureTrialWidth(clone, wrapper, layout, transOnly, mid);
-      if (captureTrialPreservesLayout(clone, wrapper, candidates, mid, trialFrame)) high = mid;
-      else low = mid + 1;
+      if (captureTrialPreservesLayout(clone, wrapper, candidates, mid, trialFrame)) {
+        bestPassing = mid;
+        const currentRequiredWidth = Math.ceil(Math.max(...candidates.map(candidate =>
+          candidate.kind === 'bbox' ? candidate.trialRequiredWidth : mid
+        )));
+        high = Math.max(low, Math.min(mid, currentRequiredWidth));
+      } else {
+        low = mid + 1;
+      }
     }
 
-    const refinedWrapW = setCaptureTrialWidth(clone, wrapper, layout, transOnly, low);
+    let refinedContentWidth = low;
+    let refinedWrapW = setCaptureTrialWidth(clone, wrapper, layout, transOnly, refinedContentWidth);
+    let layoutPreserved = captureTrialPreservesLayout(clone, wrapper, candidates, refinedContentWidth, refinedWrapW);
+    if (!layoutPreserved && bestPassing != null && bestPassing !== refinedContentWidth) {
+      refinedContentWidth = bestPassing;
+      refinedWrapW = setCaptureTrialWidth(clone, wrapper, layout, transOnly, refinedContentWidth);
+      layoutPreserved = captureTrialPreservesLayout(clone, wrapper, candidates, refinedContentWidth, refinedWrapW);
+    }
     const gain = (baselineWrapW - refinedWrapW) / baselineWrapW;
-    if (gain < CAPTURE_CROP_MIN_GAIN || !captureTrialPreservesLayout(clone, wrapper, candidates, low, refinedWrapW)) {
+    if (gain < CAPTURE_CROP_MIN_GAIN || !layoutPreserved) {
       restoreBaseline();
       return baselineWrapW;
     }
 
     await yieldToUi(20);
-    clone.dataset.captureFrameCropped = 'true';
-    console.info(`[export] framing: ${baselineWrapW}px → ${refinedWrapW}px (${Math.round(gain * 100)}% crop)`);
+    clone.dataset.captureFrameMode = cropMode;
+    console.info(`[export] framing (${cropMode}): ${baselineWrapW}px → ${refinedWrapW}px (${Math.round(gain * 100)}% crop)`);
     return refinedWrapW;
   }
 
-  const MAX_EXPORT_CANVAS_AREA = 16_777_216; // roughly 4096 x 4096
+  const MAX_EXPORT_CANVAS_AREA = 14_260_634; // 85% headroom below the 16.7 MP hard edge
   const MAX_EXPORT_CANVAS_EDGE = 16384;
+  const CAPTURE_MAX_SCALE = 6;
   const PDF_CAPTURE_TARGET_PX = 1700;
   const IMAGE_CAPTURE_TARGET_PX = 1600;
 
@@ -2079,7 +2215,7 @@ Revise the translation along these three axes:
     return Math.max(0, width || 0) * Math.max(0, height || 0);
   }
 
-  function computeCaptureScale(width, height, targetPx = IMAGE_CAPTURE_TARGET_PX, maxScale = 2) {
+  function computeCaptureScale(width, height, targetPx = IMAGE_CAPTURE_TARGET_PX, maxScale = CAPTURE_MAX_SCALE) {
     const w = Math.max(1, Math.ceil(width || 1));
     const h = Math.max(1, Math.ceil(height || 1));
     const targetScale = targetPx > 0 ? targetPx / w : maxScale;
@@ -2113,7 +2249,7 @@ Revise the translation along these three axes:
     return run;
   }
 
-  async function renderCloneToCanvas(clone, wrapW, { label = '截圖', targetPx = IMAGE_CAPTURE_TARGET_PX, maxScale = 2, adaptiveFrame = null } = {}) {
+  async function renderCloneToCanvas(clone, wrapW, { label = '截圖', targetPx = IMAGE_CAPTURE_TARGET_PX, maxScale = CAPTURE_MAX_SCALE, adaptiveFrame = null } = {}) {
     const wrapper = document.createElement('div');
     wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${wrapW}px;z-index:-1;background:#fff;`;
     wrapper.appendChild(clone);
@@ -2137,7 +2273,8 @@ Revise the translation along these three axes:
         width,
         height
       });
-      canvas.__capturePreferLandscape = clone.dataset.captureFrameCropped === 'true';
+      canvas.__captureFrameMode = clone.dataset.captureFrameMode || '';
+      canvas.__capturePreferLandscape = canvas.__captureFrameMode === 'declared';
       console.info(`[export] ${label}: ${canvas.width}x${canvas.height} in ${Math.round(performance.now() - t0)}ms`);
       return canvas;
     } finally {
@@ -2538,7 +2675,7 @@ Revise the translation along these three axes:
     return renderCloneToCanvas(clone, wrapW, {
       label: options.label || (transOnly ? '譯文截圖' : '結果截圖'),
       targetPx: options.targetPx || IMAGE_CAPTURE_TARGET_PX,
-      maxScale: options.maxScale || 2,
+      maxScale: options.maxScale ?? CAPTURE_MAX_SCALE,
       adaptiveFrame: { layout, transOnly }
     });
   }
@@ -2557,7 +2694,7 @@ Revise the translation along these three axes:
     return renderCloneToCanvas(clone, wrapW, {
       label: options.label || (panelType === 'ocr' ? '原文頁' : '譯文頁'),
       targetPx: options.targetPx || PDF_CAPTURE_TARGET_PX,
-      maxScale: options.maxScale || 2,
+      maxScale: options.maxScale ?? CAPTURE_MAX_SCALE,
       adaptiveFrame: { layout: 'tb', transOnly: true }
     });
   }
@@ -2793,6 +2930,7 @@ Revise the translation along these three axes:
     showToast('PPTX 產生中…⏳');
     try {
       const slideW = 10;
+      const maxSlideH = 56;
       // 第一輪：收集所有 canvas 資料
       const slides = [];
       for (const card of cards) {
@@ -2804,8 +2942,11 @@ Revise the translation along these three axes:
           continue;
         }
         const imgData = canvas.toDataURL('image/png');
-        const slideH = (canvas.height / canvas.width) * slideW;
-        slides.push({ imgData, slideH });
+        const naturalSlideH = (canvas.height / canvas.width) * slideW;
+        const fitScale = Math.min(1, maxSlideH / naturalSlideH);
+        const imageW = slideW * fitScale;
+        const slideH = naturalSlideH * fitScale;
+        slides.push({ imgData, slideH, imageW, imageX: (slideW - imageW) / 2 });
         releaseCanvas(canvas);
       }
       if (!slides.length) { showToast('截圖失敗 ❌'); return; }
@@ -2817,7 +2958,7 @@ Revise the translation along these three axes:
       // 第二輪：建立投影片
       for (const s of slides) {
         const slide = pptx.addSlide();
-        slide.addImage({ data: s.imgData, x: 0, y: 0, w: slideW, h: s.slideH });
+        slide.addImage({ data: s.imgData, x: s.imageX, y: 0, w: s.imageW, h: s.slideH });
       }
       const blob = await pptx.write({ outputType: 'blob' });
       const pptxName = transOnly ? 'OCR_translated.pptx' : 'OCR_results.pptx';

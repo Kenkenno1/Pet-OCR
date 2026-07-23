@@ -63,7 +63,7 @@
 }
 </style>
 <style>
-.settings-card{max-height:90vh;max-height:90dvh;overflow-y:auto;overscroll-behavior:contain}
+.settings-card{min-height:0;max-height:90vh;max-height:90dvh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
 .settings-usage{margin-top:20px;border:1px solid rgba(42,96,73,.2);border-radius:13px;background:linear-gradient(135deg,rgba(232,242,238,.72),rgba(255,255,255,.96));overflow:hidden;font-variant-numeric:tabular-nums}
 .settings-usage summary{min-height:48px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;color:#1f5a44;font-size:.78rem;font-weight:800;list-style:none}
 .settings-usage summary::-webkit-details-marker{display:none}
@@ -84,8 +84,8 @@
 .usage-row.usage-unavailable{grid-template-columns:minmax(56px,.55fr) 1fr;color:var(--ink3)}
 .usage-meter-note{margin-top:8px;color:var(--ink3);font-size:.6rem;line-height:1.45}
 @media (max-width:700px){
-  #settings-modal{align-items:flex-end}
-  .settings-card{width:100%;max-width:none;max-height:92vh;max-height:92dvh;border-radius:20px 20px 0 0;padding:24px 18px calc(18px + env(safe-area-inset-bottom))}
+  #settings-modal{align-items:flex-end;height:100vh;height:100dvh;overflow:hidden;padding-top:8px;padding-top:max(8px,env(safe-area-inset-top))}
+  .settings-card{width:100%;max-width:none;max-height:calc(100vh - 8px);max-height:calc(100dvh - max(8px,env(safe-area-inset-top)));border-radius:20px 20px 0 0;padding:24px 18px calc(18px + env(safe-area-inset-bottom))}
   .settings-usage summary{min-height:52px}
   .settings-usage-head{flex-direction:column;gap:3px}
   .usage-row{grid-template-columns:52px minmax(0,1fr) auto;gap:4px 7px;padding:7px;font-size:.66rem}
@@ -3058,7 +3058,13 @@ Revise the translation along these three axes:
     renderSettingsUsage();
     saveFeedback.classList.remove('show');
     settingsModal.classList.add('open');
-    apiKeyInput.focus();
+    const settingsCard = settingsModal.querySelector('.settings-card');
+    if (settingsCard) settingsCard.scrollTop = 0;
+    if (!window.matchMedia('(max-width: 700px)').matches) {
+      apiKeyInput.focus({ preventScroll: true });
+    } else {
+      apiKeyInput.blur();
+    }
   }
 
   function closeSettings() { settingsModal.classList.remove('open'); }

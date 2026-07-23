@@ -1851,6 +1851,7 @@ Revise the translation along these three axes:
   const AUTO_LR_MIN_SCALE = 0.45;
   const AUTO_LR_TO_TB_SCALE = 0.43;
   const AUTO_TB_TO_LR_SCALE = 0.5;
+  const MOBILE_AUTO_FIT_PAGE_MIN_SCALE = 0.65;
   const MOBILE_FIT_MIN_SCALE = 0.65;
   const LAYOUT_MOBILE_QUERY = '(max-width: 860px)';
   const SOURCE_LAYOUT_MIN_W = 320;
@@ -2008,8 +2009,13 @@ Revise the translation along these three axes:
 
   function initCardView(cardId) {
     if (!cardViewState[cardId]) {
-      const zoomMode = isMobileLayout() ? 'fit-width' : 'actual';
-      cardViewState[cardId] = { zoomMode, scale: 1, layout: 'auto' };
+      const mobile = isMobileLayout();
+      cardViewState[cardId] = {
+        zoomMode: mobile ? 'fit-page' : 'actual',
+        scale: 1,
+        layout: 'auto',
+        autoViewPending: mobile,
+      };
     }
     applyCardZoom(cardId);
   }
@@ -2022,7 +2028,11 @@ Revise the translation along these three axes:
     if (!contents.length) return;
     // 先還原 → 量測內容原始尺寸
     contents.forEach(pc => { pc.style.transform = ''; pc.style.transformOrigin = ''; pc.style.height = ''; });
-    requestAnimationFrame(() => {
+    requestAnimationFrame(async () => {
+      // 首次手機自動判斷只在網頁字型穩定後執行，避免永久鎖定錯誤的初始模式。
+      if (state.autoViewPending && document.fonts?.ready) {
+        try { await document.fonts.ready; } catch (_) {}
+      }
       let cW = 0, cH = 0;
       contents.forEach(pc => { cW = Math.max(cW, pc.scrollWidth); cH = Math.max(cH, pc.scrollHeight); });
       if (cW <= 0) return;
@@ -2037,6 +2047,11 @@ Revise the translation along these three axes:
       const viewH = Math.max(window.innerHeight * 0.8, 240);
       // 固定使用 effective layout 後的 panel 寬算 scale，避免 live/export 不一致。
       const panelW = (panels.querySelector('.result-panel')?.clientWidth || panels.clientWidth) - 40;
+      const fitPageScale = Math.max(FIT_FLOOR, Math.min(1, panelW / cW, viewH / cH));
+      if (state.autoViewPending) {
+        state.zoomMode = fitPageScale >= MOBILE_AUTO_FIT_PAGE_MIN_SCALE ? 'fit-page' : 'fit-width';
+        state.autoViewPending = false;
+      }
       let scale;
       let fitWidthNeedsPan = false;
       switch (state.zoomMode) {
@@ -2049,7 +2064,7 @@ Revise the translation along these three axes:
             fitWidthNeedsPan = true;
           }
           break;
-        default: scale = Math.max(FIT_FLOOR, Math.min(1, panelW / cW, viewH / cH)); // fit-page
+        default: scale = fitPageScale; // fit-page
       }
       state.scale = scale;
       contents.forEach(pc => {
@@ -2127,6 +2142,7 @@ Revise the translation along these three axes:
     if (zb) {
       const cardId = zb.closest('.card-toolbar').dataset.card;
       if (!cardViewState[cardId]) return;
+      cardViewState[cardId].autoViewPending = false;
       cardViewState[cardId].zoomMode = zb.dataset.mode;
       applyCardZoom(cardId);
       return;
@@ -2135,6 +2151,7 @@ Revise the translation along these three axes:
     if (eh) {
       const cardId = eh.closest('.card-toolbar').dataset.card;
       if (!cardViewState[cardId]) return;
+      cardViewState[cardId].autoViewPending = false;
       cardViewState[cardId].zoomMode = 'fit-width';
       applyCardZoom(cardId);
       eh.classList.remove('show');
@@ -2147,6 +2164,7 @@ Revise the translation along these three axes:
       const cardId = slider.closest('.card-toolbar').dataset.card;
       const st = cardViewState[cardId];
       if (!st) return;
+      st.autoViewPending = false;
       st.zoomMode = 'manual';
       st.scale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, slider.value / 100));
       applyCardZoom(cardId);

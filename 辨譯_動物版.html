@@ -64,15 +64,18 @@
 }
 </style>
 <style>
-.batch-usage-summary[hidden],.usage-meter[hidden]{display:none!important}
-.batch-usage-summary{width:min(760px,100%);margin:12px auto 20px;padding:11px 14px;border:1px solid rgba(42,96,73,.2);border-radius:14px;background:linear-gradient(135deg,rgba(232,242,238,.92),rgba(255,255,255,.96));box-shadow:0 8px 24px rgba(31,90,68,.08);display:flex;align-items:center;justify-content:center;gap:8px 12px;flex-wrap:wrap;color:var(--ink2);font-size:.74rem;line-height:1.35;font-variant-numeric:tabular-nums}
-.batch-usage-summary .usage-summary-live{display:inline-flex;align-items:center;justify-content:center;gap:8px 12px;flex-wrap:wrap}
-.batch-usage-summary .usage-summary-label{color:var(--accent);font-weight:800;letter-spacing:.04em}
-.batch-usage-summary strong{color:#173f31;font-size:.82rem}
-.batch-usage-summary .usage-summary-note{width:100%;text-align:center;color:var(--ink3);font-size:.62rem}
-.usage-meter{padding:10px 18px 11px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#fbfdfc)}
-.usage-meter-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px;font-size:.7rem;color:var(--ink3)}
-.usage-meter-head strong{color:var(--accent);font-size:.75rem;font-variant-numeric:tabular-nums}
+.settings-card{max-height:90vh;max-height:90dvh;overflow-y:auto;overscroll-behavior:contain}
+.settings-usage{margin-top:20px;border:1px solid rgba(42,96,73,.2);border-radius:13px;background:linear-gradient(135deg,rgba(232,242,238,.72),rgba(255,255,255,.96));overflow:hidden;font-variant-numeric:tabular-nums}
+.settings-usage summary{min-height:48px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;color:#1f5a44;font-size:.78rem;font-weight:800;list-style:none}
+.settings-usage summary::-webkit-details-marker{display:none}
+.settings-usage summary::after{content:'⌄';font-size:1rem;color:var(--ink3);transition:transform .18s}
+.settings-usage[open] summary::after{transform:rotate(180deg)}
+.settings-usage-summary{margin-left:auto;color:var(--ink2);font-size:.68rem;font-weight:700;text-align:right}
+.settings-usage-body{padding:0 13px 13px;border-top:1px solid rgba(42,96,73,.12)}
+.settings-usage-empty{padding:14px 0 2px;color:var(--ink3);font-size:.7rem;text-align:center}
+.settings-usage-content[hidden],.settings-usage-empty[hidden]{display:none!important}
+.settings-usage-head{padding:11px 0 8px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;font-size:.68rem;color:var(--ink3)}
+.settings-usage-head strong{color:var(--accent);font-size:.73rem}
 .usage-meter-rows{display:grid;gap:5px}
 .usage-row{display:grid;grid-template-columns:minmax(56px,.55fr) minmax(105px,1fr) minmax(86px,.7fr) minmax(88px,.7fr);align-items:center;gap:8px;padding:6px 8px;border:1px solid rgba(42,96,73,.12);border-radius:9px;background:#fff;font-size:.68rem;color:var(--ink2);font-variant-numeric:tabular-nums}
 .usage-stage{font-weight:800;color:#1f5a44}
@@ -80,13 +83,12 @@
 .usage-cost-usd{font-weight:800;color:#1e4fa3}
 .usage-cost-twd{color:#7b5e1b}
 .usage-row.usage-unavailable{grid-template-columns:minmax(56px,.55fr) 1fr;color:var(--ink3)}
-.usage-meter-note{margin-top:6px;color:var(--ink3);font-size:.6rem;line-height:1.45}
+.usage-meter-note{margin-top:8px;color:var(--ink3);font-size:.6rem;line-height:1.45}
 @media (max-width:700px){
-  .batch-usage-summary{margin:10px auto 16px;padding:10px 11px;justify-content:flex-start;gap:5px 9px;font-size:.68rem}
-  .batch-usage-summary .usage-summary-live{justify-content:flex-start;gap:5px 9px}
-  .batch-usage-summary .usage-summary-note{text-align:left}
-  .usage-meter{padding:9px 12px 10px}
-  .usage-meter-head{align-items:flex-start;flex-direction:column;gap:2px}
+  #settings-modal{align-items:flex-end}
+  .settings-card{width:100%;max-width:none;max-height:92vh;max-height:92dvh;border-radius:20px 20px 0 0;padding:24px 18px calc(18px + env(safe-area-inset-bottom))}
+  .settings-usage summary{min-height:52px}
+  .settings-usage-head{flex-direction:column;gap:3px}
   .usage-row{grid-template-columns:52px minmax(0,1fr) auto;gap:4px 7px;padding:7px;font-size:.66rem}
   .usage-cost-twd{grid-column:2 / 4;font-size:.62rem}
   .usage-row.usage-unavailable{grid-template-columns:52px 1fr}
@@ -184,6 +186,23 @@
         <span class="slider"></span>
       </label>
     </div>
+    <details class="settings-usage" id="settings-usage">
+      <summary>
+        <span>Gemini 用量與費用</span>
+        <strong class="settings-usage-summary" id="settings-usage-summary">尚無紀錄</strong>
+      </summary>
+      <div class="settings-usage-body">
+        <div class="settings-usage-empty" id="settings-usage-empty">完成 OCR、翻譯或潤稿後，這裡會顯示本次工作階段的用量。</div>
+        <div class="settings-usage-content" id="settings-usage-content" hidden>
+          <div class="settings-usage-head">
+            <strong id="settings-usage-total"></strong>
+            <span id="settings-usage-flags"></span>
+          </div>
+          <div class="usage-meter-rows" id="settings-usage-rows"></div>
+          <div class="usage-meter-note" id="settings-usage-note"></div>
+        </div>
+      </div>
+    </details>
     <div class="settings-actions">
       <span class="save-feedback" id="save-feedback">已儲存 ✓</span>
       <button class="btn-test" id="btn-test" onclick="testApiKey()">測試連線</button>
@@ -281,17 +300,6 @@
     </div>
     <!-- Status -->
     <div id="status-text"></div>
-    <div class="batch-usage-summary" id="batch-usage-summary" hidden>
-      <span class="usage-summary-live" role="status" aria-live="polite" aria-atomic="true">
-        <span class="usage-summary-label">本次工作階段用量</span>
-        <strong class="usage-summary-tokens"></strong>
-        <span class="usage-summary-usd"></span>
-        <span class="usage-summary-twd"></span>
-        <span class="usage-summary-unknown"></span>
-        <span class="usage-summary-uncosted"></span>
-      </span>
-      <span class="usage-summary-note"></span>
-    </div>
     <!-- Results -->
     <div class="results-section" id="results-section"></div>
     <!-- Export Toolbar -->
@@ -347,7 +355,6 @@
   const queueEmpty = document.getElementById('queue-empty');
   const batchCountEl = document.getElementById('batch-count');
   const resultsSection = document.getElementById('results-section');
-  const batchUsageSummary = document.getElementById('batch-usage-summary');
   const progressContainer = document.getElementById('progress-container');
   const progressBar = document.getElementById('progress-bar');
   const progressPercent = document.getElementById('progress-percent');
@@ -381,7 +388,6 @@
   let progressHideTimer = null;
   const currentSessionUsageRecords = [];
   let usageRecordSequence = 0;
-  const cardUsageState = Object.create(null);
   const FLOW_STATES = new Set(['empty', 'queued', 'mode', 'busy', 'done']);
 
   function setBatchProgress(value) {
@@ -689,82 +695,46 @@
     }).join('');
   }
 
-  function renderBatchUsageSummary() {
-    if (!batchUsageSummary) return;
-    const tokenEl = batchUsageSummary.querySelector('.usage-summary-tokens');
-    const usdEl = batchUsageSummary.querySelector('.usage-summary-usd');
-    const twdEl = batchUsageSummary.querySelector('.usage-summary-twd');
-    const unknownEl = batchUsageSummary.querySelector('.usage-summary-unknown');
-    const uncostedEl = batchUsageSummary.querySelector('.usage-summary-uncosted');
-    const noteEl = batchUsageSummary.querySelector('.usage-summary-note');
+  function renderSettingsUsage() {
+    const summaryEl = document.getElementById('settings-usage-summary');
+    const emptyEl = document.getElementById('settings-usage-empty');
+    const contentEl = document.getElementById('settings-usage-content');
+    const totalEl = document.getElementById('settings-usage-total');
+    const flagsEl = document.getElementById('settings-usage-flags');
+    const rowsEl = document.getElementById('settings-usage-rows');
+    const noteEl = document.getElementById('settings-usage-note');
+    if (!summaryEl || !emptyEl || !contentEl || !totalEl || !flagsEl || !rowsEl || !noteEl) return;
     if (currentSessionUsageRecords.length === 0) {
-      batchUsageSummary.hidden = true;
-      if (tokenEl) tokenEl.textContent = '';
-      if (usdEl) usdEl.textContent = '';
-      if (twdEl) twdEl.textContent = '';
-      if (unknownEl) unknownEl.textContent = '';
-      if (uncostedEl) uncostedEl.textContent = '';
+      summaryEl.textContent = '尚無紀錄';
+      emptyEl.hidden = false;
+      contentEl.hidden = true;
+      totalEl.textContent = '';
+      flagsEl.textContent = '';
+      rowsEl.innerHTML = '';
+      noteEl.textContent = '';
       return;
     }
     const totals = getUsageTotals(currentSessionUsageRecords);
     const tokenText = totals.tokenCalls ? `${formatTokens(totals.tokens)} tokens` : 'tokens 未知';
     const usdText = totals.costedCalls ? formatUsdCost(totals.costUsd) : '費用未知';
     const twdText = totals.costedCalls ? formatTwdCost(totals.costTwd) : '';
-    batchUsageSummary.hidden = false;
-    if (tokenEl) tokenEl.textContent = tokenText;
-    if (usdEl) usdEl.textContent = usdText;
-    if (twdEl) twdEl.textContent = twdText;
-    if (unknownEl) unknownEl.textContent = totals.unknownCalls
-      ? `另有 ${totals.unknownCalls} 次未回傳用量`
-      : '';
-    if (uncostedEl) uncostedEl.textContent = totals.uncostedCalls
-      ? `其中 ${totals.uncostedCalls} 次無法估算費用`
-      : '';
-    if (noteEl) {
-      noteEl.textContent = `依 ${GEMINI_PRICE_EFFECTIVE_DATE} Gemini Standard API 公開牌價估算；NT$ 匯率以 ${USD_TO_TWD_ESTIMATE_DATE} US$1 ≈ NT$${USD_TO_TWD_ESTIMATE} 粗估，免費額度內實際費用可能為 0。實際帳單以 Google Cloud Console 為準。`;
-    }
+    const flags = [
+      ...(totals.unknownCalls ? [`另有 ${totals.unknownCalls} 次未回傳用量`] : []),
+      ...(totals.uncostedCalls ? [`其中 ${totals.uncostedCalls} 次無法估算費用`] : []),
+    ];
+    summaryEl.textContent = `${tokenText} · ${usdText}`;
+    emptyEl.hidden = true;
+    contentEl.hidden = false;
+    totalEl.textContent = `合計 ${tokenText} · ${usdText}${twdText ? ` · ${twdText}` : ''}`;
+    flagsEl.textContent = flags.join(' · ');
+    rowsEl.innerHTML = renderUsageRows(currentSessionUsageRecords);
+    noteEl.textContent = `輸出計費含模型思考 tokens，快取輸入依 context caching 費率估算。依 ${GEMINI_PRICE_EFFECTIVE_DATE} Gemini Standard API 公開牌價估算；NT$ 匯率以 ${USD_TO_TWD_ESTIMATE_DATE} US$1 ≈ NT$${USD_TO_TWD_ESTIMATE} 粗估，免費額度內實際費用可能為 0。實際帳單以 Google Cloud Console 為準。`;
   }
 
   function addBatchUsageRecord(record) {
     if (!record) return;
     currentSessionUsageRecords.push(record);
-    renderBatchUsageSummary();
-  }
-
-  function renderCardUsage(cardId) {
-    const container = document.getElementById(cardId);
-    const card = container?.closest('.result-card');
-    const meter = card?.querySelector('.usage-meter');
-    if (!meter) return;
-    const records = cardUsageState[cardId] || [];
-    if (records.length === 0) {
-      meter.hidden = true;
-      meter.innerHTML = '';
-      return;
-    }
-    const totals = getUsageTotals(records);
-    const tokenText = totals.tokenCalls ? `${formatTokens(totals.tokens)} tokens` : 'tokens 未知';
-    const usdText = totals.costedCalls ? formatUsdCost(totals.costUsd) : '費用未知';
-    const twdText = totals.costedCalls ? ` · ${formatTwdCost(totals.costTwd)}` : '';
-    const unknown = totals.unknownCalls ? ` · ${totals.unknownCalls} 次未回傳用量` : '';
-    const uncosted = totals.uncostedCalls ? ` · ${totals.uncostedCalls} 次無法估算費用` : '';
-    meter.hidden = false;
-    meter.innerHTML = `
-      <div class="usage-meter-head">
-        <span>Gemini 用量明細</span>
-        <strong>合計 ${tokenText} · ${usdText}${twdText}${unknown}${uncosted}</strong>
-      </div>
-      <div class="usage-meter-rows">${renderUsageRows(records)}</div>
-      <div class="usage-meter-note">輸出計費含模型思考 tokens，快取輸入依 context caching 費率估算。依 ${GEMINI_PRICE_EFFECTIVE_DATE} Standard API 價格估算；免費額度內實際費用可能為 0。實際帳單以 Google Cloud Console 為準。</div>
-    `;
-  }
-
-  function addCardUsageRecord(cardId, record) {
-    if (!record) return;
-    if (!document.getElementById(cardId)) return;
-    if (!cardUsageState[cardId]) cardUsageState[cardId] = [];
-    cardUsageState[cardId].push(record);
-    renderCardUsage(cardId);
+    if (settingsModal?.classList.contains('open')) renderSettingsUsage();
   }
 
   function abortableSleep(ms, signal) {
@@ -1540,10 +1510,8 @@ Revise the translation along these three axes:
       if (signal.aborted) { cancelled = true; break; }
 
       const item = items[i];
-      const itemUsageRecords = [];
       const captureUsage = stage => usageRecord => {
         const stagedRecord = withUsageStage(stage, usageRecord);
-        itemUsageRecords.push(stagedRecord);
         addBatchUsageRecord(stagedRecord);
       };
       const queueEl = document.getElementById(`queue-item-${item.id}`);
@@ -1569,13 +1537,12 @@ Revise the translation along these three axes:
             ocrHtml || '<div style="color:var(--ink3)">⏹ OCR 已取消</div>',
             '<div style="color:var(--ink3)">⏹ 翻譯已取消</div>',
             i + 1,
-            itemUsageRecords,
           );
           break;
         }
         if (queueEl) queueEl.classList.remove('processing');
         await robotError(err.message);
-        appendResultCard(item, `<div style="color:#c0392b">OCR 失敗：${escapeHtml(err.message)}</div>`, '', i + 1, itemUsageRecords);
+        appendResultCard(item, `<div style="color:#c0392b">OCR 失敗：${escapeHtml(err.message)}</div>`, '', i + 1);
         completedSteps += stepsPerImage; // skip remaining steps for this image
         setBatchProgress((completedSteps / totalSteps) * 100);
         item.base64 = null;
@@ -1595,7 +1562,6 @@ Revise the translation along these three axes:
           ocrHtml,
           '<div style="color:var(--ink3)">⏹ 翻譯已取消</div>',
           i + 1,
-          itemUsageRecords,
         );
         break;
       }
@@ -1620,7 +1586,6 @@ Revise the translation along these three axes:
             ocrHtml,
             transHtml || '<div style="color:var(--ink3)">⏹ 翻譯已取消</div>',
             i + 1,
-            itemUsageRecords,
           );
           break;
         }
@@ -1653,7 +1618,6 @@ Revise the translation along these three axes:
               finalOcr,
               transHtml || '<div style="color:var(--ink3)">⏹ 潤稿已取消</div>',
               i + 1,
-              itemUsageRecords,
             );
             break;
           }
@@ -1668,7 +1632,7 @@ Revise the translation along these three axes:
         queueEl.classList.add('done');
       }
 
-      appendResultCard(item, finalOcr, transHtml, i + 1, itemUsageRecords);
+      appendResultCard(item, finalOcr, transHtml, i + 1);
 
       // Mark polish indicator if polished
       if (polished) {
@@ -1756,14 +1720,13 @@ Revise the translation along these three axes:
   // ══════════════════════════════════
   // ── Result Card Rendering ──
   // ══════════════════════════════════
-  function appendResultCard(item, ocrHtml, transHtml, index, usageRecords = []) {
+  function appendResultCard(item, ocrHtml, transHtml, index) {
     while (resultsSection.children.length >= MAX_RESULT_CARDS) {
       const oldest = resultsSection.children[0];
       const oldPanels = oldest.querySelector('.result-panels');
       if (oldPanels?.id) {
         delete syncState[oldPanels.id];
         delete cardViewState[oldPanels.id];
-        delete cardUsageState[oldPanels.id];
       }
       // Revoke blob URL used by this card to free memory
       const oldThumb = oldest.querySelector('.result-thumb');
@@ -1798,7 +1761,6 @@ Revise the translation along these three axes:
           <button class="btn-ghost" onclick="downloadResultImage('${cardId}', ${index}, event)">📥 下載圖</button>
         </div>
       </div>
-      <div class="usage-meter" aria-label="Gemini token 與費用明細" hidden></div>
       <div class="card-toolbar" data-card="${cardId}">
         <button type="button" class="zoom-btn" data-mode="fit-page">符合頁面</button>
         <button type="button" class="zoom-btn" data-mode="fit-width">符合寬度</button>
@@ -1827,8 +1789,6 @@ Revise the translation along these three axes:
       </div>
     `;
     resultsSection.appendChild(card);
-    cardUsageState[cardId] = Array.isArray(usageRecords) ? [...usageRecords] : [];
-    renderCardUsage(cardId);
     const sourceWidth = rememberCardSourceDimensions(card, item);
     stabilizeGeneratedLayout(card, sourceWidth);
     initCardView(cardId);
@@ -2849,7 +2809,6 @@ Revise the translation along these three axes:
     try {
       const polished = await callGeminiPolish(sourceHtml, translatedHtml, lang, undefined, model, usageRecord => {
         const stagedRecord = withUsageStage('polish', usageRecord);
-        addCardUsageRecord(cardId, stagedRecord);
         addBatchUsageRecord(stagedRecord);
       });
       // ── Sanitize polished output ──
@@ -2989,6 +2948,7 @@ Revise the translation along these three axes:
     apiKeyInput.type = 'password';
     btnEye.textContent = '👁';
     if (polishToggleInput) polishToggleInput.checked = getPolishEnabled();
+    renderSettingsUsage();
     saveFeedback.classList.remove('show');
     settingsModal.classList.add('open');
     apiKeyInput.focus();

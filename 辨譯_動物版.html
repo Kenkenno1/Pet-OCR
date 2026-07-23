@@ -11,7 +11,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Noto+Serif+TC:wght@300;400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js" integrity="sha384-qovJwSBbRDPP5cEjCp8S0UP66wrvnjaa60XMOGzTNanrThcrGfXfnZkvgY8N1KT3" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" integrity="sha384-Cck14aA9cifjYolcnjebXRfWGkz5ltHMBiG4px/j8GS+xQcb7OhNQWZYyWjQ+UwQ" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js" integrity="sha384-TcLTgu6flPhnZ5dfHnHimsxNFjYWN0povfGgnOvgPJKbZe6IbuoC2ociiatSHl9E" crossorigin="anonymous"></script>
@@ -305,6 +304,8 @@
     <!-- Export Toolbar -->
     <div class="export-toolbar" id="export-toolbar">
       <div class="export-buttons">
+        <button class="btn-export" onclick="exportMergedImage(false)" title="將全部結果合併為圖片">🖼️ 圖片</button>
+        <button class="btn-export" onclick="exportMergedImage(true)" title="僅將譯文合併為圖片">🖼️ 譯文圖片</button>
         <button class="btn-export" onclick="exportPdf()" title="合併成 PDF 文件">📄 PDF</button>
         <button class="btn-export" onclick="exportPdf(true)" title="僅譯文 PDF">📄 譯文PDF</button>
       </div>
@@ -2624,6 +2625,8 @@ Revise the translation along these three axes:
   const CAPTURE_MAX_SCALE = 6;
   const PDF_CAPTURE_TARGET_PX = 1700;
   const IMAGE_CAPTURE_TARGET_PX = 1600;
+  const WEBP_EXPORT_QUALITY = 0.95;
+  const WEBP_MAX_CANVAS_EDGE = 16383;
 
   function canvasPixelArea(width, height) {
     return Math.max(0, width || 0) * Math.max(0, height || 0);
@@ -2714,7 +2717,7 @@ Revise the translation along these three axes:
 
   function showCanvasTooLarge(label, width, height) {
     console.warn(`${label}: canvas ${width}x${height} exceeds export limit`);
-    showToast(`${label} 圖片尺寸過大，請改用 PDF、ZIP 或僅匯出譯文 ⚠️`);
+    showToast(`${label} 圖片尺寸過大，請改用 PDF 或僅匯出譯文 ⚠️`);
   }
 
   async function canvasToPngBlob(canvas, label) {
@@ -2730,6 +2733,45 @@ Revise the translation along these three axes:
       return null;
     }
     return blob;
+  }
+
+  async function canvasToPreferredImageBlob(canvas, label) {
+    if (!canvas) return null;
+    if (isExportCanvasTooLarge(canvas.width, canvas.height)) {
+      showCanvasTooLarge(label, canvas.width, canvas.height);
+      return null;
+    }
+
+    const webpWithinEdge = canvas.width <= WEBP_MAX_CANVAS_EDGE &&
+      canvas.height <= WEBP_MAX_CANVAS_EDGE;
+    if (webpWithinEdge) {
+      try {
+        const webpBlob = await new Promise(resolve =>
+          canvas.toBlob(resolve, 'image/webp', WEBP_EXPORT_QUALITY));
+        if (webpBlob?.type?.toLowerCase() === 'image/webp') {
+          return {
+            blob: webpBlob,
+            mimeType: 'image/webp',
+            extension: '.webp',
+            fallback: false,
+          };
+        }
+        console.info(`${label}: WebP encoder unavailable or returned ${webpBlob?.type || 'null'}; falling back to PNG`);
+      } catch (err) {
+        console.info(`${label}: WebP encoding failed; falling back to PNG`, err);
+      }
+    } else {
+      console.info(`${label}: canvas edge exceeds ${WEBP_MAX_CANVAS_EDGE}px WebP limit; falling back to PNG`);
+    }
+
+    const pngBlob = await canvasToPngBlob(canvas, label);
+    if (!pngBlob) return null;
+    return {
+      blob: pngBlob,
+      mimeType: 'image/png',
+      extension: '.png',
+      fallback: true,
+    };
   }
 
   async function downloadResultImage(cardId, index, event) {
@@ -3123,7 +3165,7 @@ Revise the translation along these three axes:
     const totalW = Math.max(...parts.map(p => p.width));
     const totalH = parts.reduce((sum, p) => sum + p.height, 0);
     if (totalH > MAX_EXPORT_CANVAS_EDGE) {
-      showToast('圖片過多，合併高度超出上限，請改用 PDF 或 ZIP 匯出 ⚠️');
+      showToast('圖片過多，合併高度超出上限，請改用 PDF 匯出 ⚠️');
       return null;
     }
     if (isExportCanvasTooLarge(totalW, totalH)) {
@@ -3167,44 +3209,17 @@ Revise the translation along these three axes:
       if (!canvases.length) { showToast('截圖失敗 ❌'); return; }
       merged = await buildMergedCanvas(canvases, '合併大圖');
       if (!merged) return;
-      const blob = await canvasToPngBlob(merged, '合併大圖');
-      if (!blob) return;
-      const fname = transOnly ? 'OCR_translated_merged.png' : 'OCR_results_merged.png';
-      await saveFile(blob, fname, 'image/png', '.png');
+      const encoded = await canvasToPreferredImageBlob(merged, '合併大圖');
+      if (!encoded) return;
+      const basename = transOnly ? 'OCR_translated_merged' : 'OCR_results_merged';
+      const fname = basename + encoded.extension;
+      await saveFile(encoded.blob, fname, encoded.mimeType, encoded.extension);
     } catch (err) {
       console.error('Merged image export error:', err);
       showToast('合併大圖匯出失敗 ❌ ' + err.message);
     } finally {
       releaseCanvases(canvases);
       releaseCanvas(merged);
-    }
-  }
-
-  // --- Export: ZIP ---
-  async function exportZip(transOnly) {
-    const cards = getResultCards();
-    if (!cards.length) return;
-    showToast('ZIP 打包中…⏳');
-    try {
-      const zip = new JSZip();
-      let addedCount = 0;
-      for (let i = 0; i < cards.length; i++) {
-        const canvas = await captureCard(cards[i], transOnly);
-        if (!canvas) continue;
-        const blob = await canvasToPngBlob(canvas, `ZIP 第 ${i + 1} 張`);
-        if (blob) {
-          zip.file(`OCR_result_${i + 1}.png`, blob);
-          addedCount++;
-        }
-        releaseCanvas(canvas);
-      }
-      if (!addedCount) { showToast('ZIP 沒有可匯出的圖片 ❌'); return; }
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      const zipName = transOnly ? 'OCR_translated.zip' : 'OCR_results.zip';
-      await saveFile(zipBlob, zipName, 'application/zip', '.zip');
-    } catch (err) {
-      console.error('ZIP export error:', err);
-      showToast('ZIP 匯出失敗 ❌ ' + err.message);
     }
   }
 

@@ -2261,6 +2261,8 @@ Revise the translation along these three axes:
         fontsPending: true, // 與 fit-page/fit-width 選擇脫鉤：A/B 都等字型穩定再量（Codex 點4）
       };
     }
+    // 先同步標示預設模式，避免手機慢速字型載入時看起來仍停在 1:1。
+    updateZoomUI(cardId);
     applyCardZoom(cardId);
   }
 
@@ -2642,14 +2644,20 @@ Revise the translation along these three axes:
     if (!contents.length) return;
     const renderToken = (state.zoomRenderToken || 0) + 1;
     state.zoomRenderToken = renderToken;
-    requestAnimationFrame(async () => {
-      // autofast：首次量測前等字型穩定，避免用未載入字型量錯尺寸（與 fit-page/fit-width 選擇脫鉤）。
-      if (state.fontsPending && document.fonts?.ready) {
-        try { await document.fonts.ready; } catch (_) {}
-      }
+    // 手機不得因遠端字型延遲而卡在 100%：先用現有字型立即 fit，
+    // 字型真正 ready 後再補一次精準量測。fontsPending 先清掉，避免補算形成循環。
+    const refreshAfterFonts = state.fontsPending && document.fonts?.ready;
+    state.fontsPending = false;
+    if (refreshAfterFonts) {
+      Promise.resolve(refreshAfterFonts).then(() => {
+        if (panels.isConnected && cardViewState[cardId] === state && !isCardPinching(cardId)) {
+          applyCardZoom(cardId);
+        }
+      }).catch(() => {});
+    }
+    requestAnimationFrame(() => {
       // 多次快速切換或手勢開始後，舊回呼不得覆寫最新的縮放狀態。
       if (state.zoomRenderToken !== renderToken || isCardPinching(cardId) || !panels.isConnected) return;
-      state.fontsPending = false;
       // 先還原 → 量測內容原始尺寸。
       contents.forEach(pc => { pc.style.transform = ''; pc.style.transformOrigin = ''; pc.style.height = ''; });
       let cW = 0, cH = 0;

@@ -1,0 +1,4017 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>OCR 翻譯 — 貓狗值班版</title>
+<meta name="theme-color" content="#0a2720">
+<link rel="icon" type="image/png" sizes="512x512" href="pet-ocr-logo.png">
+<link rel="apple-touch-icon" sizes="180x180" href="pet-ocr-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Noto+Serif+TC:wght@300;400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js" integrity="sha384-qovJwSBbRDPP5cEjCp8S0UP66wrvnjaa60XMOGzTNanrThcrGfXfnZkvgY8N1KT3" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" integrity="sha384-Cck14aA9cifjYolcnjebXRfWGkz5ltHMBiG4px/j8GS+xQcb7OhNQWZYyWjQ+UwQ" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js" integrity="sha384-TcLTgu6flPhnZ5dfHnHimsxNFjYWN0povfGgnOvgPJKbZe6IbuoC2ociiatSHl9E" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
+<style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}:root{--ink:#1a1a1a;--ink2:#555;--ink3:#999;--line:#e8e8e8;--bg:#fafaf8;--white:#ffffff;--accent:#2a6049;--accent-l:#e8f2ee;--zh-grad1:#237354;--zh-grad2:#3aab7a;--en-grad1:#1e4fa3;--en-grad2:#3d7fe8;--ja-grad1:#c0321f;--ja-grad2:#f05c42}html,body{overflow-x:hidden}body{font-family:'DM Sans','Zen Kaku Gothic New','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}header{width:100%;padding:20px 40px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:var(--white);position:sticky;top:0;z-index:100}.header-left{display:flex;align-items:center;gap:16px}header h1{font-family:'Noto Serif TC',serif;font-weight:300;font-size:1.3rem;letter-spacing:0.06em;color:var(--ink)}.badge{background:linear-gradient(135deg,var(--zh-grad1),var(--zh-grad2));color:#fff;font-size:0.62rem;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:0.08em;text-transform:uppercase}.header-right{display:flex;align-items:center;gap:10px}.batch-count{font-size:0.78rem;color:var(--ink3);font-weight:500;min-width:100px;text-align:right}.batch-count strong{color:var(--accent);font-size:1.1rem;font-weight:700}.btn-settings{background:none;border:1px solid var(--line);width:34px;height:34px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.05rem;color:var(--ink3);transition:all 0.15s;flex-shrink:0}.btn-settings:hover{border-color:var(--ink2);color:var(--ink);background:var(--bg)}.polish-chip{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-family:inherit;font-size:0.72rem;font-weight:500;color:var(--ink2);cursor:pointer;transition:all 0.18s;user-select:none;white-space:nowrap;flex-shrink:0}.polish-chip:hover{border-color:var(--ink2);color:var(--ink)}.polish-chip .dot{width:8px;height:8px;border-radius:50%;background:#c8c8c8;transition:all 0.2s;box-shadow:0 0 0 0 rgba(0,0,0,0)}.polish-chip.on{border-color:#d4af37;color:#8a6d1a;background:#fffbe6}.polish-chip.on .dot{background:#d4af37;box-shadow:0 0 0 3px rgba(212,175,55,0.18)}.polish-chip .icon{font-size:0.85rem;line-height:1}.app-layout{display:block;min-height:calc(100vh - 65px)}.main-content{width:min(1120px,100%);margin:0 auto;padding:28px 36px 120px}.upload-zone,.queue-section,.lang-step,.mode-step,#status-text,.results-section,.export-toolbar{animation:flowFadeIn 0.25s ease both}@keyframes flowFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}body[data-flow="empty"] .queue-section,body[data-flow="empty"] .lang-step,body[data-flow="empty"] .mode-step,body[data-flow="empty"] #status-text,body[data-flow="empty"] .results-section,body[data-flow="empty"] .export-toolbar,body[data-flow="queued"] .mode-step,body[data-flow="queued"] #status-text,body[data-flow="queued"] .export-toolbar,body[data-flow="mode"] .upload-zone,body[data-flow="mode"] .lang-step,body[data-flow="mode"] #status-text,body[data-flow="mode"] .export-toolbar,body[data-flow="busy"] .upload-zone,body[data-flow="busy"] .lang-step,body[data-flow="busy"] .mode-step,body[data-flow="busy"] .export-toolbar,body[data-flow="done"] .queue-section,body[data-flow="done"] .lang-step,body[data-flow="done"] .mode-step,body[data-flow="done"] #status-text{display:none !important}body[data-flow="empty"] .upload-zone{min-height:50vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 28px}body[data-flow="empty"] .upload-icon{font-size:52px;margin-bottom:18px;opacity:0.68}body[data-flow="empty"] .upload-text{font-family:'Noto Serif TC',serif;font-size:clamp(1.28rem,3.4vw,2rem);color:var(--ink);letter-spacing:0.02em}body[data-flow="empty"] .upload-hint{font-size:0.82rem;margin-top:12px}body[data-flow="queued"] .upload-zone,body[data-flow="done"] .upload-zone{min-height:0;padding:16px 18px;display:block}body[data-flow="queued"] .upload-icon,body[data-flow="done"] .upload-icon{display:inline-block;font-size:20px;margin:0 8px 0 0;vertical-align:middle}body[data-flow="queued"] .upload-text,body[data-flow="done"] .upload-text{display:inline;font-size:0.84rem}body[data-flow="queued"] .upload-hint,body[data-flow="done"] .upload-hint{margin-top:4px;font-size:0.7rem}.upload-zone{border:1.5px dashed var(--line);border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:border-color 0.25s,background 0.25s,transform 0.2s;background:var(--white);position:relative;overflow:hidden}.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:var(--accent-l);transform:scale(1.005)}.upload-zone.drag-over{border-width:2.5px}.upload-icon{font-size:28px;margin-bottom:8px;opacity:0.5}.upload-text{font-size:0.86rem;color:var(--ink2);line-height:1.7}.upload-text strong{color:var(--ink);font-weight:500}.upload-hint{margin-top:6px;font-size:0.72rem;color:var(--ink3)}.queue-section{margin-top:24px}.queue-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.queue-title{font-size:0.78rem;font-weight:500;color:var(--ink2);letter-spacing:0.04em;text-transform:uppercase;display:flex;align-items:center;gap:8px}.queue-pill{background:var(--accent);color:#fff;font-size:0.65rem;font-weight:700;padding:2px 9px;border-radius:12px;min-width:22px;text-align:center}.btn-clear-queue{background:none;border:1px solid var(--line);color:var(--ink3);font-family:inherit;font-size:0.72rem;padding:4px 12px;border-radius:6px;cursor:pointer;transition:all 0.15s}.btn-clear-queue:hover{border-color:#c0392b;color:#c0392b}.queue-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}.queue-item{position:relative;width:100%;aspect-ratio:4 / 3;border-radius:10px;overflow:hidden;border:1.5px solid var(--line);background:var(--white);cursor:default;transition:all 0.25s;animation:queuePop 0.35s cubic-bezier(0.34,1.56,0.64,1)}@keyframes queuePop{0%{transform:scale(0.5) rotate(-5deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}.queue-item:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.08)}.queue-item img{width:100%;height:100%;object-fit:cover}.queue-item .remove-btn{position:absolute;top:4px;right:4px;width:22px;height:22px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;font-size:0.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s;backdrop-filter:blur(4px)}.queue-item:hover .remove-btn{opacity:1}.queue-item .item-number{position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.55);color:#fff;font-size:0.6rem;font-weight:700;padding:1px 7px;border-radius:8px;backdrop-filter:blur(4px)}.queue-item.processing{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-l)}.queue-item.processing::after{content:'';position:absolute;inset:0;background:rgba(42,96,73,0.15);animation:processingPulse 1s ease-in-out infinite}@keyframes processingPulse{0%,100%{opacity:0.3}50%{opacity:0.7}}.queue-item.done{border-color:var(--accent)}.queue-item.done::after{content:'✓';position:absolute;inset:0;background:rgba(42,96,73,0.5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700}.queue-empty{text-align:center;padding:30px;color:var(--ink3);font-size:0.82rem;border:1.5px dashed var(--line);border-radius:10px;background:var(--white)}#status-text{text-align:center;font-size:0.82rem;color:var(--ink3);min-height:22px;display:flex;align-items:center;justify-content:center;gap:6px;margin:16px 0}#status-text.status-active{width:min(520px,100%);min-height:64px;margin:20px auto;padding:14px 22px;border:1px solid rgba(47,138,99,0.22);border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,0.95),rgba(241,248,244,0.92)),radial-gradient(circle at 12% 0%,rgba(47,138,99,0.18),transparent 34%);box-shadow:0 16px 42px rgba(31,90,68,0.14);color:var(--accent)}#status-text.status-active .status-copy{display:flex;flex-direction:column;align-items:flex-start;gap:2px}#status-text.status-active .status-main{font-family:'Noto Serif TC','Zen Kaku Gothic New',serif;font-size:clamp(1.28rem,3.6vw,1.8rem);font-weight:700;letter-spacing:0.08em;line-height:1.15;color:#1f5a44}#status-text.status-active.status-translate .status-main{background:linear-gradient(135deg,#1f5a44,#2f8a63 54%,#246a7c);-webkit-background-clip:text;background-clip:text;color:transparent}#status-text.status-active .status-detail{font-size:0.76rem;font-weight:700;letter-spacing:0.08em;color:var(--ink3)}.spinner{width:13px;height:13px;border:1.5px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}#status-text.status-active .spinner{width:28px;height:28px;border-width:3px;box-shadow:0 0 0 6px rgba(47,138,99,0.08)}@keyframes spin{to{transform:rotate(360deg)}}.results-section{margin-top:24px}.export-toolbar{display:none;margin-top:20px;padding:16px 20px;background:var(--white);border:1px solid var(--line);border-radius:12px;align-items:center;gap:14px;flex-wrap:wrap}.export-toolbar.visible{display:flex}.export-label{font-family:'DM Sans',sans-serif;font-size:0.75rem;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap}.export-buttons{display:flex;gap:8px;flex-wrap:wrap}.btn-export{background:var(--bg);border:1px solid var(--line);color:var(--ink2);font-family:inherit;font-size:0.76rem;font-weight:500;padding:7px 14px;border-radius:8px;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}.btn-export:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-l)}.btn-export:disabled{opacity:0.4;cursor:not-allowed}.result-card{background:var(--white);border:1px solid var(--line);border-radius:14px;margin-bottom:20px;overflow:hidden;animation:resultSlideIn 0.5s cubic-bezier(0.22,1,0.36,1)}@keyframes resultSlideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.result-header{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;background:var(--bg)}.result-thumb{width:48px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}.result-meta{flex:1;font-size:0.78rem;color:var(--ink2);font-weight:500}.result-panels{display:grid;grid-template-columns:1fr;min-height:200px}@media (max-width:860px){.result-panels{grid-template-columns:1fr}}.result-panel{padding:18px 20px;min-width:0;overflow-y:auto;max-height:60vh;font-size:0.86rem;line-height:1.75;font-family:'Noto Serif TC',serif;color:var(--ink)}.result-panel + .result-panel{border-left:none;border-top:1px solid var(--line)}@media (max-width:860px){.result-card{overflow:visible}.result-header{flex-wrap:wrap;gap:8px;padding:10px 12px}.result-meta{min-width:0}.result-header>div:last-child{flex:1 1 100%;flex-wrap:wrap;justify-content:flex-start;min-width:0}.result-panel + .result-panel{border-left:none;border-top:1px solid var(--line)}.result-panel{max-height:none;overflow-y:visible;padding:14px 12px;font-size:0.82rem}.panel-content{transform-origin:top left}.result-panel table{table-layout:fixed;word-break:break-word}.result-panel img{max-width:100%;height:auto}.result-panel pre{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}}.panel-content{outline:none;min-height:2em;cursor:text}.panel-content:focus{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}.result-panel-label{font-family:'DM Sans',sans-serif;font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink3);margin-bottom:10px;display:flex;align-items:center;gap:6px}.result-panel-label .dot{width:5px;height:5px;border-radius:50%}.result-panel table{width:100%;border-collapse:collapse;margin:8px 0}.result-panel td,.result-panel th{border:1px solid var(--line);padding:5px 8px}.result-panel::-webkit-scrollbar{width:4px}.result-panel::-webkit-scrollbar-track{background:transparent}.result-panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px}.card-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 18px;border-bottom:1px solid var(--line);background:var(--bg);font-size:0.72rem;color:var(--ink2)}.card-toolbar .zoom-btn{border:1px solid var(--line);background:var(--white);border-radius:6px;padding:3px 8px;cursor:pointer;color:var(--ink2);font-size:0.72rem}.card-toolbar .zoom-btn.active{border-color:var(--accent);color:var(--accent)}.card-toolbar .zoom-slider{width:90px}.card-toolbar .zoom-pct{min-width:38px;text-align:right;font-variant-numeric:tabular-nums}.card-toolbar .edit-hint{display:none;margin-left:auto;border:1px solid var(--accent);color:var(--accent);background:var(--accent-l);border-radius:6px;padding:3px 8px;cursor:pointer}.card-toolbar .edit-hint.show{display:inline-block}.result-panels[data-layout="lr"]{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.result-panels[data-layout="lr"] .result-panel + .result-panel{border-left:1px solid var(--line);border-top:none}.result-panels[data-layout="tb"]{grid-template-columns:1fr}.result-panels[data-layout="tb"] .result-panel + .result-panel{border-left:none;border-top:1px solid var(--line)}.viewer-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:#ffffff;flex-direction:column}.viewer-overlay.open{display:flex}.viewer-toolbar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:#f5f5f5;border-bottom:1px solid var(--line);flex-shrink:0}.viewer-toolbar button{background:none;border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:0.85rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;color:var(--ink)}.viewer-toolbar button:active{background:var(--line)}.viewer-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:16px;font-family:'Noto Serif TC',serif;font-size:0.92rem;line-height:1.8;color:var(--ink)}.viewer-body table{width:100%;border-collapse:collapse;margin:8px 0}.viewer-body td,.viewer-body th{border:1px solid var(--line);padding:5px 8px}.viewer-body img{max-width:100%;height:auto}.viewer-body pre{white-space:pre-wrap;word-break:break-word}.sync-badge{display:inline-flex;align-items:center;gap:4px;font-size:0.62rem;font-weight:600;color:var(--ink3);background:var(--bg);border:1px solid var(--line);padding:2px 8px;border-radius:10px;letter-spacing:0.04em;text-transform:uppercase;user-select:none;cursor:pointer;transition:all 0.2s}.sync-badge:hover{border-color:var(--ink2);color:var(--ink2)}.sync-badge .sync-icon{display:inline-block;transition:transform 0.3s}.sync-badge.active{color:var(--accent);border-color:var(--accent);background:var(--accent-l)}.sync-badge.active .sync-icon{transform:rotate(0deg)}.sync-badge:not(.active) .sync-icon{transform:rotate(45deg);opacity:0.5}.result-panel.sync-flash{box-shadow:inset 0 0 0 1.5px var(--accent);transition:box-shadow 0.15s}.result-actions{padding:10px 18px;border-top:1px solid var(--line);display:flex;gap:6px;justify-content:flex-end;background:var(--bg)}.btn-polish{position:relative;display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#f8f0e3 0%,#f2e6d0 100%);border:1px solid #e0d1b8;color:#8a6d3b;font-family:'Zen Kaku Gothic New','DM Sans',sans-serif;font-size:0.72rem;font-weight:600;padding:5px 14px;border-radius:8px;cursor:pointer;transition:all 0.25s;overflow:hidden;letter-spacing:0.02em}.btn-polish:hover{background:linear-gradient(135deg,#f5ead8 0%,#eddbbc 100%);border-color:#c9b48e;box-shadow:0 3px 12px rgba(138,109,59,0.15);transform:translateY(-1px)}.btn-polish:active{transform:scale(0.96)}.btn-polish .polish-icon{font-size:0.85rem}.btn-polish::after{content:'';position:absolute;inset:0;background:linear-gradient(108deg,transparent 30%,rgba(255,255,255,0.4) 50%,transparent 70%);background-size:250% 100%;opacity:0;transition:opacity 0.3s;pointer-events:none}.btn-polish:hover::after{opacity:1;animation:shimmer 2s linear infinite}.btn-polish.polishing{pointer-events:none;background:linear-gradient(135deg,#fdf6e3 0%,#f5ecd3 100%);color:#b8943e;border-color:#d4c08a}.btn-polish.polishing .polish-icon{animation:polishSpin 1s ease-in-out infinite}@keyframes polishSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}.btn-polish.done-polish{background:linear-gradient(135deg,#e8f2ee 0%,#d5ebdf 100%);border-color:#b8dcc8;color:var(--accent)}.polish-indicator{display:none;align-items:center;gap:4px;font-size:0.6rem;font-weight:600;color:#b8943e;letter-spacing:0.04em;padding:2px 8px;background:#fdf6e3;border:1px solid #e8dbb8;border-radius:10px}.polish-indicator.visible{display:inline-flex}.lang-step,.mode-step{width:min(560px,100%);margin:28px auto 0;padding:28px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,0.96);box-shadow:0 18px 44px rgba(31,90,68,0.12)}.step-title{margin-bottom:18px;font-family:'Noto Serif TC',serif;font-size:1.3rem;font-weight:600;color:#1f5a44;letter-spacing:0.04em;text-align:center}.target-lang-select{position:relative;z-index:1;width:100%;min-height:46px;border:1px solid #c9ddd3;border-radius:12px;padding:10px 12px;color:#10271f;background:#fff;font:700 0.94rem 'Zen Kaku Gothic New','DM Sans',sans-serif;outline:none}.target-lang-select:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(42,96,73,0.1)}.btn-next,.btn-back{border:1px solid var(--line);border-radius:12px;font-family:'Zen Kaku Gothic New','DM Sans',sans-serif;font-weight:800;cursor:pointer;transition:all 0.2s ease}.btn-next{width:100%;margin-top:16px;padding:13px 18px;color:#fff;background:linear-gradient(135deg,#1f5a44,#2f8a63);box-shadow:0 10px 24px rgba(31,90,68,0.18)}.btn-next:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(31,90,68,0.22)}.btn-back{margin-bottom:14px;padding:8px 13px;color:var(--ink2);background:var(--bg)}.btn-back:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-l)}.mode-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.action-btn{position:relative;z-index:1;width:100%;border:1px solid #d9e7df;border-radius:18px;cursor:pointer;font-family:'Zen Kaku Gothic New','DM Sans',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;overflow:hidden;transition:all 0.22s ease;color:#174232;background:linear-gradient(180deg,#ffffff,#f7fbf8);font-size:0.92rem;font-weight:800;box-shadow:0 10px 24px rgba(31,90,68,0.08)}.action-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(108deg,transparent 30%,rgba(255,255,255,0.2) 50%,transparent 70%);background-size:250% 100%;animation:shimmer 3s linear infinite;pointer-events:none}@keyframes shimmer{0%{background-position:-250% center}100%{background-position:250% center}}.action-btn:hover{transform:translateY(-2px);border-color:#b8dcc8;box-shadow:0 16px 34px rgba(31,90,68,0.16)}.action-btn:active{transform:scale(0.98)}.action-icon{font-size:1.8rem;line-height:1}.action-label{white-space:nowrap}.action-sub{font-size:0.76rem;opacity:0.68;letter-spacing:0.02em}.action-btn.disabled{opacity:0.55;pointer-events:none}.action-btn.processing-btn{pointer-events:none}.action-btn.processing-btn .action-icon{animation:flagSpin 0.6s ease-in-out infinite}.mode-btn{flex-direction:column;min-height:150px;padding:24px 18px}.mode-btn .action-icon{font-size:2.2rem}.mode-btn .action-label{letter-spacing:0.04em}.mode-btn.mode-active{color:#fff;background:linear-gradient(135deg,#1f5a44,#2f8a63);box-shadow:0 0 0 2px rgba(255,255,255,0.7) inset,0 6px 16px rgba(16,39,31,0.28)}.mode-btn.mode-active .action-sub{opacity:0.9}@keyframes flagSpin{0%,100%{transform:rotate(0deg)}25%{transform:rotate(15deg)}75%{transform:rotate(-15deg)}}.toast-container{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;pointer-events:none}.toast{background:rgba(10,10,10,0.88);color:#fff;font-family:'Zen Kaku Gothic New','Noto Serif TC',sans-serif;font-size:1.6rem;font-weight:700;padding:20px 40px;border-radius:20px;backdrop-filter:blur(12px);white-space:nowrap;text-align:center;animation:toastBoom 1.8s cubic-bezier(0.22,1,0.36,1) forwards;box-shadow:0 20px 60px rgba(0,0,0,0.4);letter-spacing:0.04em}@keyframes toastBoom{0%{opacity:0;transform:scale(0.3) rotate(-8deg)}15%{opacity:1;transform:scale(1.15) rotate(2deg)}25%{transform:scale(0.95) rotate(-1deg)}35%{transform:scale(1.02) rotate(0)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(0.8) translateY(-30px)}}.confetti-piece{position:fixed;z-index:9998;pointer-events:none;width:10px;height:10px;border-radius:2px;animation:confettiFall 2s ease-out forwards}@keyframes confettiFall{0%{opacity:1;transform:translate(0,0) rotate(0deg) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(720deg) scale(0.3)}}@keyframes screenShake{0%,100%{transform:translate(0)}10%{transform:translate(-6px,3px)}20%{transform:translate(5px,-4px)}30%{transform:translate(-3px,6px)}40%{transform:translate(4px,-2px)}50%{transform:translate(-5px,2px)}60%{transform:translate(3px,-5px)}70%{transform:translate(-2px,4px)}80%{transform:translate(6px,-3px)}90%{transform:translate(-4px,5px)}}body.shaking{animation:screenShake 0.5s ease-in-out}.emoji-rain{position:fixed;z-index:9997;pointer-events:none;font-size:2rem;animation:emojiDrop 2.5s ease-in forwards}@keyframes emojiDrop{0%{opacity:1;transform:translateY(-50px) rotate(0deg)}100%{opacity:0;transform:translateY(110vh) rotate(360deg)}}.btn-ghost{background:none;border:1px solid var(--line);color:var(--ink3);font-family:inherit;font-size:0.72rem;padding:4px 10px;border-radius:5px;cursor:pointer;transition:all 0.15s;white-space:nowrap}.btn-ghost:hover{border-color:var(--ink2);color:var(--ink);background:var(--bg)}.progress-bar-container{position:fixed;bottom:0;left:0;right:0;height:4px;background:var(--line);z-index:300;opacity:0;transition:opacity 0.3s}.progress-bar-container.active{opacity:1}.progress-bar{height:100%;background:linear-gradient(90deg,var(--zh-grad1),var(--zh-grad2),var(--en-grad2),var(--ja-grad2));background-size:300% 100%;animation:progressGradient 2s ease infinite;border-radius:0 2px 2px 0;transition:width 0.4s ease;width:0%}@keyframes progressGradient{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}.btn-cancel-batch{display:none;align-items:center;gap:5px;background:#c0392b;color:#fff;border:none;font-family:inherit;font-size:0.75rem;font-weight:600;padding:6px 16px;border-radius:8px;cursor:pointer;transition:all 0.2s}.btn-cancel-batch:hover{background:#a93226}.btn-cancel-batch.visible{display:inline-flex}#settings-modal{display:none;position:fixed;inset:0;z-index:1000;background:rgba(8,8,8,0.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center}#settings-modal.open{display:flex;animation:modalFadeIn 0.3s ease}@keyframes modalFadeIn{from{opacity:0}to{opacity:1}}.settings-card{background:#fff;border-radius:18px;padding:36px 36px 32px;width:min(460px,90vw);box-shadow:0 32px 80px rgba(0,0,0,0.22);animation:cardSlideUp 0.38s cubic-bezier(0.22,1,0.36,1)}@keyframes cardSlideUp{from{opacity:0;transform:translateY(32px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}.settings-title{font-family:'Noto Serif TC',serif;font-size:1.15rem;font-weight:300;margin-bottom:24px;color:var(--ink)}.field-label{font-size:0.75rem;font-weight:500;color:var(--ink2);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px}.field-row{position:relative;display:flex;align-items:center}.field-input{width:100%;padding:10px 40px 10px 14px;border:1px solid var(--line);border-radius:8px;font-family:'DM Sans',monospace;font-size:0.85rem;color:var(--ink);background:var(--bg);outline:none;transition:border-color 0.15s}.field-input:focus{border-color:var(--accent)}.field-input::placeholder{color:var(--ink3)}.btn-eye{position:absolute;right:8px;background:none;border:none;cursor:pointer;font-size:1rem;color:var(--ink3);padding:4px;line-height:1;transition:color 0.15s}.btn-eye:hover{color:var(--ink)}.btn-test{background:none;border:1px solid var(--line);color:var(--ink2);font-family:inherit;font-size:0.78rem;padding:6px 14px;border-radius:8px;cursor:pointer;transition:all 0.15s;white-space:nowrap}.btn-test:hover{border-color:var(--ink2);color:var(--ink)}.btn-test:disabled{opacity:0.5;cursor:default}.save-feedback{font-size:0.78rem;color:var(--accent);opacity:0;transition:opacity 0.2s;margin-right:auto;align-self:center}.save-feedback.show{opacity:1}.settings-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:24px}.btn-cancel{background:none;border:1px solid var(--line);color:var(--ink2);font-family:inherit;font-size:0.82rem;padding:8px 18px;border-radius:8px;cursor:pointer;transition:all 0.15s}.btn-cancel:hover{border-color:var(--ink2);color:var(--ink)}.btn-save{background:var(--accent);border:none;color:#fff;font-family:inherit;font-size:0.82rem;font-weight:500;padding:8px 22px;border-radius:8px;cursor:pointer;transition:all 0.15s}.btn-save:hover{background:#225a3e}.field-row-model{margin-top:16px}.field-input-select{width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:8px;font-family:'DM Sans',monospace;font-size:0.85rem;color:var(--ink);background:var(--bg);outline:none;transition:border-color 0.15s;cursor:pointer}.field-input-select:focus{border-color:var(--accent)}.field-row-polish{margin-top:18px;display:flex;align-items:center;justify-content:space-between;gap:12px}.field-row-polish .polish-info{flex:1}.field-row-polish .polish-info .polish-label{font-size:0.85rem;color:var(--ink);font-weight:500;margin-bottom:2px}.field-row-polish .polish-info .polish-desc{font-size:0.7rem;color:var(--ink3);line-height:1.4}.switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}.switch input{opacity:0;width:0;height:0}.switch .slider{position:absolute;cursor:pointer;inset:0;background:#d0d0d0;border-radius:24px;transition:0.25s}.switch .slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.25s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}.switch input:checked + .slider{background:#d4af37}.switch input:checked + .slider::before{transform:translateX(20px)}.key-hint{margin-top:6px;font-size:0.68rem;color:var(--ink3);line-height:1.5}@media (max-width:700px){header{padding:14px 16px;gap:10px}.header-left{min-width:0;gap:8px}header h1{font-size:1.05rem;white-space:nowrap}.badge,.batch-count,.polish-chip-label{display:none}.header-right{gap:6px;flex-shrink:0}.polish-chip{padding:6px 8px}.btn-cancel-batch.visible{padding:6px 8px;font-size:0.68rem}.main-content{padding:20px 16px 120px}body[data-flow="empty"] .upload-zone{min-height:38vh;padding:34px 18px}body[data-flow="empty"] .upload-icon{font-size:42px}.lang-step,.mode-step{width:100%;padding:22px 18px;border-radius:16px}.mode-cards{grid-template-columns:1fr}.mode-btn{min-height:126px;padding:20px 16px}.mode-btn .action-icon{font-size:1.9rem}.queue-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}.robot-stage{position:fixed;bottom:18px;left:18px;z-index:500;pointer-events:none;opacity:0;transform:translateY(40px);transition:opacity 0.45s cubic-bezier(0.22,1,0.36,1),transform 0.45s cubic-bezier(0.22,1,0.36,1)}.robot-stage.visible{opacity:1;transform:translateY(0)}.robot{display:flex;flex-direction:column;align-items:center;position:relative;flex-shrink:0;gap:2px}.robot::after{content:'';position:absolute;bottom:-7px;width:44px;height:7px;background:rgba(14,22,20,0.08);border-radius:50%;z-index:-1;transition:all 0.3s ease}.robot.idle::after{animation:robotShadowFloat 3.2s ease-in-out infinite}@keyframes robotShadowFloat{0%,100%{transform:scale(1);opacity:0.12}50%{transform:scale(0.84);opacity:0.06}}.robot-svg{width:90px;height:90px;overflow:visible;filter:drop-shadow(0 9px 18px rgba(17,24,22,0.14));transition:transform 0.22s ease,filter 0.22s ease}.robot-shell{fill:#ffffff;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.robot-antenna,.robot-wave,.robot-mouth{fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}.robot-accent{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.robot-eye{--eye-x:0px;--eye-y:0px;--eye-blink:1;transform-box:fill-box;transform-origin:center;transition:transform 0.18s ease;transform:translate(var(--eye-x),var(--eye-y)) scaleY(var(--eye-blink));fill:#16221e}.robot-eye.blinking{--eye-blink:0.16}.robot .robot-mouth{stroke:#1a2621}.robot .robot-mouth-talk{fill:rgba(26,38,33,0.12);stroke-width:2}.robot .robot-mouth-surprised{fill:rgba(255,255,255,0.76)}.robot.scanner.active .robot-svg,.robot.translator.active .robot-svg{filter:drop-shadow(0 10px 18px rgba(17,24,22,0.16))}.robot.scanner .robot-accent{fill:#ffe2bf;stroke:#d8924a;stroke-width:1.6}.robot.scanner .robot-shell{fill:#fff7ec;stroke:#d8924a}.robot.scanner{color:#d8924a}.cat-nose{fill:#f0a3b1;stroke:#c47888;stroke-width:0.8;stroke-linejoin:round}.robot.scanner.surprised .robot-eye{--eye-blink:1.15}.robot.scanner.looking-up .robot-eye{--eye-y:-2px}.robot.translator .robot-accent{fill:#c89060;stroke:#8a5a30;stroke-width:1.6}.robot.translator .robot-shell{fill:#fdf3e6;stroke:#b8855a}.robot.translator{color:#8a5a30}.dog-nose{fill:#2a2018;stroke:none}.robot.idle .robot-svg{animation:robotFloat 3.4s ease-in-out infinite}@keyframes robotFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}.robot.talking .robot-svg{animation:robotTalkBob 0.28s ease-in-out infinite alternate}@keyframes robotTalkBob{from{transform:translateY(0) scale(1)}to{transform:translateY(-1.5px) scale(1.02,0.99)}}.robot.scanner .cat-tail{transform-origin:74px 62px;animation:catTailIdle 4.2s ease-in-out infinite}.robot.scanner.waving .cat-tail,.robot.scanner.excited .cat-tail{animation:catTailSwish 0.55s ease-in-out 4}@keyframes catTailIdle{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-4deg)}75%{transform:rotate(3deg)}}@keyframes catTailSwish{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-22deg)}75%{transform:rotate(18deg)}}.robot.translator .dog-tail{transform-origin:22px 62px;animation:dogTailIdle 3.6s ease-in-out infinite}.robot.translator.waving .dog-tail,.robot.translator.excited .dog-tail,.robot.translator.happy .dog-tail{animation:dogTailWag 0.32s ease-in-out infinite alternate}@keyframes dogTailIdle{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-6deg)}}@keyframes dogTailWag{from{transform:rotate(-18deg)}to{transform:rotate(22deg)}}.robot.excited .robot-svg{animation:robotExcited 0.38s ease-in-out infinite alternate}@keyframes robotExcited{from{transform:translateY(-1px) rotate(-1deg)}to{transform:translateY(-3px) rotate(1deg)}}.robot .robot-mouth-talk,.robot .robot-mouth-happy,.robot .robot-mouth-surprised{display:none}.robot.happy .robot-mouth-neutral,.robot.surprised .robot-mouth-neutral,.robot.talking .robot-mouth-neutral{display:none}.robot.happy .robot-mouth-happy{display:block}.robot.surprised .robot-mouth-surprised{display:block}.robot.talking .robot-mouth-talk{display:block}.robot:not(.happy):not(.surprised):not(.talking) .robot-mouth-neutral{display:block}.robot.looking-right .robot-eye{--eye-x:1.8px}.robot.looking-left .robot-eye{--eye-x:-1.8px}.robot.looking-up .robot-eye{--eye-y:-1.6px}.robot.happy .robot-eye{--eye-y:-1px}.speech-area{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;min-width:0;max-width:236px;z-index:10}.speech-bubble{position:relative;padding:10px 13px;border-radius:18px;font-size:0.84rem;font-weight:600;line-height:1.5;font-family:'Zen Kaku Gothic New','DM Sans',sans-serif;color:var(--ink);box-shadow:0 8px 18px rgba(18,24,21,0.1);animation:bubblePop 0.32s cubic-bezier(0.34,1.56,0.64,1);transform-origin:bottom center;letter-spacing:0.01em}@keyframes bubblePop{0%{opacity:0;transform:scale(0.8) translateY(15px)}100%{opacity:1;transform:scale(1) translateY(0)}}.speech-bubble.scanner-bubble{background:rgba(255,251,243,0.98);border:1.5px solid #f0c896;border-bottom-left-radius:6px;margin-right:8px;color:#8a5520}.speech-bubble.scanner-bubble::before{content:'🐱';margin-right:4px;font-size:0.95em}.speech-bubble.translator-bubble{background:rgba(252,246,236,0.98);border:1.5px solid #d6a878;border-bottom-right-radius:6px;margin-left:8px;align-self:flex-end;color:#6a4520}.speech-bubble.translator-bubble::before{content:'🐶';margin-right:4px;font-size:0.95em}.speech-name{display:none}.speech-bubble.fadeout{animation:bubbleFade 0.3s ease forwards}@keyframes bubbleFade{to{opacity:0;transform:scale(0.9) translateY(-5px)}}.robot-stage-inner{display:flex;align-items:flex-end;gap:12px;padding:10px 12px 8px;border-radius:24px;border:1px solid rgba(255,255,255,0.65);background:linear-gradient(180deg,rgba(255,255,255,0.9),rgba(246,250,247,0.84));box-shadow:0 16px 36px rgba(15,24,19,0.12);backdrop-filter:blur(10px)}.robot-col{display:flex;flex-direction:column;align-items:center}@media (max-width:700px){.robot-stage{left:10px;bottom:10px}.robot-stage-inner{gap:9px;padding:9px 10px 7px;border-radius:20px}.robot-svg{width:68px;height:68px}.speech-area{max-width:176px}.speech-bubble{font-size:0.8rem;padding:9px 11px}}</style>
+<style>
+.api-key-callout[hidden]{display:none!important}.api-key-callout{display:flex;align-items:center;gap:16px;margin:0 0 20px;padding:18px 20px;border:1px solid rgba(192,57,43,.28);border-left:5px solid #c0392b;border-radius:16px;background:linear-gradient(135deg,#fff8f3,#fff);box-shadow:0 16px 36px rgba(192,57,43,.12);animation:flowFadeIn .25s ease both}.api-key-callout-icon{font-size:1.8rem;line-height:1}.api-key-callout-copy{flex:1;min-width:0}.api-key-callout-title{font-family:'Noto Serif TC',serif;font-size:1.08rem;font-weight:700;color:#8f2e25;margin-bottom:3px}.api-key-callout-text{font-size:.82rem;color:var(--ink2);line-height:1.5}.api-key-callout-btn{border:none;border-radius:12px;background:#c0392b;color:#fff;font-family:inherit;font-size:.84rem;font-weight:800;padding:10px 16px;cursor:pointer;white-space:nowrap;box-shadow:0 10px 22px rgba(192,57,43,.18)}.api-key-callout-btn:hover{background:#a93226}.key-link-row{margin-top:8px;font-size:.76rem}.key-link-row a{color:var(--accent);font-weight:800;text-decoration:none}.key-link-row a:hover{text-decoration:underline}body[data-flow="mode"] .api-key-callout,body[data-flow="busy"] .api-key-callout,body[data-flow="done"] .api-key-callout{display:none!important}@media (max-width:700px){.api-key-callout{align-items:flex-start;flex-direction:column;gap:10px;padding:16px}.api-key-callout-btn{width:100%}}
+</style>
+<style>
+.app-logo{display:block;width:36px;height:36px;object-fit:cover;border-radius:10px;flex-shrink:0;box-shadow:0 4px 12px rgba(10,39,32,.22)}
+@media (max-width:700px){.app-logo{width:32px;height:32px;border-radius:9px}}
+</style>
+<style>
+.progress-bar-container{pointer-events:none}
+.progress-bar-meta{display:none}
+.progress-bar-track{height:100%;overflow:hidden}
+@media (max-width:700px){
+  .progress-bar-container{
+    bottom:env(safe-area-inset-bottom);
+    margin-bottom:8px;
+    left:12px;
+    right:12px;
+    height:auto;
+    padding:7px 10px 9px;
+    border:1px solid rgba(42,96,73,.25);
+    border-radius:14px;
+    background:rgba(255,255,255,.94);
+    box-shadow:0 10px 28px rgba(20,66,48,.18);
+    -webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);
+    transform:translateY(10px);
+    transition:opacity .25s ease,transform .25s ease;
+  }
+  .progress-bar-container.active{transform:translateY(0)}
+  .progress-bar-meta{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:5px;
+    color:#1f5a44;
+    font-size:.68rem;
+    font-weight:700;
+    line-height:1;
+    letter-spacing:.04em;
+  }
+  .progress-bar-meta strong{font-size:.72rem;font-variant-numeric:tabular-nums}
+  .progress-bar-track{height:6px;border-radius:999px;background:rgba(42,96,73,.14)}
+  .progress-bar{border-radius:999px;box-shadow:0 0 12px rgba(47,138,99,.42)}
+  body.progress-active .robot-stage{bottom:env(safe-area-inset-bottom);margin-bottom:58px}
+}
+</style>
+<style>
+.settings-card{min-height:0;max-height:90vh;max-height:90dvh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.settings-usage{margin-top:20px;border:1px solid rgba(42,96,73,.2);border-radius:13px;background:linear-gradient(135deg,rgba(232,242,238,.72),rgba(255,255,255,.96));overflow:hidden;font-variant-numeric:tabular-nums}
+.settings-usage summary{min-height:48px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;color:#1f5a44;font-size:.78rem;font-weight:800;list-style:none}
+.settings-usage summary::-webkit-details-marker{display:none}
+.settings-usage summary::after{content:'⌄';font-size:1rem;color:var(--ink3);transition:transform .18s}
+.settings-usage[open] summary::after{transform:rotate(180deg)}
+.settings-usage-summary{margin-left:auto;color:var(--ink2);font-size:.68rem;font-weight:700;text-align:right}
+.settings-usage-body{padding:0 13px 13px;border-top:1px solid rgba(42,96,73,.12)}
+.settings-usage-empty{padding:14px 0 2px;color:var(--ink3);font-size:.7rem;text-align:center}
+.settings-usage-content[hidden],.settings-usage-empty[hidden]{display:none!important}
+.settings-usage-head{padding:11px 0 8px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;font-size:.68rem;color:var(--ink3)}
+.settings-usage-head strong{color:var(--accent);font-size:.73rem}
+.usage-meter-rows{display:grid;gap:5px}
+.usage-row{display:grid;grid-template-columns:minmax(56px,.55fr) minmax(105px,1fr) minmax(86px,.7fr) minmax(88px,.7fr);align-items:center;gap:8px;padding:6px 8px;border:1px solid rgba(42,96,73,.12);border-radius:9px;background:#fff;font-size:.68rem;color:var(--ink2);font-variant-numeric:tabular-nums}
+.usage-stage{font-weight:800;color:#1f5a44}
+.usage-tokens{font-weight:700;color:var(--ink)}
+.usage-cost-usd{font-weight:800;color:#1e4fa3}
+.usage-cost-twd{color:#7b5e1b}
+.usage-row.usage-unavailable{grid-template-columns:minmax(56px,.55fr) 1fr;color:var(--ink3)}
+.usage-meter-note{margin-top:8px;color:var(--ink3);font-size:.6rem;line-height:1.45}
+@media (max-width:700px){
+  .settings-usage summary{min-height:52px}
+  .settings-usage-head{flex-direction:column;gap:3px}
+  .usage-row{grid-template-columns:52px minmax(0,1fr) auto;gap:4px 7px;padding:7px;font-size:.66rem}
+  .usage-cost-twd{grid-column:2 / 4;font-size:.62rem}
+  .usage-row.usage-unavailable{grid-template-columns:52px 1fr}
+}
+</style>
+<style>
+/* SETTINGS-IOS-2 */
+body.settings-open{overflow:hidden;overscroll-behavior:none}
+@media (max-width:700px), (max-height:700px) and (pointer:coarse){
+  header{
+    padding:calc(14px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 14px max(16px,env(safe-area-inset-left));
+  }
+  .main-content{
+    padding-left:max(16px,env(safe-area-inset-left));
+    padding-right:max(16px,env(safe-area-inset-right));
+  }
+  #settings-modal{
+    align-items:stretch;
+    justify-content:flex-start;
+    overflow-x:hidden;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    padding:0;
+  }
+  .settings-card{
+    flex:0 0 auto;
+    width:100%;
+    max-width:none;
+    min-height:100%;
+    max-height:none;
+    overflow:visible;
+    overscroll-behavior:auto;
+    -webkit-overflow-scrolling:auto;
+    touch-action:auto;
+    border-radius:0;
+    padding:calc(22px + env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));
+    animation:none;
+  }
+  .progress-bar-container{
+    left:max(12px,env(safe-area-inset-left));
+    right:max(12px,env(safe-area-inset-right));
+  }
+  .robot-stage{
+    left:max(10px,env(safe-area-inset-left));
+    bottom:max(10px,env(safe-area-inset-bottom));
+  }
+  .viewer-toolbar{
+    padding:calc(10px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));
+  }
+  .viewer-body{
+    padding:16px max(16px,env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+  }
+}
+</style>
+<style>
+/* PINCH-1 */
+.result-panel{touch-action:pan-x pan-y}
+.result-panels.pinch-active,
+.result-panels.pinch-active .panel-content{
+  -webkit-user-select:none;
+  user-select:none;
+}
+</style>
+<style>
+.export-restart{margin-left:auto;display:flex}
+.btn-restart{
+  min-height:48px;
+  padding:8px 16px;
+  border:0;
+  border-radius:12px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  color:#fff;
+  background:linear-gradient(135deg,#1f5a44,#2f8a63);
+  box-shadow:0 10px 24px rgba(31,90,68,.2);
+  font-family:inherit;
+  cursor:pointer;
+  transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
+}
+.btn-restart:hover{transform:translateY(-1px);box-shadow:0 13px 28px rgba(31,90,68,.26);filter:saturate(1.05)}
+.btn-restart:active{transform:translateY(0) scale(.98)}
+.btn-restart:focus-visible{outline:3px solid rgba(47,138,99,.3);outline-offset:3px}
+.btn-restart-icon{font-size:1.35rem;line-height:1}
+.btn-restart-copy{display:flex;flex-direction:column;align-items:flex-start;gap:1px;line-height:1.2}
+.btn-restart-copy strong{font-size:.84rem;letter-spacing:.03em}
+.btn-restart-copy small{font-size:.64rem;font-weight:500;color:rgba(255,255,255,.78)}
+@media (max-width:700px){
+  .export-toolbar.visible{align-items:stretch}
+  .export-buttons{width:100%}
+  .export-restart{width:100%;margin-left:0;padding-top:12px;border-top:1px solid var(--line)}
+  .btn-restart{width:100%;min-height:54px}
+}
+</style>
+</head>
+<body data-flow="empty">
+<header>
+  <div class="header-left">
+    <img class="app-logo" src="pet-ocr-logo.png" alt="" width="36" height="36" aria-hidden="true">
+    <h1>OCR 翻譯</h1>
+    <span class="badge">Batch</span>
+  </div>
+  <div class="header-right">
+    <div class="batch-count" id="batch-count"></div>
+    <button class="btn-cancel-batch" id="btn-cancel-batch" onclick="cancelBatch()" title="取消批次">⏹ 取消</button>
+    <button class="btn-settings" onclick="openSettings()" title="設定" aria-label="設定">⚙</button>
+  </div>
+</header>
+<!-- Progress bar -->
+<div class="progress-bar-container" id="progress-container" role="progressbar" aria-label="翻譯進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+  <div class="progress-bar-meta" aria-hidden="true">
+    <span>翻譯進度</span>
+    <strong id="progress-percent">0%</strong>
+  </div>
+  <div class="progress-bar-track">
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+</div>
+<!-- Toast container -->
+<div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
+<!-- Robot Mascot Stage -->
+<div class="robot-stage" id="robot-stage">
+  <div class="robot-stage-inner">
+    <div class="robot-col">
+      <div class="robot scanner idle" id="robot-scanner">
+        <svg class="robot-svg" viewBox="0 0 96 96" aria-hidden="true">
+          <path class="robot-wave cat-tail" d="M74 62 q16 -4 14 -22"></path>
+          <path class="robot-accent cat-ear" d="M26 34 L20 12 L40 26 Z"></path>
+          <path class="robot-accent cat-ear" d="M70 34 L76 12 L56 26 Z"></path>
+          <circle class="robot-shell" cx="48" cy="52" r="26"></circle>
+          <circle class="robot-eye" id="scan-eye-l" cx="39" cy="48" r="3.5"></circle>
+          <circle class="robot-eye" id="scan-eye-r" cx="57" cy="48" r="3.5"></circle>
+          <path class="cat-nose" d="M45 56 L51 56 L48 59.5 Z"></path>
+          <path class="robot-mouth robot-mouth-neutral" d="M42 62 q3 2.5 6 0 q3 2.5 6 0"></path>
+          <path class="robot-mouth robot-mouth-happy" d="M40 61 q4 5 8 0 q4 5 8 0"></path>
+          <ellipse class="robot-mouth robot-mouth-talk" cx="48" cy="64" rx="5" ry="3.5"></ellipse>
+          <circle class="robot-mouth robot-mouth-surprised" cx="48" cy="64" r="3.5"></circle>
+        </svg>
+      </div>
+    </div>
+    <div class="speech-area" id="speech-area"></div>
+    <div class="robot-col">
+      <div class="robot translator idle" id="robot-translator">
+        <svg class="robot-svg" viewBox="0 0 96 96" aria-hidden="true">
+          <path class="robot-wave dog-tail" d="M22 62 q-16 -4 -14 -22"></path>
+          <path class="robot-accent dog-ear" d="M26 30 q-10 6 -8 26 q8 2 12 -8 q2 -10 -4 -18 Z"></path>
+          <path class="robot-accent dog-ear" d="M70 30 q10 6 8 26 q-8 2 -12 -8 q-2 -10 4 -18 Z"></path>
+          <rect class="robot-shell" x="24" y="26" width="48" height="50" rx="24"></rect>
+          <circle class="robot-eye" id="trans-eye-l" cx="39" cy="48" r="3.5"></circle>
+          <circle class="robot-eye" id="trans-eye-r" cx="57" cy="48" r="3.5"></circle>
+          <ellipse class="dog-nose" cx="48" cy="57" rx="4" ry="3"></ellipse>
+          <path class="robot-mouth robot-mouth-neutral" d="M48 60 v3 M44 63 q4 2 8 0"></path>
+          <path class="robot-mouth robot-mouth-happy" d="M48 60 v3 M41 62 q7 6 14 0"></path>
+          <ellipse class="robot-mouth robot-mouth-talk" cx="48" cy="65" rx="5.5" ry="3.8"></ellipse>
+          <circle class="robot-mouth robot-mouth-surprised" cx="48" cy="65" r="3.8"></circle>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Settings Modal -->
+<div id="settings-modal">
+  <div class="settings-card">
+    <p class="settings-title">設定</p>
+    <div class="field-label">Gemini API Key</div>
+    <div class="field-row">
+      <input class="field-input" id="api-key-input" type="password" placeholder="貼上你的 API Key" autocomplete="off" spellcheck="false">
+      <button class="btn-eye" id="btn-eye" onclick="toggleKeyVisibility()" title="顯示/隱藏" aria-label="顯示或隱藏 API Key">👁</button>
+    </div>
+    <div class="key-link-row"><a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">取得 Gemini API Key</a></div>
+    <div class="key-hint">⚠ Key 會自動記憶於本機，僅在你發出請求時直接傳給 Google Gemini API。</div>
+    <div class="field-row-polish" style="display:none">
+      <div class="polish-info">
+        <div class="polish-label">✨ 自動潤稿</div>
+        <div class="polish-desc">關閉後僅執行 OCR + 翻譯，每張可省下 1 次 API 呼叫，演示更快</div>
+      </div>
+      <label class="switch" title="自動潤稿開關">
+        <input type="checkbox" id="polish-toggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <details class="settings-usage" id="settings-usage">
+      <summary>
+        <span>Gemini 用量與費用</span>
+        <strong class="settings-usage-summary" id="settings-usage-summary">尚無紀錄</strong>
+      </summary>
+      <div class="settings-usage-body">
+        <div class="settings-usage-empty" id="settings-usage-empty">完成 OCR、翻譯或潤稿後，這裡會顯示本次工作階段的用量。</div>
+        <div class="settings-usage-content" id="settings-usage-content" hidden>
+          <div class="settings-usage-head">
+            <strong id="settings-usage-total"></strong>
+            <span id="settings-usage-flags"></span>
+          </div>
+          <div class="usage-meter-rows" id="settings-usage-rows"></div>
+          <div class="usage-meter-note" id="settings-usage-note"></div>
+        </div>
+      </div>
+    </details>
+    <div class="settings-actions">
+      <span class="save-feedback" id="save-feedback">已儲存 ✓</span>
+      <button class="btn-test" id="btn-test" onclick="testApiKey()">測試連線</button>
+      <button class="btn-cancel" onclick="closeSettings()">取消</button>
+      <button class="btn-save" id="btn-save-key" onclick="saveApiKey()">儲存</button>
+    </div>
+  </div>
+</div>
+<!-- Fullscreen Viewer -->
+<div class="viewer-overlay" id="viewer-overlay">
+  <div class="viewer-toolbar">
+    <button onclick="closeViewer()">✕ 關閉</button>
+    <button onclick="shareViewerImage()">📤 分享</button>
+  </div>
+  <div class="viewer-body" id="viewer-body"></div>
+</div>
+
+<div class="app-layout">
+  <div class="main-content">
+    <div class="api-key-callout" id="api-key-callout" hidden>
+      <div class="api-key-callout-icon">🔑</div>
+      <div class="api-key-callout-copy">
+        <div class="api-key-callout-title">開始前先輸入 API Key</div>
+        <div class="api-key-callout-text">輸入後才能辨識圖片與翻譯內容。</div>
+      </div>
+      <button type="button" class="api-key-callout-btn" onclick="openSettings()">輸入 API Key</button>
+    </div>
+    <!-- Upload -->
+    <div class="upload-zone" id="drop-zone">
+      <div class="upload-icon">⬆︎</div>
+      <p class="upload-text"><strong>貼上圖片，自動辨識＋翻譯</strong></p>
+      <p class="upload-hint">支援多張圖片　｜　JPG、PNG、GIF、WebP　｜　上限 30 張、每張 10MB</p>
+      <input type="file" id="file-input" accept="image/*" multiple style="display:none">
+    </div>
+    <!-- Batch Queue -->
+    <div class="queue-section" id="queue-section">
+      <div class="queue-header">
+        <div class="queue-title">
+          待翻譯圖片
+          <span class="queue-pill" id="queue-pill">0</span>
+        </div>
+        <button class="btn-clear-queue" id="btn-clear" onclick="clearQueue()">清空佇列</button>
+      </div>
+      <div class="queue-grid" id="queue-grid">
+        <div class="queue-empty" id="queue-empty">
+          還沒有圖片喔，貼上或拖曳圖片就會出現在這裡 ✨
+        </div>
+      </div>
+    </div>
+    <div class="lang-step" id="lang-step" style="display:none">
+      <p class="step-title">選擇目標語言</p>
+      <select class="target-lang-select" id="target-lang-select" aria-label="選擇目標語言">
+        <option value="Traditional Chinese (Taiwan usage)">繁體中文（台灣）</option>
+      </select>
+      <button class="btn-next" id="btn-lang-next">下一步 →</button>
+    </div>
+    <div class="mode-step" id="mode-step" style="display:none">
+      <button class="btn-back" id="btn-mode-back">← 返回</button>
+      <p class="step-title">選擇翻譯模式</p>
+      <div class="mode-cards">
+        <button class="action-btn mode-btn disabled" id="btn-mode-quick" data-mode="quick" onclick="startSelectedLanguageBatch('quick')">
+          <span class="action-icon">⚡</span>
+          <span class="action-label">快速模式</span>
+          <span class="action-sub">速度優先</span>
+        </button>
+        <button class="action-btn mode-btn disabled" id="btn-mode-refined" data-mode="refined" onclick="startSelectedLanguageBatch('refined')">
+          <span class="action-icon">✨</span>
+          <span class="action-label">精緻模式</span>
+          <span class="action-sub">品質優先 · 約 3~5 分鐘</span>
+        </button>
+      </div>
+    </div>
+    <!-- Status -->
+    <div id="status-text"></div>
+    <!-- Results -->
+    <div class="results-section" id="results-section"></div>
+    <!-- Export Toolbar -->
+    <div class="export-toolbar" id="export-toolbar">
+      <div class="export-buttons">
+        <button class="btn-export" onclick="exportMergedImage(false)" title="將全部結果合併為圖片">🖼️ 圖片</button>
+        <button class="btn-export" onclick="exportMergedImage(true)" title="僅將譯文合併為圖片">🖼️ 譯文圖片</button>
+        <button class="btn-export" onclick="exportPdf()" title="合併成 PDF 文件">📄 PDF</button>
+        <button class="btn-export" onclick="exportPdf(true)" title="僅譯文 PDF">📄 譯文PDF</button>
+      </div>
+      <div class="export-restart">
+        <button class="btn-restart" type="button" onclick="restartApp()" title="重新載入頁面並上傳新檔">
+          <span class="btn-restart-icon" aria-hidden="true">↻</span>
+          <span class="btn-restart-copy">
+            <strong>重新開始</strong>
+            <small>清空本次結果並上傳新檔</small>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // ══════════════════════════════════
+  // ── Constants & Config ──
+  // ══════════════════════════════════
+  const STORAGE_KEY = 'ocr_gemini_api_key';
+  const STORAGE_MODEL_KEY = 'ocr_gemini_model';
+  const STORAGE_POLISH_KEY = 'ocr_polish_enabled';
+  const STORAGE_LANG_KEY = 'ocr_target_language';
+  const MODE_MODELS = Object.freeze({ quick: 'gemini-3.5-flash-lite', refined: 'gemini-3.6-flash' });
+  const DEFAULT_MODEL = MODE_MODELS.quick;
+  const VALID_MODELS = [MODE_MODELS.refined, MODE_MODELS.quick];
+  // ══ Autofast 變體：鎖定單一真相源（中央鎖，不讀/不寫原版偏好）══
+  const LOCKED_TARGET_LANG = 'Traditional Chinese (Taiwan usage)';
+  const LOCKED_MODEL = MODE_MODELS.quick;      // gemini-3.5-flash-lite
+  const LOCKED_POLISH_ENABLED = false;         // 每張固定 2 次 call：OCR + 翻譯
+  // true = 純 fit-page（長圖也整頁縮小）；false = 手機聰明模式（長圖改 fit-width）。A↔B 只改這行。
+  const AUTOFAST_STRICT_FITPAGE = true;
+  const MODEL_MIGRATION = {
+    'gemini-3.1-flash-lite-preview': 'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite': 'gemini-3.5-flash-lite',
+    'gemini-3-flash-preview': 'gemini-3.6-flash',
+    'gemini-3.5-flash': 'gemini-3.6-flash',
+  };
+  // 使用者只看到「快速 / 精緻」模式，技術型號對應在此（不在 UI 顯示型號）
+  // Google Gemini Developer API Standard 價格（USD / 1M tokens），更新日：2026-07-24。
+  // Gemini 2.5+ 預設啟用 implicit caching；cached input 依 context caching 費率估算。
+  // 輸出費用含 candidates 與 thoughts tokens。
+  const GEMINI_PRICE_USD_PER_MILLION = Object.freeze({
+    'gemini-3.5-flash-lite': Object.freeze({ input: 0.30, cachedInput: 0.03, output: 2.50 }),
+    'gemini-3.6-flash': Object.freeze({ input: 1.50, cachedInput: 0.15, output: 7.50 }),
+  });
+  const GEMINI_PRICE_EFFECTIVE_DATE = '2026-07-24';
+  const USD_TO_TWD_ESTIMATE = 32;
+  const USD_TO_TWD_ESTIMATE_DATE = '2026-07-23';
+  const MAX_FILES = 30;
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+  const MAX_RETRIES = 3;
+  const MAX_RESULT_CARDS = 20;
+
+  // ══════════════════════════════════
+  // ── DOM References ──
+  // ══════════════════════════════════
+  const fileInput = document.getElementById('file-input');
+  const dropZone = document.getElementById('drop-zone');
+  const statusText = document.getElementById('status-text');
+  const queueGrid = document.getElementById('queue-grid');
+  const queuePill = document.getElementById('queue-pill');
+  const queueEmpty = document.getElementById('queue-empty');
+  const batchCountEl = document.getElementById('batch-count');
+  const resultsSection = document.getElementById('results-section');
+  const progressContainer = document.getElementById('progress-container');
+  const progressBar = document.getElementById('progress-bar');
+  const progressPercent = document.getElementById('progress-percent');
+  const toastContainer = document.getElementById('toast-container');
+  const settingsModal = document.getElementById('settings-modal');
+  const apiKeyInput = document.getElementById('api-key-input');
+  const apiKeyCallout = document.getElementById('api-key-callout');
+  const saveFeedback = document.getElementById('save-feedback');
+  const btnTest = document.getElementById('btn-test');
+  const btnEye = document.getElementById('btn-eye');
+  const btnCancelBatch = document.getElementById('btn-cancel-batch');
+  const polishToggleInput = document.getElementById('polish-toggle');
+  const polishChip = document.getElementById('polish-chip');
+  const polishChipLabel = document.getElementById('polish-chip-label');
+  const targetLangSelect = document.getElementById('target-lang-select');
+  const btnLangNext = document.getElementById('btn-lang-next');
+  const btnModeBack = document.getElementById('btn-mode-back');
+
+  // ══════════════════════════════════
+  // ── State ──
+  // ══════════════════════════════════
+  let imageQueue = []; // { id, file, base64, mimeType, blobUrl }
+  let renderedBlobUrls = new Set(); // blob URLs used in result cards — do NOT revoke
+  let isProcessing = false;
+  let queueIdCounter = 0;
+  let queueEpoch = 0; // incremented on clearQueue to invalidate pending readers
+  let pendingReaders = 0; // number of FileReaders still in-flight
+  let lastUsedLang = '';
+  let lastUsedModel = ''; // 最近一次批次使用的型號（供單卡再次潤稿沿用同模式）
+  let batchAbortController = null; // AbortController for cancelling batch
+  let progressHideTimer = null;
+  const currentSessionUsageRecords = [];
+  let usageRecordSequence = 0;
+  const FLOW_STATES = new Set(['empty', 'queued', 'mode', 'busy', 'done']);
+
+  function setBatchProgress(value) {
+    const progress = Math.max(0, Math.min(100, Number(value) || 0));
+    const rounded = Math.round(progress);
+    progressBar.style.width = `${progress}%`;
+    progressPercent.textContent = `${rounded}%`;
+    progressContainer.setAttribute('aria-valuenow', String(rounded));
+  }
+
+  function setFlow(next) {
+    if (!FLOW_STATES.has(next)) return;
+    if (document.body.dataset.flow !== next) {
+      document.body.dataset.flow = next;
+    }
+  }
+
+  function restartApp() {
+    if (isProcessing) return;
+    if (!confirm('重新開始會清除本次所有結果與編輯，確定嗎？')) return;
+    window.location.reload();
+  }
+
+  function hasResultCards() {
+    return resultsSection.children.length > 0;
+  }
+
+  function settleFlowAfterQueueChange() {
+    if (isProcessing) return;
+    if (imageQueue.length === 0) {
+      setFlow(hasResultCards() ? 'done' : 'empty');
+    } else if (document.body.dataset.flow === 'busy' || document.body.dataset.flow === 'empty' || document.body.dataset.flow === 'done') {
+      setFlow('queued');
+    }
+  }
+
+  function onQueueItemAdded() {
+    const flow = document.body.dataset.flow;
+    if (flow === 'empty' || flow === 'done') setFlow('queued');
+  }
+
+  // ══════════════════════════════════
+  // ── HTML Sanitizer (XSS Protection) ──
+  // ══════════════════════════════════
+  function sanitizeUrlAttribute(value, attrName) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (attrName === 'src' && /^\s*data\s*:\s*image\//i.test(raw)) return raw;
+    try {
+      const url = new URL(raw, window.location.href);
+      const allowed = attrName === 'href' || attrName === 'xlink:href'
+        ? ['http:', 'https:', 'mailto:', 'tel:']
+        : ['http:', 'https:', 'blob:'];
+      return allowed.includes(url.protocol) ? raw : '';
+    } catch {
+      return '';
+    }
+  }
+
+  function sanitizeInlineStyle(value) {
+    const css = String(value || '');
+    if (/expression\s*\(|behavior\s*:|@import/i.test(css)) return '';
+    // OCR layout relies on inline CSS, but CSS url() can leak via remote beacons.
+    return css.replace(/url\s*\((?:[^)(]|\([^)]*\))*\)/gi, '');
+  }
+
+  function sanitizeHtml(dirty) {
+    const template = document.createElement('template');
+    template.innerHTML = dirty || '';
+
+    const dangerousTags = 'script,iframe,object,embed,form,input,textarea,select,button,link,meta,base,applet,style,noscript,template,svg,math';
+    template.content.querySelectorAll(dangerousTags).forEach(el => el.remove());
+
+    template.content.querySelectorAll('*').forEach(el => {
+      [...el.attributes].forEach(attr => {
+        const name = attr.name.toLowerCase();
+        if (name.startsWith('on')) {
+          el.removeAttribute(attr.name);
+          return;
+        }
+        if (['src', 'href', 'action', 'xlink:href'].includes(name)) {
+          const clean = sanitizeUrlAttribute(attr.value, name);
+          if (clean) el.setAttribute(attr.name, clean);
+          else el.removeAttribute(attr.name);
+          return;
+        }
+        if (name === 'style') {
+          const clean = sanitizeInlineStyle(attr.value);
+          if (clean.trim()) el.setAttribute(attr.name, clean);
+          else el.removeAttribute(attr.name);
+        }
+      });
+    });
+
+    return template.innerHTML;
+  }
+
+  // ══════════════════════════════════
+  // ── Safe API Response Parser ──
+  // ══════════════════════════════════
+  function extractModelText(data) {
+    if (data?.error) {
+      throw new Error(data.error.message || 'API error');
+    }
+    const candidates = data?.candidates;
+    if (!candidates || candidates.length === 0) {
+      const blockReason = data?.promptFeedback?.blockReason;
+      throw new Error(blockReason ? `Blocked: ${blockReason}` : 'No candidates returned');
+    }
+    const candidate = candidates[0];
+    if (candidate.finishReason === 'MAX_TOKENS') {
+      throw new Error('回應被截斷（MAX_TOKENS），內容不完整');
+    } else if (candidate.finishReason && candidate.finishReason !== 'STOP') {
+      throw new Error(`Response filtered: ${candidate.finishReason}`);
+    }
+    const text = candidate?.content?.parts
+      ?.map(part => part.text || '')
+      .join('')
+      .trim();
+    if (!text) {
+      throw new Error('Model returned empty text');
+    }
+    return text.replace(/```html|```/g, '').trim();
+  }
+
+  // ══════════════════════════════════
+  // ── Centralized Gemini API Caller (with retries & backoff) ──
+  // ══════════════════════════════════
+  function getApiKey() { return localStorage.getItem(STORAGE_KEY) || ''; }
+  function refreshApiKeyCallout() {
+    if (!apiKeyCallout) return;
+    apiKeyCallout.hidden = !!getApiKey();
+  }
+  function getModel() {
+    return LOCKED_MODEL; // autofast：中央鎖定 quick，不讀/不寫舊 storage（連 testApiKey 也吃這個）
+  }
+  function getMode() {
+    return 'quick'; // autofast：恆快速
+  }
+  function getPolishEnabled() {
+    return LOCKED_POLISH_ENABLED; // autofast：潤稿恆關，不讀/不寫 storage
+  }
+  // autofast：setPolishEnabled 已移除——它是唯一寫 STORAGE_POLISH_KEY 的路徑（會污染主版偏好）。
+  function syncPolishUi() {
+    const on = getPolishEnabled();
+    if (polishToggleInput) polishToggleInput.checked = on;
+    if (polishChip) polishChip.classList.toggle('on', on);
+    if (polishChipLabel) polishChipLabel.textContent = on ? '潤稿 開' : '潤稿 關';
+    if (polishChip) polishChip.title = on
+      ? '自動潤稿：開（點擊關閉以加速）'
+      : '自動潤稿：關（點擊開啟以提升品質）';
+  }
+
+  // ══════════════════════════════════
+  // ── Gemini token usage & estimated cost ──
+  // ══════════════════════════════════
+  function readUsageToken(value) {
+    const number = Number(value);
+    return Number.isFinite(number) && number >= 0 ? Math.round(number) : null;
+  }
+
+  function createGeminiUsageRecord(model, usageMetadata) {
+    const raw = usageMetadata && typeof usageMetadata === 'object' ? usageMetadata : {};
+    const promptTokens = readUsageToken(raw.promptTokenCount);
+    const candidateTokens = readUsageToken(raw.candidatesTokenCount);
+    const thinkingTokens = readUsageToken(raw.thoughtsTokenCount);
+    const reportedTotal = readUsageToken(raw.totalTokenCount);
+    const reportedCachedTokens = readUsageToken(raw.cachedContentTokenCount);
+    const cachedTokens = reportedCachedTokens === null
+      ? null
+      : (promptTokens === null ? reportedCachedTokens : Math.min(promptTokens, reportedCachedTokens));
+    const hasOutputBreakdown = candidateTokens !== null || thinkingTokens !== null;
+    const breakdownOutputTokens = hasOutputBreakdown
+      ? (candidateTokens || 0) + (thinkingTokens || 0)
+      : null;
+    const reportedOutputTokens = promptTokens !== null && reportedTotal !== null
+      ? Math.max(0, reportedTotal - promptTokens)
+      : null;
+    const outputTokens = breakdownOutputTokens !== null && reportedOutputTokens !== null
+      ? Math.max(breakdownOutputTokens, reportedOutputTokens)
+      : (breakdownOutputTokens ?? reportedOutputTokens);
+    const totalTokens = promptTokens !== null && outputTokens !== null
+      ? promptTokens + outputTokens
+      : reportedTotal;
+    const rates = GEMINI_PRICE_USD_PER_MILLION[model];
+    const canEstimateCost = !!rates && promptTokens !== null && outputTokens !== null;
+    const billedCachedTokens = cachedTokens || 0;
+    const nonCachedPromptTokens = promptTokens === null
+      ? null
+      : Math.max(0, promptTokens - billedCachedTokens);
+    const costUsd = canEstimateCost
+      ? (((nonCachedPromptTokens * rates.input)
+        + (billedCachedTokens * rates.cachedInput)
+        + (outputTokens * rates.output)) / 1_000_000)
+      : null;
+
+    return Object.freeze({
+      id: ++usageRecordSequence,
+      model,
+      promptTokens,
+      cachedTokens,
+      candidateTokens,
+      thinkingTokens,
+      outputTokens,
+      totalTokens,
+      costUsd,
+      costTwd: costUsd === null ? null : costUsd * USD_TO_TWD_ESTIMATE,
+      usageAvailable: totalTokens !== null,
+    });
+  }
+
+  function withUsageStage(stage, usageRecord) {
+    return Object.freeze({ ...usageRecord, stage });
+  }
+
+  function formatTokens(value) {
+    return Number.isFinite(value) ? Math.round(value).toLocaleString('zh-TW') : '—';
+  }
+
+  function toRoundedFixed(value, decimals) {
+    const factor = 10 ** decimals;
+    return (Math.round((value + Number.EPSILON) * factor) / factor).toFixed(decimals);
+  }
+
+  function formatUsdCost(value) {
+    if (!Number.isFinite(value)) return '費用未知';
+    if (value < 0.001) return `US$${toRoundedFixed(value, 6)}`;
+    if (value < 0.1) return `US$${toRoundedFixed(value, 4)}`;
+    return `US$${toRoundedFixed(value, 2)}`;
+  }
+
+  function formatTwdCost(value) {
+    if (!Number.isFinite(value)) return '';
+    return `約 NT$${value < 1 ? toRoundedFixed(value, 2) : toRoundedFixed(value, 1)}`;
+  }
+
+  function getUsageTotals(records) {
+    return records.reduce((totals, record) => {
+      if (Number.isFinite(record.totalTokens)) {
+        totals.tokens += record.totalTokens;
+        totals.tokenCalls++;
+      }
+      else totals.unknownCalls++;
+      if (Number.isFinite(record.costUsd)) {
+        totals.costUsd += record.costUsd;
+        totals.costTwd += record.costTwd;
+        totals.costedCalls++;
+      }
+      else if (Number.isFinite(record.totalTokens)) totals.uncostedCalls++;
+      return totals;
+    }, { tokens: 0, costUsd: 0, costTwd: 0, tokenCalls: 0, costedCalls: 0, unknownCalls: 0, uncostedCalls: 0 });
+  }
+
+  function getUsageStageLabel(stage, number) {
+    if (stage === 'ocr') return number > 1 ? `OCR #${number}` : 'OCR';
+    if (stage === 'translate') return number > 1 ? `翻譯 #${number}` : '翻譯';
+    if (stage === 'polish') return number > 1 ? `潤稿 #${number}` : '潤稿';
+    return 'Gemini';
+  }
+
+  function getUsageRowTitle(record) {
+    const mode = record.model === MODE_MODELS.refined ? '精緻模式' : '快速模式';
+    const detail = [
+      `輸入 ${formatTokens(record.promptTokens)}`,
+      ...(record.cachedTokens ? [`其中快取 ${formatTokens(record.cachedTokens)}`] : []),
+      `可見輸出 ${formatTokens(record.candidateTokens)}`,
+      `思考 ${formatTokens(record.thinkingTokens)}`,
+    ].join(' · ');
+    return `${mode}（${record.model}）｜${detail}`;
+  }
+
+  function renderUsageRows(records) {
+    const stageCounts = Object.create(null);
+    return records.map(record => {
+      stageCounts[record.stage] = (stageCounts[record.stage] || 0) + 1;
+      const label = getUsageStageLabel(record.stage, stageCounts[record.stage]);
+      if (!record.usageAvailable) {
+        return `<div class="usage-row usage-unavailable" title="${escapeHtml(record.model || '')}">
+          <span class="usage-stage">${escapeHtml(label)}</span>
+          <span>API 未回傳 token 用量，無法估算此筆費用</span>
+        </div>`;
+      }
+      return `<div class="usage-row" title="${escapeHtml(getUsageRowTitle(record))}">
+        <span class="usage-stage">${escapeHtml(label)}</span>
+        <span class="usage-tokens">${formatTokens(record.totalTokens)} tokens</span>
+        <span class="usage-cost-usd">${formatUsdCost(record.costUsd)}</span>
+        <span class="usage-cost-twd">${formatTwdCost(record.costTwd)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderSettingsUsage() {
+    const summaryEl = document.getElementById('settings-usage-summary');
+    const emptyEl = document.getElementById('settings-usage-empty');
+    const contentEl = document.getElementById('settings-usage-content');
+    const totalEl = document.getElementById('settings-usage-total');
+    const flagsEl = document.getElementById('settings-usage-flags');
+    const rowsEl = document.getElementById('settings-usage-rows');
+    const noteEl = document.getElementById('settings-usage-note');
+    if (!summaryEl || !emptyEl || !contentEl || !totalEl || !flagsEl || !rowsEl || !noteEl) return;
+    if (currentSessionUsageRecords.length === 0) {
+      summaryEl.textContent = '尚無紀錄';
+      emptyEl.hidden = false;
+      contentEl.hidden = true;
+      totalEl.textContent = '';
+      flagsEl.textContent = '';
+      rowsEl.innerHTML = '';
+      noteEl.textContent = '';
+      return;
+    }
+    const totals = getUsageTotals(currentSessionUsageRecords);
+    const tokenText = totals.tokenCalls ? `${formatTokens(totals.tokens)} tokens` : 'tokens 未知';
+    const usdText = totals.costedCalls ? formatUsdCost(totals.costUsd) : '費用未知';
+    const twdText = totals.costedCalls ? formatTwdCost(totals.costTwd) : '';
+    const flags = [
+      ...(totals.unknownCalls ? [`另有 ${totals.unknownCalls} 次未回傳用量`] : []),
+      ...(totals.uncostedCalls ? [`其中 ${totals.uncostedCalls} 次無法估算費用`] : []),
+    ];
+    summaryEl.textContent = `${tokenText} · ${usdText}`;
+    emptyEl.hidden = true;
+    contentEl.hidden = false;
+    totalEl.textContent = `合計 ${tokenText} · ${usdText}${twdText ? ` · ${twdText}` : ''}`;
+    flagsEl.textContent = flags.join(' · ');
+    rowsEl.innerHTML = renderUsageRows(currentSessionUsageRecords);
+    noteEl.textContent = `輸出計費含模型思考 tokens，快取輸入依 context caching 費率估算。依 ${GEMINI_PRICE_EFFECTIVE_DATE} Gemini Standard API 公開牌價估算；NT$ 匯率以 ${USD_TO_TWD_ESTIMATE_DATE} US$1 ≈ NT$${USD_TO_TWD_ESTIMATE} 粗估，免費額度內實際費用可能為 0。實際帳單以 Google Cloud Console 為準。`;
+  }
+
+  function addBatchUsageRecord(record) {
+    if (!record) return;
+    currentSessionUsageRecords.push(record);
+    if (settingsModal?.classList.contains('open')) renderSettingsUsage();
+  }
+
+  function abortableSleep(ms, signal) {
+    return new Promise((resolve, reject) => {
+      if (signal?.aborted) { reject(new DOMException('Aborted', 'AbortError')); return; }
+      const timer = setTimeout(resolve, ms);
+      signal?.addEventListener('abort', () => { clearTimeout(timer); reject(new DOMException('Aborted', 'AbortError')); }, { once: true });
+    });
+  }
+
+  async function callGemini(parts, { signal, model: modelOverride, systemInstruction, onUsage } = {}) {
+    const key = getApiKey();
+    const model = modelOverride || getModel();
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+    let lastError;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
+      try {
+        const reqBody = { contents: [{ parts }] };
+        if (systemInstruction) {
+          reqBody.systemInstruction = { parts: [{ text: systemInstruction }] };
+        }
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+          body: JSON.stringify(reqBody),
+          signal,
+        });
+
+        // Retry on 429 / 502 / 503 with exponential backoff
+        if (res.status === 429 || res.status === 502 || res.status === 503) {
+          const wait = Math.min(1000 * Math.pow(2, attempt) + Math.random() * 500, 16000);
+          await abortableSleep(wait, signal);
+          lastError = new Error(`HTTP ${res.status} (retry ${attempt + 1}/${MAX_RETRIES})`);
+          continue;
+        }
+
+        // Non-retryable client errors (400, 401, 403, 404…) — fail immediately
+        if (res.status >= 400 && res.status < 500) {
+          const data = await res.json().catch(() => ({}));
+          const err = new Error(data?.error?.message || `HTTP ${res.status}`);
+          err.nonRetryable = true;
+          throw err;
+        }
+
+        const data = await res.json();
+        if (res.ok && typeof onUsage === 'function') {
+          try {
+            onUsage(createGeminiUsageRecord(model, data?.usageMetadata));
+          } catch (usageError) {
+            console.warn('[usage] Failed to record Gemini usage:', usageError);
+          }
+        }
+        return extractModelText(data);
+
+      } catch (err) {
+        if (err.name === 'AbortError') throw err;
+        if (err.nonRetryable) throw err;
+        lastError = err;
+        if (attempt < MAX_RETRIES - 1) {
+          const wait = Math.min(1000 * Math.pow(2, attempt), 8000);
+          await abortableSleep(wait, signal);
+        }
+      }
+    }
+    throw lastError || new Error('Max retries exceeded');
+  }
+
+  // ══════════════════════════════════
+  // ── Funny Reactions ──
+  // ══════════════════════════════════
+  const reactions = {
+    'Traditional Chinese (Taiwan usage)': {
+      start: [
+        '翻譯大師出動！🔥', '開始施法：繁體化！✨', '台灣 NO.1！衝啊！🚀',
+        '正在把外語打成中文…💪', '啟動繁體結界！🛡️', '翻譯引擎：全力運轉！⚡',
+        '文字煉金術，開始！🧙', '吃我一記翻譯波動拳！👊',
+      ],
+      done: [
+        '翻譯完成！可以下班了嗎？😴', '大功告成！頒獎典禮在哪？🏆',
+        '搞定！這翻譯品質，我自己都感動 🥲', '完美落地！裁判請給分！💯',
+        '翻譯完畢，請簽收 📦', '任務完成！今天也是優秀的一天 ✌️',
+        '交貨！品質保證，不滿意可以…再按一次 😏',
+      ],
+      emoji: '🇹🇼'
+    },
+    'English': {
+      start: [
+        'Translating like a boss! 💼', 'English mode: ACTIVATED 🦅',
+        'Making it speak English… 🗽', 'Hold my tea, translating! 🍵',
+        'Deploying English protocol! 🚀', 'Translation turbo: ON! ⚡',
+        'Summoning the power of Shakespeare! 📜', 'Let\'s gooo! 🎯',
+      ],
+      done: [
+        'Done! That was brilliant! 🎩', 'Translation complete! *mic drop* 🎤',
+        'Nailed it! You\'re welcome 😎', 'Finished! Where\'s my trophy? 🏆',
+        'All done! English has entered the chat 💬',
+        'Mission accomplished! 🫡', 'That\'s a wrap! 🎬',
+      ],
+      emoji: '🇺🇸'
+    },
+    'Japanese': {
+      start: [
+        '翻訳開始！気合い入れるぞ！🔥', '日本語モード：起動！⚡',
+        'よっしゃ！翻訳するぜ！💪', '翻訳の呼吸…壱ノ型！🌊',
+        'いくぞ！全集中！🎯', '翻訳エンジン、フルスロットル！🚂',
+        'ただいま翻訳中…邪魔しないで！🙅', '翻訳忍法、発動！🥷',
+      ],
+      done: [
+        '完了！お疲れ様でした！🎉', '翻訳完了！天才かもしれない 🧠',
+        'できた！拍手をどうぞ！👏', '任務完了！ご褒美はラーメン 🍜',
+        'やったぜ！完璧だ！✨', '以上！異議なし！⚖️',
+        '終わり！今日も一日お疲れ様 🌅',
+      ],
+      emoji: '🇯🇵'
+    }
+  };
+
+  function getReaction(lang) {
+    if (reactions[lang]) return reactions[lang];
+    const label = targetLangSelect?.selectedOptions?.[0]?.textContent?.trim() || lang;
+    return {
+      start: [
+        `${label} 模式啟動，穩穩翻。`,
+        `目標：${label}。貓狗小隊開工。`,
+        `收到，翻成 ${label}。節奏走起。`,
+        `${label} 接線完成，開始處理。`,
+      ],
+      done: [
+        `${label} 版本完成，漂亮收工。`,
+        `完成！${label} 已上桌。`,
+        `翻譯完成，這波很順。`,
+        `任務完成，品質在線。`,
+      ]
+    };
+  }
+
+  // ══════════════════════════════════
+  // ── Queue Management ──
+  // ══════════════════════════════════
+  function updateQueueUI() {
+    const count = imageQueue.length;
+    queuePill.textContent = count + (pendingReaders > 0 ? `+${pendingReaders}` : '');
+    batchCountEl.innerHTML = count > 0 ? `待翻譯：<strong>${count}</strong> 張` : '';
+    queueEmpty.style.display = count === 0 && pendingReaders === 0 ? 'block' : 'none';
+    const btns = document.querySelectorAll('.action-btn');
+    btns.forEach(btn => {
+      if (count > 0 && !isProcessing && pendingReaders === 0) {
+        btn.classList.remove('disabled');
+      } else {
+        btn.classList.add('disabled');
+      }
+    });
+  }
+
+  // ── autofast：上傳後全自動啟動（debounce 120ms + 所有 reader settled 才啟動）──
+  let autoRunTimer = null;
+  let autoRunPendingKey = false; // 因缺 API Key 而延後，待「儲存」後由 saveApiKey 續跑一次
+  function scheduleAutoRun() {
+    if (autoRunTimer) clearTimeout(autoRunTimer);
+    autoRunTimer = setTimeout(() => {
+      autoRunTimer = null;
+      // 啟動條件：非處理中、無 pending reader、佇列非空。第一個成功啟動會同步把 isProcessing 設 true → 後續 timer 自動失效。
+      if (isProcessing || pendingReaders > 0 || imageQueue.length === 0) return;
+      if (!getApiKey()) autoRunPendingKey = true; // startBatch 會開設定；「儲存」後由 saveApiKey 續跑
+      startSelectedLanguageBatch();
+    }, 120);
+  }
+
+  function addToQueue(file) {
+    // ── File count limit（含 pending 中的）──
+    if (imageQueue.length + pendingReaders >= MAX_FILES) {
+      showToast(`最多 ${MAX_FILES} 張圖片！`);
+      return;
+    }
+    // ── File size limit ──
+    if (file.size > MAX_FILE_SIZE) {
+      showToast(`${file.name} 超過 10MB，已跳過`);
+      return;
+    }
+
+    const id = ++queueIdCounter;
+    const blobUrl = URL.createObjectURL(file);
+    const myEpoch = queueEpoch;
+    pendingReaders++;
+    updateQueueUI(); // disable buttons while readers pending
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      try {
+        // 若 clearQueue 已被呼叫（epoch 變了），丟棄結果
+        if (myEpoch !== queueEpoch) {
+          try { URL.revokeObjectURL(blobUrl); } catch(e) {}
+          return;
+        }
+        // autofast：讀檔失敗或結果非字串 → 跳過，避免 reader.result.split 在失敗時 throw
+        if (reader.error || typeof reader.result !== 'string') {
+          try { URL.revokeObjectURL(blobUrl); } catch(e) {}
+          showToast(`${file.name || '圖片'} 讀取失敗，已跳過`);
+          return;
+        }
+        // 再次檢查上限（防止並行 readers 超額）
+        if (imageQueue.length >= MAX_FILES) {
+          try { URL.revokeObjectURL(blobUrl); } catch(e) {}
+          showToast(`最多 ${MAX_FILES} 張圖片！`);
+          return;
+        }
+        const base64 = reader.result.split(',')[1];
+        let resolveSourceDimensions;
+        const sourceDimensionsReady = new Promise(resolve => { resolveSourceDimensions = resolve; });
+        const item = { id, file, base64, mimeType: file.type, blobUrl, sourceDimensionsReady };
+        imageQueue.push(item);
+        onQueueItemAdded();
+        const el = document.createElement('div');
+        el.className = 'queue-item';
+        el.id = `queue-item-${id}`;
+        const img = document.createElement('img');
+        img.onload = () => resolveSourceDimensions(recordItemSourceDimensions(item, img));
+        img.onerror = () => resolveSourceDimensions(0);
+        img.src = blobUrl;
+        img.alt = `圖片 ${id}`;
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-btn';
+        removeBtn.textContent = '✕';
+        removeBtn.onclick = () => removeFromQueue(id);
+        const numSpan = document.createElement('span');
+        numSpan.className = 'item-number';
+        numSpan.textContent = `#${imageQueue.length}`;
+        el.append(img, removeBtn, numSpan);
+        queueGrid.appendChild(el);
+      } finally {
+        // autofast：所有 settled 路徑收斂於此 → 遞減、更新 UI、嘗試全自動啟動（gate 在 scheduler 內）
+        pendingReaders--;
+        updateQueueUI();
+        scheduleAutoRun();
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeFromQueue(id) {
+    const removed = imageQueue.find(i => i.id === id);
+    if (removed) {
+      // Only revoke if NOT already used in a result card
+      if (removed.blobUrl && !renderedBlobUrls.has(removed.blobUrl)) {
+        try { URL.revokeObjectURL(removed.blobUrl); } catch(e) {}
+      }
+      removed.base64 = null;
+      removed.file = null;
+    }
+    imageQueue = imageQueue.filter(i => i.id !== id);
+    settleFlowAfterQueueChange();
+    const el = document.getElementById(`queue-item-${id}`);
+    if (el) {
+      el.style.transition = 'all 0.25s';
+      el.style.transform = 'scale(0) rotate(10deg)';
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.remove();
+        document.querySelectorAll('.queue-item .item-number').forEach((n, i) => {
+          n.textContent = `#${i + 1}`;
+        });
+        updateQueueUI();
+      }, 250);
+    }
+  }
+
+  function clearQueue() {
+    queueEpoch++; // invalidate any in-flight FileReaders
+    imageQueue.forEach(item => {
+      // Only revoke blob URLs NOT used in rendered result cards
+      if (item.blobUrl && !renderedBlobUrls.has(item.blobUrl)) {
+        try { URL.revokeObjectURL(item.blobUrl); } catch(e) {}
+      }
+      item.base64 = null;
+      item.file = null;
+    });
+    imageQueue = [];
+    queueIdCounter = 0;
+    // pendingReaders 不歸零，讓 onloadend 自行遞減並因 epoch 不符而丟棄
+    queueGrid.querySelectorAll('.queue-item').forEach(el => el.remove());
+    updateQueueUI();
+    settleFlowAfterQueueChange();
+  }
+
+  // ══════════════════════════════════
+  // ── Effects & Reactions (DOM-limited) ──
+  // ══════════════════════════════════
+  function showToast(text) {
+    toastContainer.innerHTML = '';
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = text;
+    toastContainer.appendChild(el);
+    setTimeout(() => { if (el.parentNode) el.remove(); }, 2000);
+  }
+
+  const MAX_EFFECTS = 25;
+
+  function spawnConfetti(count = 20) {
+    count = Math.min(count, MAX_EFFECTS);
+    document.querySelectorAll('.confetti-piece').forEach(e => e.remove());
+    const colors = ['#237354', '#3aab7a', '#1e4fa3', '#3d7fe8', '#c0321f', '#f05c42', '#f0c040', '#e87dd8'];
+    for (let i = 0; i < count; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = `${50 + (Math.random() - 0.5) * 60}vw`;
+      piece.style.top = `${40 + (Math.random() - 0.5) * 30}vh`;
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.setProperty('--dx', `${(Math.random() - 0.5) * 400}px`);
+      piece.style.setProperty('--dy', `${Math.random() * 500 + 150}px`);
+      piece.style.width = `${6 + Math.random() * 6}px`;
+      piece.style.height = `${6 + Math.random() * 6}px`;
+      piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      piece.style.animationDuration = `${1.5 + Math.random() * 1}s`;
+      document.body.appendChild(piece);
+      setTimeout(() => { if (piece.parentNode) piece.remove(); }, 2800);
+    }
+  }
+
+  function shakeScreen() {
+    document.body.classList.add('shaking');
+    setTimeout(() => document.body.classList.remove('shaking'), 500);
+  }
+
+  function emojiRain(emoji, count = 6) {
+    count = Math.min(count, 8);
+    document.querySelectorAll('.emoji-rain').forEach(e => e.remove());
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement('div');
+      el.className = 'emoji-rain';
+      el.textContent = emoji;
+      el.style.left = `${10 + Math.random() * 80}vw`;
+      el.style.top = `-40px`;
+      el.style.animationDelay = `${Math.random() * 1}s`;
+      el.style.fontSize = `${1.5 + Math.random() * 1}rem`;
+      document.body.appendChild(el);
+      setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
+    }
+  }
+
+  function randomPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  // ══════════════════════════════════
+  // ── Robot Mascot System ──
+  // ══════════════════════════════════
+  const robotStage = document.getElementById('robot-stage');
+  const speechArea = document.getElementById('speech-area');
+  const scannerBot = document.getElementById('robot-scanner');
+  const translatorBot = document.getElementById('robot-translator');
+  let blinkTimer = null;
+  let robotVisible = false;
+
+  function showRobots() {
+    if (robotVisible) return;
+    robotVisible = true;
+    robotStage.classList.add('visible');
+    startBlinking();
+  }
+
+  function hideRobots() {
+    stopIdleChat();
+    clearAllBubbles();
+    robotVisible = false;
+    robotStage.classList.remove('visible');
+    stopBlinking();
+    resetRobotState(scannerBot);
+    resetRobotState(translatorBot);
+  }
+
+  function resetRobotState(bot) {
+    bot.className = bot.id === 'robot-scanner' ? 'robot scanner idle' : 'robot translator idle';
+  }
+
+  function setRobotMood(bot, moods) {
+    const base = bot.id === 'robot-scanner' ? 'robot scanner' : 'robot translator';
+    bot.className = base + ' ' + moods.join(' ');
+  }
+
+  // ── Natural blinking with recursive setTimeout ──
+  function startBlinking() {
+    stopBlinking();
+    function scheduleBlink() {
+      if (!robotVisible) return;
+      const delay = 2000 + Math.random() * 3000;
+      blinkTimer = setTimeout(() => {
+        if (!robotVisible) return;
+        const eyes = [
+          document.getElementById('scan-eye-l'),
+          document.getElementById('scan-eye-r'),
+          document.getElementById('trans-eye-l'),
+          document.getElementById('trans-eye-r'),
+        ];
+        const pair = Math.random() > 0.5 ? [0, 1] : [2, 3];
+        pair.forEach(i => {
+          if (eyes[i]) {
+            eyes[i].classList.add('blinking');
+            setTimeout(() => eyes[i].classList.remove('blinking'), 220);
+          }
+        });
+        scheduleBlink();
+      }, delay);
+    }
+    scheduleBlink();
+  }
+
+  function stopBlinking() {
+    if (blinkTimer) { clearTimeout(blinkTimer); blinkTimer = null; }
+  }
+
+  // ── Speech bubble system ──
+  let speechQueue = [];
+  let speechBusy = false;
+  let speechEpoch = 0;  // race-condition guard
+
+  async function addSpeech(who, text, duration) {
+    return new Promise(resolve => {
+      speechQueue.push({ who, text, duration: duration || 2800, resolve });
+      if (!speechBusy) drainSpeechQueue();
+    });
+  }
+
+  async function drainSpeechQueue() {
+    if (speechBusy || speechQueue.length === 0) return;
+    speechBusy = true;
+    const myEpoch = speechEpoch;
+    while (speechQueue.length > 0 && myEpoch === speechEpoch) {
+      const { who, text, duration, resolve } = speechQueue.shift();
+      await showBubble(who, text, duration);
+      resolve();
+    }
+    if (myEpoch === speechEpoch) speechBusy = false;
+  }
+
+  function cycleBubble(limit = 2) {
+    return new Promise(resolve => {
+      if (speechArea.children.length < limit) {
+        resolve();
+        return;
+      }
+      const oldest = speechArea.children[0];
+      if (!oldest) {
+        resolve();
+        return;
+      }
+      oldest.classList.add('fadeout');
+      setTimeout(() => {
+        if (oldest.parentNode) oldest.remove();
+        resolve();
+      }, 160);
+    });
+  }
+
+  async function showBubble(who, text, duration) {
+    await cycleBubble(2);
+    return new Promise(resolve => {
+      const isScanner = who === 'scanner';
+      const bot = isScanner ? scannerBot : translatorBot;
+      const otherBot = isScanner ? translatorBot : scannerBot;
+      setRobotMood(bot, ['active', 'talking', isScanner ? 'looking-right' : 'looking-left']);
+      setRobotMood(otherBot, ['idle', isScanner ? 'looking-left' : 'looking-right']);
+      const bubble = document.createElement('div');
+      bubble.className = `speech-bubble ${who}-bubble`;
+      bubble.textContent = text;
+      speechArea.appendChild(bubble);
+      const talkTime = Math.min(text.length * 70, 1500);
+      setTimeout(() => {
+        setRobotMood(bot, ['active', 'happy', isScanner ? 'looking-right' : 'looking-left']);
+      }, talkTime);
+      setTimeout(resolve, duration);
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function clearAllBubbles() {
+    speechEpoch++;          // invalidate any in-flight drain
+    const stale = speechQueue.splice(0);
+    stale.forEach(item => item.resolve());  // unblock any awaiting callers
+    speechBusy = false;
+    speechArea.innerHTML = '';
+  }
+
+  // ══════════════════════════════════
+  // ── Dialogue Database ──
+  // ══════════════════════════════════
+  const greetingPairs = [
+    [{ who: 'scanner', text: '喵，開工！' }, { who: 'translator', text: '汪，上！' }],
+    [{ who: 'scanner', text: '字，我抓。' }, { who: 'translator', text: '意思，我翻。' }],
+    [{ who: 'scanner', text: '就位。' }, { who: 'translator', text: '出發。' }],
+  ];
+
+  // ── Idle chatter while waiting ──
+  const idleChatPairs = [];
+
+  let _idleChatTimer = null;
+  let _idleChatActive = false;
+
+  function startIdleChat() {
+    if (!idleChatPairs.length) return;
+    if (_idleChatActive) return;
+    _idleChatActive = true;
+    const usedIndices = new Set();
+    const schedule = () => {
+      if (!_idleChatActive) return;
+      const delay = 4000 + Math.random() * 4000;
+      _idleChatTimer = setTimeout(async () => {
+        if (!_idleChatActive) return;
+        if (usedIndices.size >= idleChatPairs.length) usedIndices.clear();
+        let idx;
+        do { idx = Math.floor(Math.random() * idleChatPairs.length); } while (usedIndices.has(idx));
+        usedIndices.add(idx);
+        const pair = idleChatPairs[idx];
+        for (const line of pair) {
+          if (!_idleChatActive) return;
+          await addSpeech(line.who, line.text, 2800);
+        }
+        schedule();
+      }, delay);
+    };
+    schedule();
+  }
+
+  function stopIdleChat() {
+    _idleChatActive = false;
+    if (_idleChatTimer) { clearTimeout(_idleChatTimer); _idleChatTimer = null; }
+  }
+
+  const scannerOcrQuips = ['掃描中。', '鎖定文字。', '看我的。', '喵，抓字。'];
+
+  const scannerDoneQuips = ['抓完，交棒。', '原文 OK。', '換你。'];
+
+  function scannerPageQuip(idx, total) {
+    return `第 ${idx}/${total} 張。`;
+  }
+
+  const translatorStartQuips = ['翻譯中。', '交給我。', '汪，開翻。'];
+
+  const translatorDoneQuips = ['翻好了。', '順。', '完成。'];
+
+  const scannerCheersQuips = ['漂亮。', '讚。', '下一張。'];
+
+  const allDoneScannerQuips = ['全部完成！', '收工！'];
+
+  const allDoneTranslatorQuips = ['汪，交付！', '完美。'];
+
+  // ── Robot dialogue controllers ──
+  async function robotGreeting() {
+    showRobots();
+    clearAllBubbles();
+    setRobotMood(scannerBot, ['active', 'waving', 'happy']);
+    setRobotMood(translatorBot, ['idle', 'looking-left']);
+    const pair = randomPick(greetingPairs);
+    for (const line of pair) {
+      await addSpeech(line.who, line.text, 1200);
+    }
+  }
+
+  async function robotOcrStart(imageIndex, total) {
+    stopIdleChat();
+    clearAllBubbles();
+    setRobotMood(scannerBot, ['active', 'looking-right']);
+    if (total > 1) {
+      await addSpeech('scanner', scannerPageQuip(imageIndex, total), 2000);
+    } else {
+      await addSpeech('scanner', randomPick(scannerOcrQuips), 2000);
+    }
+  }
+
+  async function robotOcrDone() {
+    await addSpeech('scanner', randomPick(scannerDoneQuips), 2000);
+  }
+
+  async function robotTranslateStart() {
+    setRobotMood(translatorBot, ['active', 'looking-left']);
+    await addSpeech('translator', randomPick(translatorStartQuips), 2000);
+  }
+
+  async function robotTranslateDone() {
+    setRobotMood(translatorBot, ['active', 'happy']);
+    await addSpeech('translator', randomPick(translatorDoneQuips), 2000);
+    setRobotMood(scannerBot, ['idle', 'happy', 'excited']);
+    await addSpeech('scanner', randomPick(scannerCheersQuips), 2000);
+  }
+
+  async function robotAllDone(count) {
+    clearAllBubbles();
+    setRobotMood(scannerBot, ['active', 'happy', 'excited']);
+    setRobotMood(translatorBot, ['active', 'happy']);
+    await addSpeech('scanner', randomPick(allDoneScannerQuips), 2500);
+    await addSpeech('translator', randomPick(allDoneTranslatorQuips), 2500);
+    setTimeout(() => hideRobots(), 3500);
+  }
+
+  async function robotError(msg) {
+    setRobotMood(scannerBot, ['active', 'surprised']);
+    setRobotMood(translatorBot, ['idle', 'surprised']);
+    await addSpeech('scanner', '喵？！', 2000);
+    await addSpeech('translator', '再試一次。', 2000);
+  }
+
+  // ══════════════════════════════════
+  // ── API Calls (OCR / Translate / Polish) ──
+  // ══════════════════════════════════
+  async function callGeminiOCR(base64Data, mimeType, signal, modelOverride, sourceWidth, onUsage) {
+    const sysInstr = `You are an expert Frontend Developer specializing in converting images to high-fidelity HTML.`;
+    const normalizedSourceWidth = normalizeSourceLayoutWidth(sourceWidth);
+    const widthContract = normalizedSourceWidth
+      ? `\n6. The source image is ${normalizedSourceWidth}px wide. Wrap the entire reconstruction in exactly one outermost wrapper element with inline style="width: ${normalizedSourceWidth}px; margin: 0; box-sizing: border-box;". Use this exact pixel width and zero outer margins on that wrapper. Lay out the reconstruction across the available wrapper width according to the source image proportions; do not place the document inside a narrower column or leave artificial unused horizontal whitespace. Do not use %, vw, max-width, fit-content, or a narrower centered wrapper for the outermost document.`
+      : '';
+    const outputRuleNumber = normalizedSourceWidth ? 7 : 6;
+    const prompt = `Convert this image to high-fidelity HTML.
+Rules:
+1. Use inline CSS for layout (flex/grid).
+2. Match colors, fonts, and positions as closely as possible.
+3. Preserve horizontal text as horizontal text. Japanese/Chinese/Korean language alone is NOT evidence of vertical writing.
+4. Use CSS "writing-mode: vertical-rl" ONLY when the source image visibly shows top-to-bottom vertical columns. For ordinary news pages, lists, headlines, cards, captions, and paragraphs arranged in left-to-right horizontal rows, DO NOT use writing-mode or narrow one-character columns.
+5. Avoid artificial narrow columns: give each text block enough width for normal words/phrases to wrap naturally.${widthContract}
+${outputRuleNumber}. Return ONLY raw HTML string. No markdown, no code fences.`;
+
+    return callGemini([
+      { text: prompt },
+      { inline_data: { mime_type: mimeType, data: base64Data } }
+    ], { signal, model: modelOverride, systemInstruction: sysInstr, onUsage });
+  }
+
+  async function callGeminiTranslate(html, lang, signal, modelOverride, onUsage) {
+    let localeRule = '';
+    if (/chinese/i.test(lang)) {
+      localeRule = '\n3. Use Taiwan Traditional Chinese phrasing (not Mainland China/HK usage).';
+    } else if (/japanese/i.test(lang)) {
+      localeRule = '\n3. Use natural, native Japanese (日本語) phrasing. Output MUST be in Japanese, NOT Chinese.';
+    } else if (/english/i.test(lang)) {
+      localeRule = '\n3. Use natural, fluent English phrasing.';
+    } else {
+      localeRule = `\n3. Use natural, native ${lang} phrasing.`;
+    }
+    const sysInstr = `You are a Localization Engineer. Your job is to translate HTML content while preserving all markup structure exactly.`;
+    const prompt = `Target language: ${lang}.
+Source HTML:
+${html}
+Rules:
+1. Keep all HTML structure, classes, and inline styles EXACTLY the same.
+2. Only translate visible text content.${localeRule}
+4. Return ONLY raw HTML string. No markdown, no code fences.`;
+
+    return callGemini([{ text: prompt }], { signal, model: modelOverride, systemInstruction: sysInstr, onUsage });
+  }
+
+  async function callGeminiPolish(sourceHtml, translatedHtml, lang, signal, modelOverride, onUsage) {
+    const sysInstr = `You are a senior translation editor and quality assurance specialist. Your job is to polish and elevate existing translations through deep revision along three axes: Precision, Localization, and Fluency. You always keep the translation in its designated target language — never switch languages.`;
+    let localeRule = '';
+    if (/Traditional Chinese/i.test(lang)) {
+      localeRule = '\n- For Traditional Chinese (Taiwan): use Taiwan-standard vocabulary, measure words, and expressions; strictly avoid Mainland China or Hong Kong phrasing';
+    }
+    const prompt = `Target language: ${lang}.
+The revised translation MUST remain entirely in ${lang}. Never rewrite it into any other language. If any part of the current translation is in the wrong language, translate that part into ${lang}.
+
+## Step 1: Deep Comprehension
+First, carefully re-read the source text to fully understand:
+- The overall meaning, intent, and nuance of the original
+- Any domain-specific terminology or context
+- The tone, register, and rhetorical purpose
+
+## Source HTML (original text):
+${sourceHtml}
+
+## Current Translation (target language: ${lang}):
+${translatedHtml}
+
+## Step 2: Three-Axis Quality Enhancement
+Revise the translation along these three axes:
+
+### Axis 1 — Precision
+- Fix any mistranslations, omissions, or additions
+- Ensure numbers, proper nouns, and technical terms are correct
+- Verify that the meaning faithfully reflects the source
+
+### Axis 2 — Localization
+- Use natural phrasing for the target locale of ${lang}${localeRule}
+- Adapt cultural references, units, or idioms appropriately for the target audience
+
+### Axis 3 — Fluency & Naturalness
+- Ensure the text reads as if originally written in ${lang}
+- Improve sentence rhythm, flow, and cohesion
+- Remove translationese — awkward calques, unnatural word order, or overly literal constructions
+- Maintain consistency in style and tone throughout
+
+## Output Rules:
+1. Keep ALL HTML structure, tags, classes, and inline styles EXACTLY the same as the current translation
+2. Only modify the visible text content
+3. The output language MUST be ${lang}
+4. Return ONLY the revised raw HTML string. No markdown, no code fences, no explanations.`;
+
+    return callGemini([{ text: prompt }], { signal, model: modelOverride, systemInstruction: sysInstr, onUsage });
+  }
+
+  // ══════════════════════════════════
+  // ── Batch Processing ──
+  // ══════════════════════════════════
+  function cancelBatch() {
+    if (batchAbortController) {
+      batchAbortController.abort();
+      showToast('正在取消…⏹');
+    }
+  }
+
+  function getSelectedLanguage() {
+    return LOCKED_TARGET_LANG; // autofast：單一台灣繁中
+  }
+
+  // 在語言面板高亮目前模式（讓使用者辨識最近 / Ctrl+Enter 會用哪個模式）
+  function syncModeUi(mode) {
+    const active = (mode === 'quick' || mode === 'refined') ? mode : getMode();
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.classList.toggle('mode-active', btn.dataset.mode === active);
+    });
+  }
+
+  // autofast：唯一批次入口。忽略任何傳入模式與舊 storage，永遠 locked quick + 台灣繁中；不持久化偏好。
+  function startSelectedLanguageBatch() {
+    syncModeUi('quick');
+    return startBatch(LOCKED_TARGET_LANG, LOCKED_MODEL);
+  }
+
+  btnLangNext?.addEventListener('click', () => {
+    if (imageQueue.length > 0 && !isProcessing) setFlow('mode');
+  });
+
+  btnModeBack?.addEventListener('click', () => {
+    if (imageQueue.length > 0 && !isProcessing) setFlow('queued');
+  });
+
+  async function startBatch(lang, modelOverride) {
+    if (imageQueue.length === 0 || isProcessing) return;
+    if (!getApiKey()) {
+      showToast('先設定 API Key 啦！⚙️');
+      shakeScreen();
+      refreshApiKeyCallout();
+      openSettings();
+      return;
+    }
+
+    autoRunPendingKey = false; // autofast：通過 key guard、真正開始批次 → 清掉過期等待旗標
+    setFlow('busy');
+    isProcessing = true;
+    try { // autofast：外層 try/catch/finally 保證 isProcessing 歸位＋非預期例外統一清理（防 mascot/DOM 例外卡死）
+    lastUsedLang = lang;
+    lastUsedModel = modelOverride || getModel();
+    // autofast：不寫原版 lang 偏好（localStorage 隔離）
+    batchAbortController = new AbortController();
+    const signal = batchAbortController.signal;
+    const r = getReaction(lang);
+    const polishEnabled = getPolishEnabled();
+    const stepsPerImage = polishEnabled ? 3 : 2; // OCR + Translate (+ Polish)
+    const totalSteps = imageQueue.length * stepsPerImage;
+    let completedSteps = 0;
+
+    // Show cancel button
+    btnCancelBatch.classList.add('visible');
+
+    // Epic start reaction
+    showToast(randomPick(r.start));
+    if ((lastUsedModel || getModel()) === MODE_MODELS.refined) {
+      showToast('精緻模式約需 3~5 分鐘，請稍候一下 ✨');
+    }
+    shakeScreen();
+
+    document.querySelectorAll('.action-btn').forEach(btn => {
+      btn.classList.add('disabled', 'processing-btn');
+    });
+
+    if (progressHideTimer !== null) {
+      clearTimeout(progressHideTimer);
+      progressHideTimer = null;
+    }
+    progressContainer.classList.add('active');
+    document.body.classList.add('progress-active');
+    setBatchProgress(0);
+
+    const items = [...imageQueue];
+
+    // Robots greet (awaited for ordering)
+    await robotGreeting();
+
+    let cancelled = false;
+
+    for (let i = 0; i < items.length; i++) {
+      if (signal.aborted) { cancelled = true; break; }
+
+      const item = items[i];
+      const captureUsage = stage => usageRecord => {
+        const stagedRecord = withUsageStage(stage, usageRecord);
+        addBatchUsageRecord(stagedRecord);
+      };
+      const queueEl = document.getElementById(`queue-item-${item.id}`);
+      if (queueEl) queueEl.classList.add('processing');
+
+      setStatus('spinner', `OCR 辨識中… (${i + 1}/${items.length})`);
+
+      // Robot: OCR start (fire-and-forget, don't block API call)
+      robotOcrStart(i + 1, items.length);
+
+      let ocrHtml = '';
+      try {
+        const sourceWidth = await getItemSourceWidthForOcr(item);
+        console.info(`[ocr] source-width contract: ${sourceWidth ? `${sourceWidth}px` : 'omitted (dimension unavailable)'}`);
+        ocrHtml = await callGeminiOCR(item.base64, item.mimeType, signal, lastUsedModel, sourceWidth, captureUsage('ocr'));
+        completedSteps++;
+        setBatchProgress((completedSteps / totalSteps) * 100);
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          cancelled = true;
+          appendResultCard(
+            item,
+            ocrHtml || '<div style="color:var(--ink3)">⏹ OCR 已取消</div>',
+            '<div style="color:var(--ink3)">⏹ 翻譯已取消</div>',
+            i + 1,
+          );
+          break;
+        }
+        if (queueEl) queueEl.classList.remove('processing');
+        await robotError(err.message);
+        appendResultCard(item, `<div style="color:#c0392b">OCR 失敗：${escapeHtml(err.message)}</div>`, '', i + 1);
+        completedSteps += stepsPerImage; // skip remaining steps for this image
+        setBatchProgress((completedSteps / totalSteps) * 100);
+        item.base64 = null;
+        continue;
+      }
+
+      // Free base64 memory immediately after OCR
+      item.base64 = null;
+
+      // Robot: OCR done (fire-and-forget)
+      robotOcrDone();
+
+      if (signal.aborted) {
+        cancelled = true;
+        appendResultCard(
+          item,
+          ocrHtml,
+          '<div style="color:var(--ink3)">⏹ 翻譯已取消</div>',
+          i + 1,
+        );
+        break;
+      }
+
+      setStatus('spinner', `翻譯中… (${i + 1}/${items.length})`);
+
+      // Robot: Translate start (fire-and-forget)
+      robotTranslateStart();
+
+      let transHtml = '';
+      let translationOk = false;
+      try {
+        transHtml = await callGeminiTranslate(ocrHtml, lang, signal, lastUsedModel, captureUsage('translate'));
+        translationOk = true;
+        completedSteps++;
+        setBatchProgress((completedSteps / totalSteps) * 100);
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          cancelled = true;
+          appendResultCard(
+            item,
+            ocrHtml,
+            transHtml || '<div style="color:var(--ink3)">⏹ 翻譯已取消</div>',
+            i + 1,
+          );
+          break;
+        }
+        transHtml = `<div style="color:#c0392b">翻譯失敗：${escapeHtml(err.message)}</div>`;
+        completedSteps += polishEnabled ? 2 : 1; // skip Translate (+ Polish)
+        setBatchProgress((completedSteps / totalSteps) * 100);
+      }
+
+      const finalOcr = ocrHtml;
+      ocrHtml = null;
+
+      // Robot: Translate done (fire-and-forget)
+      robotTranslateDone();
+
+      // ── Auto-polish ──
+      let polished = false;
+      if (polishEnabled && translationOk && !signal.aborted) {
+        setStatus('spinner', `潤稿中… (${i + 1}/${items.length})`);
+        // Robot: Polish start (fire-and-forget)
+        robotPolishStart();
+        try {
+          const polishedHtml = await callGeminiPolish(finalOcr, transHtml, lang, signal, lastUsedModel, captureUsage('polish'));
+          transHtml = polishedHtml;
+          polished = true;
+        } catch (err) {
+          if (err.name === 'AbortError') {
+            cancelled = true;
+            appendResultCard(
+              item,
+              finalOcr,
+              transHtml || '<div style="color:var(--ink3)">⏹ 潤稿已取消</div>',
+              i + 1,
+            );
+            break;
+          }
+          // Polish failed — keep original translation, not a fatal error
+        }
+        completedSteps++;
+        setBatchProgress((completedSteps / totalSteps) * 100);
+      }
+
+      if (queueEl) {
+        queueEl.classList.remove('processing');
+        queueEl.classList.add('done');
+      }
+
+      appendResultCard(item, finalOcr, transHtml, i + 1);
+
+      // Mark polish indicator if polished
+      if (polished) {
+        const lastCard = resultsSection.lastElementChild;
+        if (lastCard) {
+          const polishInd = lastCard.querySelector('.polish-indicator');
+          if (polishInd) polishInd.classList.add('visible');
+          const polishBtn = lastCard.querySelector('.btn-polish');
+          if (polishBtn) {
+            polishBtn.classList.add('done-polish');
+            polishBtn.innerHTML = '<span class="polish-icon">✨</span> 再次潤稿';
+          }
+        }
+      }
+    }
+
+    // Hide cancel button
+    btnCancelBatch.classList.remove('visible');
+
+    if (cancelled) {
+      setStatus('', '⏹ 已取消');
+      showToast('批次已取消 ⏹');
+      hideRobots();
+    } else {
+      // Epic done reaction
+      setTimeout(() => {
+        showToast(randomPick(r.done));
+        spawnConfetti(20);
+        emojiRain('🎉', 5);
+      }, 300);
+      // Robot: All done (awaited)
+      await robotAllDone(items.length);
+      setStatus('', `✓ 全部完成！共 ${items.length} 張`);
+    }
+
+    if (cancelled) {
+      progressContainer.classList.remove('active');
+      document.body.classList.remove('progress-active');
+    } else {
+      setBatchProgress(100);
+      progressHideTimer = setTimeout(() => {
+        progressContainer.classList.remove('active');
+        document.body.classList.remove('progress-active');
+        progressHideTimer = null;
+      }, 1500);
+    }
+
+    } catch (err) {
+      // autofast：非預期例外（如 robotGreeting/robotAllDone throw）→ 統一清理並「吞掉」，
+      // 避免 progress UI 殘留、以及 auto-run/Ctrl+Enter 未 await 造成的 unhandled promise rejection。
+      console.error('[batch] unexpected error:', err);
+      try { hideRobots(); } catch (_) {}
+      if (progressHideTimer !== null) { clearTimeout(progressHideTimer); progressHideTimer = null; }
+      progressContainer.classList.remove('active');
+      document.body.classList.remove('progress-active');
+      setStatus('', '⚠ 發生非預期錯誤，已停止');
+      showToast('發生非預期錯誤，已停止 ⚠');
+    } finally {
+      isProcessing = false;
+      batchAbortController = null;
+      btnCancelBatch.classList.remove('visible');
+      // autofast：取消或完成都清未處理 queue、保留結果卡；務必在 isProcessing=false 之後呼叫，
+      // settleFlowAfterQueueChange 才會正確落 done/empty（不自動重啟，要再跑就重新上傳）。
+      clearQueue();
+      document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.classList.remove('processing-btn');
+      });
+      updateQueueUI();
+    }
+  }
+
+  // ══════════════════════════════════
+  // ── Result Card Rendering ──
+  // ══════════════════════════════════
+  function appendResultCard(item, ocrHtml, transHtml, index) {
+    while (resultsSection.children.length >= MAX_RESULT_CARDS) {
+      const oldest = resultsSection.children[0];
+      const oldPanels = oldest.querySelector('.result-panels');
+      if (oldPanels?.id) {
+        finishPinchForCard(oldPanels.id, false);
+        delete syncState[oldPanels.id];
+        delete cardViewState[oldPanels.id];
+      }
+      // Revoke blob URL used by this card to free memory
+      const oldThumb = oldest.querySelector('.result-thumb');
+      if (oldThumb?.src && oldThumb.src.startsWith('blob:')) {
+        renderedBlobUrls.delete(oldThumb.src);
+        try { URL.revokeObjectURL(oldThumb.src); } catch(e) {}
+      }
+      oldest.remove();
+      showToast('已移除最舊的結果以節省記憶體 🗑️');
+    }
+
+    // Track this blob URL as "rendered" — do not revoke it
+    if (item.blobUrl) renderedBlobUrls.add(item.blobUrl);
+
+    // ── Sanitize model-generated HTML ──
+    const safeOcrHtml = sanitizeHtml(ocrHtml);
+    const safeTransHtml = sanitizeHtml(transHtml);
+
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    const cardId = `result-${Date.now()}-${index}`;
+    card.dataset.lang = lastUsedLang;
+    card.dataset.model = lastUsedModel; // 供單卡「再次潤稿」沿用同一模式型號
+
+    card.innerHTML = `
+      <div class="result-header">
+        <img class="result-thumb" src="${item.blobUrl}" alt="">
+        <div class="result-meta">圖片 #${index}</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn-ghost" onclick="copyResult('${cardId}', 'ocr')">複製原文</button>
+          <button class="btn-ghost" onclick="copyResult('${cardId}', 'trans')">複製譯文</button>
+          <button class="btn-ghost" onclick="downloadResultImage('${cardId}', ${index}, event)">📥 下載圖</button>
+        </div>
+      </div>
+      <div class="card-toolbar" data-card="${cardId}">
+        <button type="button" class="zoom-btn" data-mode="fit-page">符合頁面</button>
+        <button type="button" class="zoom-btn" data-mode="fit-width">符合寬度</button>
+        <button type="button" class="zoom-btn" data-mode="actual">1:1</button>
+        <input type="range" class="zoom-slider" min="50" max="200" step="5" value="100" aria-label="縮放">
+        <span class="zoom-pct">100%</span>
+        <button type="button" class="edit-hint" data-act="edit-fit">放大以編輯</button>
+      </div>
+      <div class="result-panels" id="${cardId}" data-layout="tb">
+        <div class="result-panel" data-type="ocr">
+          <div class="result-panel-label"><span class="dot" style="background:#aaa"></span>原文 OCR</div>
+          <div class="panel-content" contenteditable="true" role="textbox" aria-label="原文 OCR" aria-multiline="true">${safeOcrHtml}</div>
+        </div>
+        <div class="result-panel" data-type="trans">
+          <div class="result-panel-label" style="justify-content:space-between;">
+            <span style="display:flex;align-items:center;gap:6px;">
+              <span class="dot" style="background:var(--accent)"></span>譯文
+              <span class="polish-indicator" id="polish-ind-${cardId}">✨ 已潤稿</span>
+            </span>
+            <button class="btn-polish" id="polish-btn-${cardId}" onclick="polishTranslation('${cardId}')">
+              <span class="polish-icon">✨</span> 潤稿
+            </button>
+          </div>
+          <div class="panel-content" contenteditable="true" role="textbox" aria-label="譯文" aria-multiline="true">${safeTransHtml}</div>
+        </div>
+      </div>
+    `;
+    resultsSection.appendChild(card);
+    const sourceWidth = rememberCardSourceDimensions(card, item);
+    stabilizeGeneratedLayout(card, sourceWidth);
+    initCardView(cardId);
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setupSyncScroll(cardId);
+    updateExportToolbar();
+  }
+
+  // ── 檢視/縮放狀態（per-card）──
+  const cardViewState = {};
+  const ZOOM_MIN = 0.5, ZOOM_MAX = 2.0, FIT_FLOOR = 0.05;
+  const AUTO_LR_MIN_SCALE = 0.45;
+  const AUTO_LR_TO_TB_SCALE = 0.43;
+  const AUTO_TB_TO_LR_SCALE = 0.5;
+  const MOBILE_AUTO_FIT_PAGE_MIN_SCALE = 0.65;
+  const MOBILE_FIT_MIN_SCALE = 0.65;
+  const LAYOUT_MOBILE_QUERY = '(max-width: 860px)';
+  const SOURCE_LAYOUT_MIN_W = 320;
+  const SOURCE_LAYOUT_MAX_W = 2200;
+  const CAPTURE_PANEL_X_PADDING = 40;
+  const FALLBACK_CAPTURE_SINGLE_W = 800;
+  const CAPTURE_CONTENT_MIN_W = 600;
+  const CAPTURE_BBOX_MIN_INK_W = 64;
+  const CAPTURE_CROP_MIN_GAIN = 0.10;
+  const CAPTURE_CONTENT_COVERAGE = 0.98;
+
+  function normalizeSourceLayoutWidth(value) {
+    const width = Number(value);
+    if (!Number.isFinite(width) || width <= 0) return 0;
+    return Math.max(SOURCE_LAYOUT_MIN_W, Math.min(SOURCE_LAYOUT_MAX_W, Math.round(width)));
+  }
+
+  function normalizeSourceLayoutHeight(value) {
+    const height = Number(value);
+    return Number.isFinite(height) && height > 0 ? Math.round(height) : 0;
+  }
+
+  function recordItemSourceDimensions(item, img) {
+    if (!item || !img) return 0;
+    const sourceWidth = normalizeSourceLayoutWidth(img.naturalWidth);
+    if (!sourceWidth) return 0;
+    item.sourceWidth = sourceWidth;
+    const sourceHeight = normalizeSourceLayoutHeight(img.naturalHeight);
+    if (sourceHeight) item.sourceHeight = sourceHeight;
+    return sourceWidth;
+  }
+
+  async function getItemSourceWidthForOcr(item) {
+    let sourceWidth = normalizeSourceLayoutWidth(item?.sourceWidth);
+    if (!sourceWidth && item?.sourceDimensionsReady) {
+      try {
+        sourceWidth = normalizeSourceLayoutWidth(await item.sourceDimensionsReady);
+      } catch(e) {}
+    }
+    return sourceWidth || normalizeSourceLayoutWidth(item?.sourceWidth) || undefined;
+  }
+
+  function findResultPanels(scope) {
+    return scope?.matches?.('.result-panels')
+      ? scope
+      : scope?.closest?.('.result-panels') || scope?.querySelector?.('.result-panels') || null;
+  }
+
+  function findResultCard(scope) {
+    return scope?.matches?.('.result-card')
+      ? scope
+      : scope?.closest?.('.result-card') || scope?.querySelector?.('.result-card') || null;
+  }
+
+  function getSourceLayoutWidth(scope) {
+    const panels = findResultPanels(scope);
+    const card = findResultCard(scope);
+    return normalizeSourceLayoutWidth(panels?.dataset.sourceWidth || card?.dataset.sourceWidth);
+  }
+
+  function setCardSourceDimensions(card, width, height) {
+    const sourceWidth = normalizeSourceLayoutWidth(width);
+    if (!card || !sourceWidth) return 0;
+    const sourceHeight = normalizeSourceLayoutHeight(height);
+    card.dataset.sourceWidth = String(sourceWidth);
+    if (sourceHeight) card.dataset.sourceHeight = String(sourceHeight);
+    const panels = card.querySelector('.result-panels');
+    if (panels) {
+      panels.dataset.sourceWidth = String(sourceWidth);
+      if (sourceHeight) panels.dataset.sourceHeight = String(sourceHeight);
+    }
+    return sourceWidth;
+  }
+
+  function rememberCardSourceDimensions(card, item) {
+    const knownWidth = setCardSourceDimensions(card, item?.sourceWidth, item?.sourceHeight);
+    const thumb = card.querySelector('.result-thumb');
+    const applyFromThumb = () => {
+      const sourceWidth = recordItemSourceDimensions(item, thumb);
+      if (!sourceWidth) return;
+      setCardSourceDimensions(card, item.sourceWidth, item.sourceHeight);
+      stabilizeGeneratedLayout(card, sourceWidth);
+      const panels = card.querySelector('.result-panels');
+      if (panels?.id && cardViewState[panels.id]) applyCardZoom(panels.id);
+    };
+    if (thumb) {
+      if (thumb.complete && thumb.naturalWidth) applyFromThumb();
+      else thumb.addEventListener('load', applyFromThumb, { once: true });
+    }
+    return knownWidth || getSourceLayoutWidth(card);
+  }
+
+  function isMobileLayout() {
+    return window.matchMedia(LAYOUT_MOBILE_QUERY).matches;
+  }
+
+  function chooseAutoLayout(panels, contentWidth, currentLayout) {
+    if (!panels || isMobileLayout()) return 'tb';
+    const sourceWidth = getSourceLayoutWidth(panels);
+    const layoutWidth = Math.max(contentWidth || 0, sourceWidth || 0);
+    const availableHalfWidth = Math.max(1, panels.clientWidth / 2 - CAPTURE_PANEL_X_PADDING);
+    const lrScale = Math.min(1, availableHalfWidth / Math.max(1, layoutWidth));
+    if (currentLayout === 'lr') return lrScale < AUTO_LR_TO_TB_SCALE ? 'tb' : 'lr';
+    if (currentLayout === 'tb') return lrScale > AUTO_TB_TO_LR_SCALE ? 'lr' : 'tb';
+    return lrScale >= AUTO_LR_MIN_SCALE ? 'lr' : 'tb';
+  }
+
+  function getEffectiveLayout(scope, transOnly) {
+    if (transOnly) return 'tb';
+    const panels = findResultPanels(scope);
+    return panels?.dataset.layout === 'lr' ? 'lr' : 'tb';
+  }
+
+  function getCaptureFrameWidth(scope, transOnly) {
+    const layout = getEffectiveLayout(scope, transOnly);
+    const sourceWidth = getSourceLayoutWidth(scope);
+    const panelWidth = sourceWidth ? sourceWidth + CAPTURE_PANEL_X_PADDING : FALLBACK_CAPTURE_SINGLE_W;
+    return layout === 'lr' ? panelWidth * 2 : panelWidth;
+  }
+
+  function applyCaptureLayoutStyle(clone, layout, width, transOnly) {
+    if (transOnly) {
+      clone.dataset.layout = 'tb';
+      clone.style.cssText = `display:block;min-height:auto;width:${width}px;`;
+      return;
+    }
+    const effective = layout === 'lr' ? 'lr' : 'tb';
+    clone.dataset.layout = effective;
+    const columns = effective === 'lr' ? '1fr 1fr' : '1fr';
+    clone.style.cssText = `display:grid;grid-template-columns:${columns};min-height:auto;width:${width}px;`;
+  }
+
+  function recomputeSync(cardId) {
+    const panels = document.getElementById(cardId);
+    if (!panels) return;
+    const ps = panels.querySelectorAll('.result-panel');
+    const st = syncState[cardId];
+    // 同步開啟時：取 source 側比例 → 套到對側，維持兩區同步（不能只 clamp）
+    if (st && st.enabled && ps.length >= 2) {
+      const src = (st.lastSource === 'trans') ? ps[1] : ps[0]; // 預設以 OCR(上) 為 source
+      const dst = (src === ps[0]) ? ps[1] : ps[0];
+      const srcMax = src.scrollHeight - src.clientHeight;
+      const ratio = srcMax > 0 ? src.scrollTop / srcMax : 0;
+      const dstMax = Math.max(0, dst.scrollHeight - dst.clientHeight);
+      st.busy = true;
+      dst.scrollTop = ratio * dstMax;
+      requestAnimationFrame(() => { st.busy = false; });
+    }
+    // 最後 clamp 兩側 scrollTop 回合法範圍
+    ps.forEach(p => {
+      const max = Math.max(0, p.scrollHeight - p.clientHeight);
+      if (p.scrollTop > max) p.scrollTop = max;
+    });
+  }
+
+  function initCardView(cardId) {
+    if (!cardViewState[cardId]) {
+      const mobile = isMobileLayout();
+      cardViewState[cardId] = {
+        // A（strict）一律 fit-page；B 保留手機聰明選擇。A↔B 只由 AUTOFAST_STRICT_FITPAGE 決定。
+        zoomMode: AUTOFAST_STRICT_FITPAGE ? 'fit-page' : (mobile ? 'fit-page' : 'actual'),
+        scale: 1,
+        layout: 'auto',
+        autoViewPending: AUTOFAST_STRICT_FITPAGE ? false : mobile,
+        fontsPending: true, // 與 fit-page/fit-width 選擇脫鉤：A/B 都等字型穩定再量（Codex 點4）
+      };
+    }
+    applyCardZoom(cardId);
+  }
+
+  // ── PINCH-1：卡片內雙指縮放（Pointer-first；舊環境用 Touch fallback）──
+  const pinchPointerRecords = new Map();
+  const pinchTouchRecords = new Map();
+  const activePinchGestures = new Map();
+
+  function clampZoomScale(value) {
+    return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Number(value) || 1));
+  }
+
+  function getPinchMidpoint(a, b) {
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  }
+
+  function getPinchDistance(a, b) {
+    return Math.hypot(b.x - a.x, b.y - a.y);
+  }
+
+  function isCardPinching(cardId) {
+    return activePinchGestures.has(cardId);
+  }
+
+  function measurePinchNaturalHeights(cardId) {
+    const panels = document.getElementById(cardId);
+    const state = cardViewState[cardId];
+    const contents = panels ? Array.from(panels.querySelectorAll('.panel-content')) : [];
+    if (!panels || !state || !contents.length) return null;
+
+    const windowScroll = { x: window.scrollX, y: window.scrollY };
+    const panelScroll = Array.from(panels.querySelectorAll('.result-panel'), panel => ({
+      panel,
+      left: panel.scrollLeft,
+      top: panel.scrollTop,
+    }));
+    const savedStyles = contents.map(pc => ({
+      pc,
+      transform: pc.style.transform,
+      transformOrigin: pc.style.transformOrigin,
+      height: pc.style.height,
+    }));
+    const previousPanelOverflowAnchor = panels.style.overflowAnchor;
+    const previousRootOverflowAnchor = document.documentElement.style.overflowAnchor;
+
+    // 中立量測只存在於同一個 task；避免從已套用的縮放高度再次乘 scale。
+    panels.style.overflowAnchor = 'none';
+    document.documentElement.style.overflowAnchor = 'none';
+    savedStyles.forEach(({ pc }) => {
+      pc.style.transform = '';
+      pc.style.transformOrigin = '';
+      pc.style.height = '';
+    });
+    void panels.offsetHeight;
+    const baseHeights = contents.map(pc => Math.max(1, pc.scrollHeight));
+
+    savedStyles.forEach(({ pc, transform, transformOrigin, height }) => {
+      pc.style.transform = transform;
+      pc.style.transformOrigin = transformOrigin;
+      pc.style.height = height;
+    });
+    void panels.offsetHeight;
+    panelScroll.forEach(({ panel, left, top }) => {
+      panel.scrollLeft = left;
+      panel.scrollTop = top;
+    });
+    window.scrollTo(windowScroll.x, windowScroll.y);
+
+    return {
+      baseHeights,
+      previousPanelOverflowAnchor,
+      previousRootOverflowAnchor,
+    };
+  }
+
+  function renderManualScale(cardId, scale, gestureCtx = {}) {
+    const panels = document.getElementById(cardId);
+    const state = cardViewState[cardId];
+    const contents = panels ? Array.from(panels.querySelectorAll('.panel-content')) : [];
+    if (!panels || !state || !contents.length) return false;
+
+    const nextScale = clampZoomScale(scale);
+    const baseHeights = gestureCtx.baseHeights || contents.map(pc => Math.max(1, pc.scrollHeight));
+
+    // 先一次寫完所有 panel，再做唯一一次 anchor read，避免每個 panel 各自強制 reflow。
+    contents.forEach((pc, index) => {
+      const baseHeight = Math.max(1, Number(baseHeights[index]) || pc.scrollHeight);
+      pc.style.transform = `scale(${nextScale})`;
+      pc.style.transformOrigin = 'top left';
+      pc.style.height = `${baseHeight * nextScale}px`;
+    });
+    panels.querySelectorAll('.result-panel').forEach(panel => {
+      panel.style.maxHeight = 'none';
+      panel.style.overflowX = 'auto';
+      panel.style.overflowY = 'auto';
+    });
+    state.scale = nextScale;
+
+    const gestureContent = gestureCtx.gestureContent;
+    const gesturePanel = gestureCtx.gesturePanel;
+    const midpoint = gestureCtx.midpoint;
+    if (gestureContent?.isConnected && gesturePanel?.isConnected && midpoint) {
+      const rect = gestureContent.getBoundingClientRect();
+      const anchorViewportX = rect.left + gestureCtx.anchorX * nextScale;
+      const anchorViewportY = rect.top + gestureCtx.anchorY * nextScale;
+      gesturePanel.scrollLeft += anchorViewportX - midpoint.x;
+      window.scrollBy(0, anchorViewportY - midpoint.y);
+    }
+    return true;
+  }
+
+  function updatePinchZoomReadout(cardId, scale) {
+    const bar = document.querySelector(`.card-toolbar[data-card="${cardId}"]`);
+    if (!bar) return;
+    const value = Math.round(clampZoomScale(scale) * 100);
+    const pct = bar.querySelector('.zoom-pct');
+    const slider = bar.querySelector('.zoom-slider');
+    if (pct) pct.textContent = `${value}%`;
+    if (slider) slider.value = value;
+  }
+
+  function beginPinchGesture(cardId, panel, firstPoint, secondPoint, inputType) {
+    const panels = document.getElementById(cardId);
+    const state = cardViewState[cardId];
+    const gestureContent = panel?.querySelector('.panel-content');
+    if (!panels || !state || !panel || !gestureContent || activePinchGestures.has(cardId)) return false;
+
+    const startDistance = getPinchDistance(firstPoint, secondPoint);
+    if (!Number.isFinite(startDistance) || startDistance < 4) return false;
+    const measurement = measurePinchNaturalHeights(cardId);
+    if (!measurement) return false;
+
+    const startScale = clampZoomScale(state.scale);
+    const midpoint = getPinchMidpoint(firstPoint, secondPoint);
+    const rect = gestureContent.getBoundingClientRect();
+    const gesture = {
+      cardId,
+      panels,
+      gesturePanel: panel,
+      gestureContent,
+      inputType,
+      pointerIds: [firstPoint.id, secondPoint.id],
+      startDistance,
+      startScale,
+      baseHeights: measurement.baseHeights,
+      previousPanelOverflowAnchor: measurement.previousPanelOverflowAnchor,
+      previousRootOverflowAnchor: measurement.previousRootOverflowAnchor,
+      anchorX: (midpoint.x - rect.left) / startScale,
+      anchorY: (midpoint.y - rect.top) / startScale,
+      latestScale: startScale,
+      latestMidpoint: midpoint,
+      rafId: 0,
+    };
+
+    state.autoViewPending = false;
+    state.zoomMode = 'manual';
+    state.zoomRenderToken = (state.zoomRenderToken || 0) + 1; // 使手勢開始前排隊中的 applyCardZoom 失效。
+    panels.classList.add('pinch-active');
+    activePinchGestures.set(cardId, gesture);
+
+    if (inputType === 'pointer' && typeof panel.setPointerCapture === 'function') {
+      gesture.pointerIds.forEach(pointerId => {
+        try { panel.setPointerCapture(pointerId); } catch (_) {}
+      });
+    }
+    return true;
+  }
+
+  function flushPinchRender(gesture) {
+    gesture.rafId = 0;
+    if (activePinchGestures.get(gesture.cardId) !== gesture) return;
+    if (!document.getElementById(gesture.cardId)) {
+      finishPinchForCard(gesture.cardId, false);
+      return;
+    }
+    renderManualScale(gesture.cardId, gesture.latestScale, {
+      baseHeights: gesture.baseHeights,
+      gestureContent: gesture.gestureContent,
+      gesturePanel: gesture.gesturePanel,
+      anchorX: gesture.anchorX,
+      anchorY: gesture.anchorY,
+      midpoint: gesture.latestMidpoint,
+    });
+    updatePinchZoomReadout(gesture.cardId, gesture.latestScale);
+  }
+
+  function queuePinchRender(gesture, firstPoint, secondPoint) {
+    const distance = getPinchDistance(firstPoint, secondPoint);
+    if (!Number.isFinite(distance) || distance <= 0) return;
+    gesture.latestScale = clampZoomScale(gesture.startScale * distance / gesture.startDistance);
+    gesture.latestMidpoint = getPinchMidpoint(firstPoint, secondPoint);
+    if (!gesture.rafId) {
+      gesture.rafId = requestAnimationFrame(() => flushPinchRender(gesture));
+    }
+  }
+
+  function finishPinchGesture(cardId, commit = true) {
+    const gesture = activePinchGestures.get(cardId);
+    if (!gesture) return false;
+
+    if (gesture.rafId) {
+      cancelAnimationFrame(gesture.rafId);
+      gesture.rafId = 0;
+      if (commit && document.getElementById(cardId)) {
+        renderManualScale(cardId, gesture.latestScale, {
+          baseHeights: gesture.baseHeights,
+          gestureContent: gesture.gestureContent,
+          gesturePanel: gesture.gesturePanel,
+          anchorX: gesture.anchorX,
+          anchorY: gesture.anchorY,
+          midpoint: gesture.latestMidpoint,
+        });
+      }
+    }
+
+    gesture.panels.classList.remove('pinch-active');
+    gesture.panels.style.overflowAnchor = gesture.previousPanelOverflowAnchor;
+    document.documentElement.style.overflowAnchor = gesture.previousRootOverflowAnchor;
+    if (gesture.inputType === 'pointer' && typeof gesture.gesturePanel.releasePointerCapture === 'function') {
+      gesture.pointerIds.forEach(pointerId => {
+        try {
+          if (!gesture.gesturePanel.hasPointerCapture || gesture.gesturePanel.hasPointerCapture(pointerId)) {
+            gesture.gesturePanel.releasePointerCapture(pointerId);
+          }
+        } catch (_) {}
+      });
+    }
+    activePinchGestures.delete(cardId);
+
+    if (commit) {
+      const state = cardViewState[cardId];
+      if (state && document.getElementById(cardId)) {
+        state.autoViewPending = false;
+        state.zoomMode = 'manual';
+        state.scale = clampZoomScale(gesture.latestScale);
+        updateZoomUI(cardId);
+        recomputeSync(cardId);
+      }
+    }
+    return true;
+  }
+
+  function finishPinchForCard(cardId, commit = true) {
+    finishPinchGesture(cardId, commit);
+    [pinchPointerRecords, pinchTouchRecords].forEach(records => {
+      records.forEach((record, id) => {
+        if (record.cardId === cardId) records.delete(id);
+      });
+    });
+  }
+
+  function findPinchTarget(target) {
+    const panel = target instanceof Element ? target.closest('.result-panel') : null;
+    const panels = panel?.closest('.result-panels');
+    return panel && panels?.id && cardViewState[panels.id]
+      ? { panel, cardId: panels.id }
+      : null;
+  }
+
+  function findGestureForInput(inputType, inputId) {
+    for (const gesture of activePinchGestures.values()) {
+      if (gesture.inputType === inputType && gesture.pointerIds.includes(inputId)) return gesture;
+    }
+    return null;
+  }
+
+  function handlePinchPointerDown(event) {
+    if (event.pointerType !== 'touch') return;
+    const target = findPinchTarget(event.target);
+    if (!target) return;
+    if (activePinchGestures.has(target.cardId)) return; // 第三指不改變既有 pair。
+
+    pinchPointerRecords.set(event.pointerId, {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      panel: target.panel,
+      cardId: target.cardId,
+    });
+    const candidates = Array.from(pinchPointerRecords.values())
+      .filter(point => point.cardId === target.cardId && point.panel === target.panel);
+    if (candidates.length === 2 &&
+        beginPinchGesture(target.cardId, target.panel, candidates[0], candidates[1], 'pointer')) {
+      event.preventDefault();
+    }
+  }
+
+  function handlePinchPointerMove(event) {
+    const record = pinchPointerRecords.get(event.pointerId);
+    if (!record) return;
+    record.x = event.clientX;
+    record.y = event.clientY;
+    const gesture = findGestureForInput('pointer', event.pointerId);
+    if (!gesture) return;
+    const firstPoint = pinchPointerRecords.get(gesture.pointerIds[0]);
+    const secondPoint = pinchPointerRecords.get(gesture.pointerIds[1]);
+    if (!firstPoint || !secondPoint) return;
+    event.preventDefault();
+    queuePinchRender(gesture, firstPoint, secondPoint);
+  }
+
+  function handlePinchPointerEnd(event) {
+    const gesture = findGestureForInput('pointer', event.pointerId);
+    pinchPointerRecords.delete(event.pointerId);
+    if (gesture) finishPinchForCard(gesture.cardId, true);
+  }
+
+  function handlePinchTouchStart(event) {
+    Array.from(event.changedTouches || []).forEach(touch => {
+      const target = findPinchTarget(touch.target || event.target);
+      if (!target || activePinchGestures.has(target.cardId)) return;
+      pinchTouchRecords.set(touch.identifier, {
+        id: touch.identifier,
+        x: touch.clientX,
+        y: touch.clientY,
+        panel: target.panel,
+        cardId: target.cardId,
+      });
+    });
+    for (const record of pinchTouchRecords.values()) {
+      if (activePinchGestures.has(record.cardId)) continue;
+      const candidates = Array.from(pinchTouchRecords.values())
+        .filter(point => point.cardId === record.cardId && point.panel === record.panel);
+      if (candidates.length === 2 &&
+          beginPinchGesture(record.cardId, record.panel, candidates[0], candidates[1], 'touch')) {
+        event.preventDefault();
+      }
+    }
+  }
+
+  function handlePinchTouchMove(event) {
+    Array.from(event.changedTouches || []).forEach(touch => {
+      const record = pinchTouchRecords.get(touch.identifier);
+      if (record) {
+        record.x = touch.clientX;
+        record.y = touch.clientY;
+      }
+    });
+    activePinchGestures.forEach(gesture => {
+      if (gesture.inputType !== 'touch') return;
+      const firstPoint = pinchTouchRecords.get(gesture.pointerIds[0]);
+      const secondPoint = pinchTouchRecords.get(gesture.pointerIds[1]);
+      if (!firstPoint || !secondPoint) return;
+      event.preventDefault();
+      queuePinchRender(gesture, firstPoint, secondPoint);
+    });
+  }
+
+  function handlePinchTouchEnd(event) {
+    const cardsToFinish = new Set();
+    Array.from(event.changedTouches || []).forEach(touch => {
+      const gesture = findGestureForInput('touch', touch.identifier);
+      if (gesture) cardsToFinish.add(gesture.cardId);
+      pinchTouchRecords.delete(touch.identifier);
+    });
+    cardsToFinish.forEach(cardId => finishPinchForCard(cardId, true));
+  }
+
+  if (typeof window.PointerEvent === 'function') {
+    document.addEventListener('pointerdown', handlePinchPointerDown, { passive: false });
+    document.addEventListener('pointermove', handlePinchPointerMove, { passive: false });
+    document.addEventListener('pointerup', handlePinchPointerEnd, { passive: false });
+    document.addEventListener('pointercancel', handlePinchPointerEnd, { passive: false });
+  } else {
+    document.addEventListener('touchstart', handlePinchTouchStart, { passive: false });
+    document.addEventListener('touchmove', handlePinchTouchMove, { passive: false });
+    document.addEventListener('touchend', handlePinchTouchEnd, { passive: false });
+    document.addEventListener('touchcancel', handlePinchTouchEnd, { passive: false });
+  }
+  window.addEventListener('orientationchange', () => {
+    Array.from(activePinchGestures.keys()).forEach(cardId => finishPinchForCard(cardId, true));
+  });
+
+  function applyCardZoom(cardId) {
+    const panels = document.getElementById(cardId);
+    const state = cardViewState[cardId];
+    if (!panels || !state || isCardPinching(cardId)) return;
+    const contents = panels.querySelectorAll('.panel-content');
+    if (!contents.length) return;
+    const renderToken = (state.zoomRenderToken || 0) + 1;
+    state.zoomRenderToken = renderToken;
+    requestAnimationFrame(async () => {
+      // autofast：首次量測前等字型穩定，避免用未載入字型量錯尺寸（與 fit-page/fit-width 選擇脫鉤）。
+      if (state.fontsPending && document.fonts?.ready) {
+        try { await document.fonts.ready; } catch (_) {}
+      }
+      // 多次快速切換或手勢開始後，舊回呼不得覆寫最新的縮放狀態。
+      if (state.zoomRenderToken !== renderToken || isCardPinching(cardId) || !panels.isConnected) return;
+      state.fontsPending = false;
+      // 先還原 → 量測內容原始尺寸。
+      contents.forEach(pc => { pc.style.transform = ''; pc.style.transformOrigin = ''; pc.style.height = ''; });
+      let cW = 0, cH = 0;
+      contents.forEach(pc => { cW = Math.max(cW, pc.scrollWidth); cH = Math.max(cH, pc.scrollHeight); });
+      if (cW <= 0) return;
+      // 只有 fit-page/fit-width 這種本來就會自動縮放的模式才允許排版跟著 resize 切換；
+      // actual/manual 模式下版面要對齊使用者貼上的原圖尺寸，resize 不應改變左右/上下排列。
+      if (state.zoomMode === 'fit-page' || state.zoomMode === 'fit-width') {
+        state.layout = chooseAutoLayout(panels, cW, state.layout);
+        panels.dataset.layout = state.layout;
+      }
+      cW = 0; cH = 0;
+      contents.forEach(pc => { cW = Math.max(cW, pc.scrollWidth); cH = Math.max(cH, pc.scrollHeight); });
+      const naturalHeights = Array.from(contents, pc => Math.max(1, pc.scrollHeight));
+      const viewH = Math.max(window.innerHeight * 0.8, 240);
+      // 固定使用 effective layout 後的 panel 寬算 scale，避免 live/export 不一致。
+      const panelW = (panels.querySelector('.result-panel')?.clientWidth || panels.clientWidth) - 40;
+      const fitPageScale = Math.max(FIT_FLOOR, Math.min(1, panelW / cW, viewH / cH));
+      if (state.autoViewPending) {
+        state.zoomMode = fitPageScale >= MOBILE_AUTO_FIT_PAGE_MIN_SCALE ? 'fit-page' : 'fit-width';
+        state.autoViewPending = false;
+      }
+      let scale;
+      let fitWidthNeedsPan = false;
+      switch (state.zoomMode) {
+        case 'actual': scale = 1; break;
+        case 'manual': scale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, state.scale)); break;
+        case 'fit-width':
+          scale = Math.min(1, panelW / cW);
+          if (isMobileLayout() && scale < MOBILE_FIT_MIN_SCALE) {
+            scale = MOBILE_FIT_MIN_SCALE;
+            fitWidthNeedsPan = true;
+          }
+          break;
+        default: scale = fitPageScale; // fit-page
+      }
+      state.scale = scale;
+      if (state.zoomMode === 'manual') {
+        renderManualScale(cardId, scale, { baseHeights: naturalHeights });
+      } else {
+        contents.forEach(pc => {
+          if (scale === 1) { pc.style.transform = ''; pc.style.transformOrigin = ''; pc.style.height = ''; }
+          else {
+            pc.style.transform = `scale(${scale})`;
+            pc.style.transformOrigin = 'top left';
+            pc.style.height = (pc.scrollHeight * scale) + 'px';
+          }
+        });
+        // 讓結果欄自然長高，避免長圖在欄位內產生上下雙層捲動。
+        const innerScroll = state.zoomMode === 'actual';
+        panels.querySelectorAll('.result-panel').forEach(p => {
+          p.style.maxHeight = 'none';
+          p.style.overflowX = (innerScroll || fitWidthNeedsPan) ? 'auto' : 'visible';
+          p.style.overflowY = innerScroll ? 'auto' : 'visible';
+        });
+      }
+      updateZoomUI(cardId);
+      if (typeof recomputeSync === 'function') recomputeSync(cardId);
+    });
+  }
+
+  function updateZoomUI(cardId) {
+    const state = cardViewState[cardId];
+    const bar = document.querySelector(`.card-toolbar[data-card="${cardId}"]`);
+    if (!state || !bar) return;
+    bar.querySelectorAll('.zoom-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.mode === state.zoomMode));
+    const pct = bar.querySelector('.zoom-pct');
+    if (pct) pct.textContent = Math.round(state.scale * 100) + '%';
+    const slider = bar.querySelector('.zoom-slider');
+    if (slider && state.zoomMode === 'manual') slider.value = Math.round(state.scale * 100);
+    const hint = bar.querySelector('.edit-hint');
+    if (hint && state.scale >= 1) hint.classList.remove('show');
+  }
+
+  function cssPx(value) {
+    const match = String(value || '').trim().match(/^([\d.]+)px$/);
+    return match ? Number(match[1]) : 0;
+  }
+
+  function stabilizeGeneratedLayout(scope, targetWidth) {
+    const layoutWidth = normalizeSourceLayoutWidth(targetWidth) || getSourceLayoutWidth(scope);
+    const contents = scope?.matches?.('.panel-content')
+      ? [scope]
+      : Array.from(scope?.querySelectorAll?.('.panel-content') || []);
+    contents.forEach(pc => {
+      let lockedChild = false;
+      Array.from(pc.children).forEach(child => {
+        const stableWidth = Math.max(cssPx(child.style.width), cssPx(child.style.maxWidth));
+        if (stableWidth >= 600) {
+          const lockWidth = layoutWidth || stableWidth;
+          child.style.width = `${lockWidth}px`;
+          child.style.maxWidth = `${lockWidth}px`;
+          if (!child.style.boxSizing) child.style.boxSizing = 'border-box';
+          lockedChild = true;
+        }
+      });
+      if (layoutWidth && !lockedChild) {
+        pc.style.width = `${layoutWidth}px`;
+        pc.style.maxWidth = `${layoutWidth}px`;
+        if (!pc.style.boxSizing) pc.style.boxSizing = 'border-box';
+      }
+    });
+  }
+
+  window.addEventListener('resize', () => {
+    document.querySelectorAll('.result-panels').forEach(p => {
+      if (!p.id || !cardViewState[p.id]) return;
+      if (!isCardPinching(p.id)) applyCardZoom(p.id);
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    const zb = e.target.closest('.card-toolbar .zoom-btn');
+    if (zb) {
+      const cardId = zb.closest('.card-toolbar').dataset.card;
+      if (!cardViewState[cardId]) return;
+      cardViewState[cardId].autoViewPending = false;
+      cardViewState[cardId].zoomMode = zb.dataset.mode;
+      applyCardZoom(cardId);
+      return;
+    }
+    const eh = e.target.closest('.card-toolbar .edit-hint');
+    if (eh) {
+      const cardId = eh.closest('.card-toolbar').dataset.card;
+      if (!cardViewState[cardId]) return;
+      cardViewState[cardId].autoViewPending = false;
+      cardViewState[cardId].zoomMode = 'fit-width';
+      applyCardZoom(cardId);
+      eh.classList.remove('show');
+      return;
+    }
+  });
+  document.addEventListener('input', (e) => {
+    const slider = e.target.closest('.card-toolbar .zoom-slider');
+    if (slider) {
+      const cardId = slider.closest('.card-toolbar').dataset.card;
+      const st = cardViewState[cardId];
+      if (!st) return;
+      st.autoViewPending = false;
+      st.zoomMode = 'manual';
+      st.scale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, slider.value / 100));
+      applyCardZoom(cardId);
+      return;
+    }
+    // 手動編輯 contenteditable：內容變高時，於縮放模式(scale<1)下重算該 panel 高度。
+    // 只調高度、不重設 transform → 不打斷打字 caret；scale=1 時高度為 auto，自然增長免處理。
+    const pc = e.target.closest('.panel-content');
+    if (pc) {
+      const panels = pc.closest('.result-panels');
+      const st = panels && cardViewState[panels.id];
+      if (st && st.scale < 1) {
+        requestAnimationFrame(() => { pc.style.height = (pc.scrollHeight * st.scale) + 'px'; });
+      }
+    }
+  });
+
+  document.addEventListener('focusin', (e) => {
+    const pc = e.target.closest('.panel-content');
+    if (!pc) return;
+    const panels = pc.closest('.result-panels');
+    if (!panels || !cardViewState[panels.id]) return;
+    const bar = document.querySelector(`.card-toolbar[data-card="${panels.id}"]`);
+    const hint = bar?.querySelector('.edit-hint');
+    if (hint) hint.classList.toggle('show', cardViewState[panels.id].scale < 1);
+  });
+
+  // ══════════════════════════════════
+  // ── Sync Scroll System ──
+  // ══════════════════════════════════
+  const syncState = {};
+
+  function setupSyncScroll(cardId) {
+    const container = document.getElementById(cardId);
+    if (!container) return;
+    const panels = container.querySelectorAll('.result-panel');
+    if (panels.length < 2) return;
+    const ocrPanel = panels[0];
+    const transPanel = panels[1];
+    syncState[cardId] = { enabled: true, busy: false };
+
+    function getScrollRatio(el) {
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      return maxScroll > 0 ? el.scrollTop / maxScroll : 0;
+    }
+    function applyScrollRatio(el, ratio) {
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      el.scrollTop = ratio * maxScroll;
+    }
+
+    ocrPanel.addEventListener('scroll', () => {
+      const s = syncState[cardId];
+      if (!s || !s.enabled || s.busy) return;
+      s.busy = true;
+      s.lastSource = 'ocr';
+      const ratio = getScrollRatio(ocrPanel);
+      applyScrollRatio(transPanel, ratio);
+      requestAnimationFrame(() => { s.busy = false; });
+    });
+    transPanel.addEventListener('scroll', () => {
+      const s = syncState[cardId];
+      if (!s || !s.enabled || s.busy) return;
+      s.busy = true;
+      s.lastSource = 'trans';
+      const ratio = getScrollRatio(transPanel);
+      applyScrollRatio(ocrPanel, ratio);
+      requestAnimationFrame(() => { s.busy = false; });
+    });
+  }
+
+  function toggleSync(cardId) {
+    const s = syncState[cardId];
+    if (!s) return;
+    s.enabled = !s.enabled;
+    const badge = document.getElementById(`sync-${cardId}`);
+    if (badge) badge.classList.toggle('active', s.enabled);
+    if (s.enabled) {
+      const container = document.getElementById(cardId);
+      if (container) {
+        container.querySelectorAll('.result-panel').forEach(p => {
+          p.classList.add('sync-flash');
+          setTimeout(() => p.classList.remove('sync-flash'), 400);
+        });
+      }
+      showToast('同步滾動：開啟 🔗');
+    } else {
+      showToast('同步滾動：關閉 🔓');
+    }
+  }
+
+  // ══════════════════════════════════
+  // ── Copy (with clipboard fallback) ──
+  // ══════════════════════════════════
+  async function copyResult(cardId, type) {
+    const panel = document.querySelector(`#${cardId} [data-type="${type}"]`);
+    if (!panel) return;
+    const content = panel.cloneNode(true);
+    content.querySelector('.result-panel-label')?.remove();
+    try {
+      if (window.ClipboardItem && navigator.clipboard?.write) {
+        const blob = new Blob([content.innerHTML], { type: 'text/html' });
+        const textBlob = new Blob([content.innerText], { type: 'text/plain' });
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'text/html': blob, 'text/plain': textBlob })
+        ]);
+      } else {
+        await navigator.clipboard.writeText(content.innerText);
+      }
+      showToast('已複製！📋');
+    } catch {
+      // Last-resort fallback
+      try { await navigator.clipboard.writeText(content.innerText); showToast('已複製！📋'); }
+      catch { showToast('複製失敗 😢'); }
+    }
+  }
+
+  // ══════════════════════════════════
+  // ── Fullscreen Viewer ──
+  // ══════════════════════════════════
+  const viewerOverlay = document.getElementById('viewer-overlay');
+  const viewerBody = document.getElementById('viewer-body');
+  let viewerSourceCard = null;
+  let viewerSourceType = 'trans';
+
+  function openViewer(panelEl) {
+    const sourcePanel = panelEl?.closest?.('.result-panel') || panelEl;
+    viewerSourceCard = sourcePanel?.closest?.('.result-card') || null;
+    viewerSourceType = sourcePanel?.dataset?.type === 'ocr' ? 'ocr' : 'trans';
+    const content = panelEl.cloneNode(true);
+    // Remove label header from cloned content
+    content.querySelectorAll('.result-panel-label').forEach(el => el.remove());
+    content.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+    viewerBody.innerHTML = content.innerHTML;
+    viewerOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    // Focus the close button for keyboard accessibility
+    const closeBtn = viewerOverlay.querySelector('.viewer-toolbar button');
+    if (closeBtn) closeBtn.focus();
+  }
+
+  function closeViewer() {
+    viewerOverlay.classList.remove('open');
+    viewerBody.innerHTML = '';
+    viewerSourceCard = null;
+    viewerSourceType = 'trans';
+    document.body.style.overflow = '';
+  }
+
+  async function shareViewerImage() {
+    const shareBtn = viewerOverlay.querySelector('.viewer-toolbar button:last-child');
+    if (shareBtn) { shareBtn.disabled = true; shareBtn.textContent = '處理中…'; }
+    try {
+      let canvas = null;
+      if (viewerSourceCard?.isConnected) {
+        canvas = await capturePanel(viewerSourceCard, viewerSourceType, {
+          label: '分享圖片',
+          targetPx: IMAGE_CAPTURE_TARGET_PX
+        });
+      }
+      if (!canvas) {
+        // Source card may have been removed while the viewer was open; keep the legacy viewer clone as a fallback.
+        const clone = viewerBody.cloneNode(true);
+        clone.style.cssText = 'font-family:"Noto Serif TC",serif;font-size:0.92rem;line-height:1.8;color:#1a1a1a;';
+        prepareCloneForCapture(clone);
+        canvas = await renderCloneToCanvas(clone, 1000, { label: '分享圖片', targetPx: IMAGE_CAPTURE_TARGET_PX });
+      }
+
+      const blob = await canvasToPngBlob(canvas, '分享圖片');
+      if (!blob) { releaseCanvas(canvas); return; }
+      releaseCanvas(canvas);
+      const file = new File([blob], 'OCR_result.png', { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'OCR 翻譯結果' });
+      } else {
+        // Fallback: download
+        const link = document.createElement('a');
+        link.download = 'OCR_result.png';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showToast('已下載圖片（此裝置不支援直接分享）');
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Share failed:', err);
+        showToast('分享失敗 😢');
+      }
+    }
+    if (shareBtn) { shareBtn.disabled = false; shareBtn.textContent = '📤 分享'; }
+  }
+
+  // Delegate: tap on result-panel content opens viewer
+  document.addEventListener('click', function(e) {
+    const panel = e.target.closest('.result-panel');
+    if (!panel) return;
+    // Don't trigger on buttons, labels, editable areas, or interactive elements
+    if (e.target.closest('button, .btn-polish, .result-panel-label, .polish-indicator, a, input, textarea, select, [contenteditable]')) return;
+    // Only on mobile
+    if (window.innerWidth > 860) return;
+    openViewer(panel);
+  });
+
+  // ══════════════════════════════════
+  // ── Download Result as Image ──
+  // ══════════════════════════════════
+
+  // Convert writing-mode:vertical elements to html2canvas-safe layout
+  function flattenVerticalText(el) {
+    el.querySelectorAll('*').forEach(node => {
+      // Prioritize inline style (Gemini outputs inline CSS), fallback to computed
+      const inlineWM = node.style.writingMode || '';
+      let wm = inlineWM;
+      if (!wm) {
+        try { wm = window.getComputedStyle(node).writingMode || ''; } catch(e) {}
+      }
+      if (wm.includes('vertical')) {
+        node.style.writingMode = 'horizontal-tb';
+        node.style.textOrientation = 'mixed';
+        // Preserve vertical appearance: render each character on its own line
+        const text = node.textContent;
+        if (text && node.children.length === 0 && text.trim().length > 0) {
+          node.innerHTML = text.split('').map(ch =>
+            ch === '\n' ? '<br>' : `<span style="display:block;text-align:center;line-height:1.3">${ch}</span>`
+          ).join('');
+          node.style.display = 'inline-block';
+          node.style.verticalAlign = 'top';
+        }
+      }
+    });
+  }
+
+  // ── 共用：把離螢幕截圖 clone 還原成「無縮放、可完整截圖」狀態 ──
+  // 統一處理所有 html2canvas 匯出路徑，避免某條路徑漏清 live-view 的 transform。
+  function relaxCaptureSourceWidthWrappers(clone) {
+    clone.querySelectorAll('.panel-content').forEach(pc => {
+      const sourceWidth = getSourceLayoutWidth(pc);
+      if (!sourceWidth) return;
+      Array.from(pc.children).forEach(child => {
+        const declaredWidth = cssPx(child.style.width);
+        if (!declaredWidth || Math.abs(declaredWidth - sourceWidth) > 2) return;
+        child.style.width = '100%';
+        child.style.maxWidth = '100%';
+        child.style.marginLeft = '0';
+        child.style.marginRight = '0';
+      });
+    });
+  }
+
+  function prepareCloneForCapture(clone) {
+    relaxCaptureSourceWidthWrappers(clone);
+    stabilizeGeneratedLayout(clone);
+    clone.querySelectorAll('.result-panel').forEach(p => {
+      p.style.maxHeight = 'none';
+      p.style.overflow = 'visible';
+      p.style.padding = '18px 20px';
+      p.style.fontSize = '0.86rem';
+    });
+    clone.querySelectorAll('.panel-content').forEach(pc => {
+      pc.style.transform = '';
+      pc.style.transformOrigin = '';
+      pc.style.height = '';
+    });
+    clone.querySelectorAll('.result-panel-label, .card-toolbar').forEach(el => el.remove());
+    clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+    flattenVerticalText(clone);
+  }
+
+  const CAPTURE_VISUAL_SELECTOR = 'img,svg,canvas,table,pre,video';
+
+  function captureTextLength(node) {
+    return String(node?.textContent || '').replace(/\s+/g, '').length;
+  }
+
+  function captureVisualCount(node) {
+    if (!node) return 0;
+    return (node.matches?.(CAPTURE_VISUAL_SELECTOR) ? 1 : 0) +
+      node.querySelectorAll(CAPTURE_VISUAL_SELECTOR).length;
+  }
+
+  function findCaptureDocumentCandidate(pc, baselineContentWidth) {
+    const totalText = captureTextLength(pc);
+    const totalVisuals = captureVisualCount(pc);
+    if (!totalText && !totalVisuals) return null;
+
+    let best = null;
+    pc.querySelectorAll('*').forEach(el => {
+      const computed = getComputedStyle(el);
+      const declaredWidth = Math.max(
+        cssPx(el.style.width),
+        cssPx(el.style.maxWidth),
+        cssPx(computed.maxWidth)
+      );
+      if (declaredWidth < CAPTURE_CONTENT_MIN_W) return;
+
+      const rect = el.getBoundingClientRect();
+      if (!rect.width || rect.width >= baselineContentWidth * (1 - CAPTURE_CROP_MIN_GAIN)) return;
+
+      const textCovered = !totalText || captureTextLength(el) >= totalText * CAPTURE_CONTENT_COVERAGE;
+      const visualsCovered = !totalVisuals || captureVisualCount(el) >= totalVisuals;
+      if (!textCovered || !visualsCovered) return;
+
+      if (!best || rect.width > best.width) {
+        best = { kind: 'declared', element: el, width: rect.width, height: rect.height, panel: pc, panelHeight: pc.scrollHeight };
+      }
+    });
+    return best;
+  }
+
+  function pxNumber(value) {
+    const number = Number.parseFloat(value);
+    return Number.isFinite(number) ? number : 0;
+  }
+
+  function captureContentBoxLeft(pc) {
+    const rect = pc.getBoundingClientRect();
+    const computed = getComputedStyle(pc);
+    return rect.left + pxNumber(computed.borderLeftWidth) + pxNumber(computed.paddingLeft);
+  }
+
+  function isCaptureInkElement(el, panelContentWidth = 0) {
+    if (el.matches?.('pre')) return false;
+    if (el.matches?.(CAPTURE_VISUAL_SELECTOR)) return true;
+    const computed = getComputedStyle(el);
+    const outOfFlow = computed.position === 'absolute' || computed.position === 'fixed';
+    const explicitPxWidth = cssPx(el.style.width) > 0 || cssPx(el.style.maxWidth) > 0;
+    const shrinkToFit = ['inline-block', 'inline-flex', 'inline-grid', 'inline-table', 'table'].includes(computed.display);
+    const hasBackground = computed.backgroundImage !== 'none' ||
+      (computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)' && computed.backgroundColor !== 'transparent');
+    const decorated = hasBackground ||
+      pxNumber(computed.borderLeftWidth) > 0 || pxNumber(computed.borderRightWidth) > 0 ||
+      pxNumber(computed.borderTopWidth) > 0 || pxNumber(computed.borderBottomWidth) > 0 ||
+      (computed.boxShadow && computed.boxShadow !== 'none');
+    const isFullWidthFlowBackground = hasBackground && !outOfFlow && !explicitPxWidth && !shrinkToFit &&
+      panelContentWidth > 0 && el.getBoundingClientRect().width >= panelContentWidth - 2;
+    if (isFullWidthFlowBackground) return false;
+    return hasBackground || (decorated && (outOfFlow || explicitPxWidth || shrinkToFit));
+  }
+
+  function createCaptureInkProbe(pc, baselineContentWidth) {
+    const ranges = [];
+    const walker = document.createTreeWalker(pc, NodeFilter.SHOW_TEXT);
+    let textNode;
+    while ((textNode = walker.nextNode())) {
+      const text = String(textNode.nodeValue || '');
+      if (!text.trim() && !text.includes('\u00a0')) continue;
+      const range = document.createRange();
+      range.selectNodeContents(textNode);
+      ranges.push(range);
+    }
+    const elements = Array.from(pc.querySelectorAll('*'))
+      .filter(el => isCaptureInkElement(el, baselineContentWidth));
+
+    const measure = () => {
+      let minLeft = Infinity;
+      let minTop = Infinity;
+      let maxRight = -Infinity;
+      let maxBottom = -Infinity;
+      const includeRect = rect => {
+        if (!rect || rect.width <= 0 || rect.height <= 0) return;
+        minLeft = Math.min(minLeft, rect.left);
+        minTop = Math.min(minTop, rect.top);
+        maxRight = Math.max(maxRight, rect.right);
+        maxBottom = Math.max(maxBottom, rect.bottom);
+      };
+      ranges.forEach(range => Array.from(range.getClientRects()).forEach(includeRect));
+      elements.forEach(el => includeRect(el.getBoundingClientRect()));
+      if (!Number.isFinite(minLeft) || !Number.isFinite(maxRight)) return null;
+      return {
+        minLeft,
+        minTop,
+        maxRight,
+        maxBottom,
+        width: maxRight - minLeft,
+        height: maxBottom - minTop,
+        requiredWidth: maxRight - captureContentBoxLeft(pc)
+      };
+    };
+    return { measure };
+  }
+
+  function findCaptureInkCandidate(pc, baselineContentWidth) {
+    const probe = createCaptureInkProbe(pc, baselineContentWidth);
+    const ink = probe.measure();
+    if (!ink || ink.width < CAPTURE_BBOX_MIN_INK_W || ink.requiredWidth <= 0) return null;
+    if (ink.requiredWidth >= baselineContentWidth * (1 - CAPTURE_CROP_MIN_GAIN)) return null;
+    return {
+      kind: 'bbox',
+      probe,
+      width: Math.ceil(ink.width),
+      inkWidth: ink.width,
+      inkHeight: ink.height,
+      panel: pc,
+      panelHeight: pc.scrollHeight
+    };
+  }
+
+  function setCaptureTrialWidth(clone, wrapper, layout, transOnly, contentWidth) {
+    const columns = layout === 'lr' && !transOnly ? 2 : 1;
+    const frameWidth = Math.ceil((contentWidth + CAPTURE_PANEL_X_PADDING) * columns);
+    wrapper.style.width = `${frameWidth}px`;
+    applyCaptureLayoutStyle(clone, layout, frameWidth, transOnly);
+    clone.querySelectorAll('.panel-content').forEach(pc => {
+      pc.style.width = `${contentWidth}px`;
+      pc.style.maxWidth = `${contentWidth}px`;
+      pc.style.boxSizing = 'border-box';
+    });
+    void clone.offsetWidth;
+    return frameWidth;
+  }
+
+  function captureTrialPreservesLayout(clone, wrapper, candidates, contentWidth, frameWidth) {
+    const contents = Array.from(clone.querySelectorAll('.panel-content'));
+    const candidatesStable = candidates.every(candidate => {
+      if (candidate.kind === 'bbox') {
+        const ink = candidate.probe.measure();
+        candidate.trialRequiredWidth = ink?.requiredWidth ?? Infinity;
+        return ink &&
+          Math.abs(ink.width - candidate.inkWidth) <= 0.5 &&
+          Math.abs(ink.height - candidate.inkHeight) <= 1 &&
+          ink.requiredWidth <= contentWidth + 1 &&
+          Math.abs(candidate.panel.scrollHeight - candidate.panelHeight) <= 1;
+      }
+      const rect = candidate.element.getBoundingClientRect();
+      return rect.width >= candidate.width - 0.25 &&
+        Math.abs(rect.height - candidate.height) <= 0.5 &&
+        Math.abs(candidate.panel.scrollHeight - candidate.panelHeight) <= 1;
+    });
+    const contentsFit = contents.every(pc => pc.scrollWidth <= contentWidth + 1);
+    return candidatesStable && contentsFit && clone.scrollWidth <= frameWidth + 1 && wrapper.scrollWidth <= frameWidth;
+  }
+
+  async function refineCaptureFrame(clone, wrapper, baselineWrapW, { layout = 'tb', transOnly = false } = {}) {
+    delete clone.dataset.captureFrameCropped;
+    delete clone.dataset.captureFrameMode;
+    const contents = Array.from(clone.querySelectorAll('.panel-content'));
+    if (!contents.length) return baselineWrapW;
+
+    const columns = layout === 'lr' && !transOnly ? 2 : 1;
+    const baselineContentWidth = Math.max(
+      CAPTURE_CONTENT_MIN_W,
+      Math.round(baselineWrapW / columns - CAPTURE_PANEL_X_PADDING)
+    );
+    const candidates = contents.map(pc =>
+      findCaptureDocumentCandidate(pc, baselineContentWidth) || findCaptureInkCandidate(pc, baselineContentWidth)
+    );
+    if (candidates.some(candidate => !candidate)) return baselineWrapW;
+    const cropMode = candidates.every(candidate => candidate.kind === 'declared') ? 'declared' : 'bbox';
+
+    const originalCloneStyle = clone.style.cssText;
+    const originalLayout = clone.dataset.layout;
+    const originalContentStyles = contents.map(pc => ({
+      width: pc.style.width,
+      maxWidth: pc.style.maxWidth,
+      boxSizing: pc.style.boxSizing
+    }));
+    const restoreBaseline = () => {
+      wrapper.style.width = `${baselineWrapW}px`;
+      clone.style.cssText = originalCloneStyle;
+      if (originalLayout == null) delete clone.dataset.layout;
+      else clone.dataset.layout = originalLayout;
+      contents.forEach((pc, index) => {
+        pc.style.width = originalContentStyles[index].width;
+        pc.style.maxWidth = originalContentStyles[index].maxWidth;
+        pc.style.boxSizing = originalContentStyles[index].boxSizing;
+      });
+      delete clone.dataset.captureFrameMode;
+      void clone.offsetWidth;
+    };
+
+    let low = Math.ceil(Math.max(...candidates.map(candidate => candidate.width)));
+    let high = baselineContentWidth;
+    let bestPassing = null;
+    while (low < high) {
+      const mid = Math.floor((low + high) / 2);
+      const trialFrame = setCaptureTrialWidth(clone, wrapper, layout, transOnly, mid);
+      if (captureTrialPreservesLayout(clone, wrapper, candidates, mid, trialFrame)) {
+        bestPassing = mid;
+        const currentRequiredWidth = Math.ceil(Math.max(...candidates.map(candidate =>
+          candidate.kind === 'bbox' ? candidate.trialRequiredWidth : mid
+        )));
+        high = Math.max(low, Math.min(mid, currentRequiredWidth));
+      } else {
+        low = mid + 1;
+      }
+    }
+
+    let refinedContentWidth = low;
+    let refinedWrapW = setCaptureTrialWidth(clone, wrapper, layout, transOnly, refinedContentWidth);
+    let layoutPreserved = captureTrialPreservesLayout(clone, wrapper, candidates, refinedContentWidth, refinedWrapW);
+    if (!layoutPreserved && bestPassing != null && bestPassing > refinedContentWidth) {
+      let retryLow = refinedContentWidth + 1;
+      let retryHigh = bestPassing;
+      let retryBest = bestPassing;
+      while (retryLow <= retryHigh) {
+        const mid = Math.floor((retryLow + retryHigh) / 2);
+        const trialFrame = setCaptureTrialWidth(clone, wrapper, layout, transOnly, mid);
+        if (captureTrialPreservesLayout(clone, wrapper, candidates, mid, trialFrame)) {
+          retryBest = mid;
+          retryHigh = mid - 1;
+        } else {
+          retryLow = mid + 1;
+        }
+      }
+      refinedContentWidth = retryBest;
+      refinedWrapW = setCaptureTrialWidth(clone, wrapper, layout, transOnly, refinedContentWidth);
+      layoutPreserved = captureTrialPreservesLayout(clone, wrapper, candidates, refinedContentWidth, refinedWrapW);
+    }
+    const gain = (baselineWrapW - refinedWrapW) / baselineWrapW;
+    if (gain < CAPTURE_CROP_MIN_GAIN || !layoutPreserved) {
+      restoreBaseline();
+      return baselineWrapW;
+    }
+
+    await yieldToUi(20);
+    clone.dataset.captureFrameMode = cropMode;
+    console.info(`[export] framing (${cropMode}): ${baselineWrapW}px → ${refinedWrapW}px (${Math.round(gain * 100)}% crop)`);
+    return refinedWrapW;
+  }
+
+  const MAX_EXPORT_CANVAS_AREA = 14_260_634; // 85% headroom below the 16.7 MP hard edge
+  const MAX_EXPORT_CANVAS_EDGE = 16384;
+  const CAPTURE_MAX_SCALE = 6;
+  const PDF_CAPTURE_TARGET_PX = 1700;
+  const IMAGE_CAPTURE_TARGET_PX = 1600;
+  const WEBP_EXPORT_QUALITY = 0.95;
+  const WEBP_MAX_CANVAS_EDGE = 16383;
+
+  function canvasPixelArea(width, height) {
+    return Math.max(0, width || 0) * Math.max(0, height || 0);
+  }
+
+  function computeCaptureScale(width, height, targetPx = IMAGE_CAPTURE_TARGET_PX, maxScale = CAPTURE_MAX_SCALE) {
+    const w = Math.max(1, Math.ceil(width || 1));
+    const h = Math.max(1, Math.ceil(height || 1));
+    const targetScale = targetPx > 0 ? targetPx / w : maxScale;
+    const areaScale = Math.sqrt(MAX_EXPORT_CANVAS_AREA / Math.max(1, w * h));
+    const edgeScale = Math.min(MAX_EXPORT_CANVAS_EDGE / w, MAX_EXPORT_CANVAS_EDGE / h);
+    return Math.max(0.1, Math.min(maxScale, targetScale, areaScale, edgeScale));
+  }
+
+  function yieldToUi(ms = 30) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  let exportQueue = Promise.resolve();
+  let exportQueueActive = false;
+  let exportQueuePending = 0;
+
+  function queueExportJob(label, task) {
+    const shouldWait = exportQueueActive || exportQueuePending > 0;
+    exportQueuePending++;
+    if (shouldWait) showToast(`${label} 已排入下載佇列，請稍候…`);
+    const run = exportQueue.catch(() => {}).then(async () => {
+      exportQueuePending = Math.max(0, exportQueuePending - 1);
+      exportQueueActive = true;
+      try {
+        return await task();
+      } finally {
+        exportQueueActive = false;
+      }
+    });
+    exportQueue = run.catch(() => {});
+    return run;
+  }
+
+  async function renderCloneToCanvas(clone, wrapW, { label = '截圖', targetPx = IMAGE_CAPTURE_TARGET_PX, maxScale = CAPTURE_MAX_SCALE, adaptiveFrame = null } = {}) {
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${wrapW}px;z-index:-1;background:#fff;`;
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+    try {
+      await yieldToUi(50);
+      const effectiveWrapW = adaptiveFrame
+        ? await refineCaptureFrame(clone, wrapper, wrapW, adaptiveFrame)
+        : wrapW;
+      const width = Math.max(1, Math.ceil(clone.scrollWidth || effectiveWrapW || 1));
+      const height = Math.max(1, Math.ceil(clone.scrollHeight || clone.getBoundingClientRect().height || 1));
+      const scale = computeCaptureScale(width, height, targetPx, maxScale);
+      const t0 = performance.now();
+      console.info(`[export] ${label}: ${width}x${height} scale ${scale.toFixed(2)}`);
+      const canvas = await html2canvas(clone, {
+        scale,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
+        width,
+        height
+      });
+      canvas.__captureFrameMode = clone.dataset.captureFrameMode || '';
+      canvas.__capturePreferLandscape = canvas.__captureFrameMode === 'declared';
+      console.info(`[export] ${label}: ${canvas.width}x${canvas.height} in ${Math.round(performance.now() - t0)}ms`);
+      return canvas;
+    } finally {
+      if (wrapper.parentNode) document.body.removeChild(wrapper);
+    }
+  }
+
+  function releaseCanvas(canvas) {
+    if (!canvas) return;
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+
+  function releaseCanvases(canvases) {
+    canvases.forEach(releaseCanvas);
+  }
+
+  function isExportCanvasTooLarge(width, height) {
+    return width > MAX_EXPORT_CANVAS_EDGE ||
+      height > MAX_EXPORT_CANVAS_EDGE ||
+      canvasPixelArea(width, height) > MAX_EXPORT_CANVAS_AREA;
+  }
+
+  function showCanvasTooLarge(label, width, height) {
+    console.warn(`${label}: canvas ${width}x${height} exceeds export limit`);
+    showToast(`${label} 圖片尺寸過大，請改用 PDF 或僅匯出譯文 ⚠️`);
+  }
+
+  async function canvasToPngBlob(canvas, label) {
+    if (!canvas) return null;
+    if (isExportCanvasTooLarge(canvas.width, canvas.height)) {
+      showCanvasTooLarge(label, canvas.width, canvas.height);
+      return null;
+    }
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) {
+      console.warn(`${label}: canvas.toBlob returned null for ${canvas.width}x${canvas.height}`);
+      showToast(`${label} 圖片產生失敗，可能是瀏覽器記憶體不足 ⚠️`);
+      return null;
+    }
+    return blob;
+  }
+
+  async function canvasToPreferredImageBlob(canvas, label) {
+    if (!canvas) return null;
+    if (isExportCanvasTooLarge(canvas.width, canvas.height)) {
+      showCanvasTooLarge(label, canvas.width, canvas.height);
+      return null;
+    }
+
+    const webpWithinEdge = canvas.width <= WEBP_MAX_CANVAS_EDGE &&
+      canvas.height <= WEBP_MAX_CANVAS_EDGE;
+    if (webpWithinEdge) {
+      try {
+        const webpBlob = await new Promise(resolve =>
+          canvas.toBlob(resolve, 'image/webp', WEBP_EXPORT_QUALITY));
+        if (webpBlob?.type?.toLowerCase() === 'image/webp') {
+          return {
+            blob: webpBlob,
+            mimeType: 'image/webp',
+            extension: '.webp',
+            fallback: false,
+          };
+        }
+        console.info(`${label}: WebP encoder unavailable or returned ${webpBlob?.type || 'null'}; falling back to PNG`);
+      } catch (err) {
+        console.info(`${label}: WebP encoding failed; falling back to PNG`, err);
+      }
+    } else {
+      console.info(`${label}: canvas edge exceeds ${WEBP_MAX_CANVAS_EDGE}px WebP limit; falling back to PNG`);
+    }
+
+    const pngBlob = await canvasToPngBlob(canvas, label);
+    if (!pngBlob) return null;
+    return {
+      blob: pngBlob,
+      mimeType: 'image/png',
+      extension: '.png',
+      fallback: true,
+    };
+  }
+
+  async function downloadResultImage(cardId, index, event) {
+    const container = document.getElementById(cardId);
+    if (!container) return;
+    const btn = event?.target?.closest('.btn-ghost');
+    if (btn) { btn.disabled = true; btn.textContent = '擷取中…'; }
+
+    // Create offscreen clone at desktop width for full capture
+    const layout = getEffectiveLayout(container, false);
+    const wrapW = getCaptureFrameWidth(container, false);
+    const clone = container.cloneNode(true);
+    clone.id = '';
+    applyCaptureLayoutStyle(clone, layout, wrapW, false);
+    prepareCloneForCapture(clone);
+
+    try {
+      const canvas = await renderCloneToCanvas(clone, wrapW, {
+        label: `下載圖 #${index}`,
+        targetPx: IMAGE_CAPTURE_TARGET_PX,
+        adaptiveFrame: { layout, transOnly: false }
+      });
+      const blob = await canvasToPngBlob(canvas, '下載圖');
+      if (!blob) { releaseCanvas(canvas); return; }
+      releaseCanvas(canvas);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `OCR_result_${index}.png`;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast('圖片已下載！📥');
+    } catch (err) {
+      console.error('Download failed:', err);
+      showToast('下載失敗 😢');
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '📥 下載圖'; }
+  }
+
+  // ══════════════════════════════════
+  // ── Polish Translation ──
+  // ══════════════════════════════════
+  async function polishTranslation(cardId) {
+    if (isProcessing) {
+      showToast('批次處理中，請稍後再潤稿 ⏳');
+      return;
+    }
+    const btn = document.getElementById(`polish-btn-${cardId}`);
+    const container = document.getElementById(cardId);
+    if (!btn || !container) return;
+    if (!getApiKey()) {
+      showToast('先設定 API Key 啦！⚙️');
+      return;
+    }
+
+    const ocrPanel = container.querySelector('[data-type="ocr"]');
+    const transPanel = container.querySelector('[data-type="trans"]');
+    if (!ocrPanel || !transPanel) return;
+
+    const ocrPanelContent = ocrPanel.querySelector('.panel-content');
+    const transPanelContent = transPanel.querySelector('.panel-content');
+    const sourceHtml = ocrPanelContent ? ocrPanelContent.innerHTML.trim() : '';
+    const translatedHtml = transPanelContent ? transPanelContent.innerHTML.trim() : '';
+    if (!sourceHtml || !translatedHtml) return;
+
+    const card = container.closest('.result-card');
+    const lang = card?.dataset?.lang || lastUsedLang || 'Traditional Chinese (Taiwan usage)';
+    const model = card?.dataset?.model || getModel();
+
+    btn.classList.add('polishing');
+    btn.innerHTML = '<span class="polish-icon">✨</span> 潤稿中…';
+
+    showRobots();
+    clearAllBubbles();
+    await robotPolishStart();
+
+    try {
+      const polished = await callGeminiPolish(sourceHtml, translatedHtml, lang, undefined, model, usageRecord => {
+        const stagedRecord = withUsageStage('polish', usageRecord);
+        addBatchUsageRecord(stagedRecord);
+      });
+      // ── Sanitize polished output ──
+      const safePolished = sanitizeHtml(polished);
+
+      const panelContent = transPanel.querySelector('.panel-content');
+      if (panelContent) {
+        panelContent.innerHTML = safePolished;
+        stabilizeGeneratedLayout(panelContent);
+      } else {
+        const label = transPanel.querySelector('.result-panel-label');
+        const labelHtml = label ? label.outerHTML : '';
+        transPanel.innerHTML = labelHtml + safePolished;
+      }
+      // 潤稿改寫了譯文內容 → 重算縮放（避免 fit 模式下沿用舊高度而溢出/截斷）
+      requestAnimationFrame(() => applyCardZoom(cardId));
+
+      const newLabel = transPanel.querySelector('.result-panel-label');
+      if (newLabel) {
+        newLabel.style.justifyContent = 'space-between';
+        newLabel.innerHTML = `
+          <span style="display:flex;align-items:center;gap:6px;">
+            <span class="dot" style="background:var(--accent)"></span>譯文
+            <span class="polish-indicator visible" id="polish-ind-${cardId}">✨ 已潤稿</span>
+          </span>
+          <button class="btn-polish done-polish" id="polish-btn-${cardId}" onclick="polishTranslation('${cardId}')">
+            <span class="polish-icon">✨</span> 再次潤稿
+          </button>
+        `;
+      }
+
+      await robotPolishDone();
+      showToast('潤稿完成！品質再升級 💎');
+    } catch (err) {
+      btn.classList.remove('polishing');
+      btn.innerHTML = '<span class="polish-icon">✨</span> 潤稿';
+      showToast('潤稿失敗：' + err.message.substring(0, 30));
+      await robotPolishError();
+    }
+  }
+
+  // ── Robot Polish Dialogue ──
+  const polishStartPairs = [
+    [
+      { who: 'scanner', text: '再把語氣打亮一點？' },
+      { who: 'translator', text: '汪，細修模式開。' },
+    ],
+    [
+      { who: 'scanner', text: '喵，讓它像人寫的。' },
+      { who: 'translator', text: '收到，翻譯腔下線。' },
+    ],
+    [
+      { who: 'scanner', text: '我示範一下精修精神。' },
+      { who: 'translator', text: '懂，字句也要順毛。' },
+    ],
+    [
+      { who: 'scanner', text: '這段值得更亮。' },
+      { who: 'translator', text: '汪，幫它升級。' },
+    ],
+    [
+      { who: 'scanner', text: '再拋光一次？' },
+      { who: 'translator', text: '可以，細節我來。' },
+    ],
+  ];
+
+  const polishDoneQuips_scanner = [
+    '喵，順很多。',
+    '這段發光了。',
+    '好看，肉球認證。',
+    '可讀性加分。',
+    '這就對味。',
+  ];
+
+  const polishDoneQuips_translator = [
+    '汪，潤完。',
+    '語氣更自然了。',
+    '尾巴搖，完成。',
+    'OK，這版更穩。',
+    '漂亮收尾。',
+  ];
+
+  async function robotPolishStart() {
+    const pair = randomPick(polishStartPairs);
+    for (const line of pair) {
+      await addSpeech(line.who, line.text, 2000);
+    }
+    setRobotMood(translatorBot, ['active', 'looking-left']);
+  }
+
+  async function robotPolishDone() {
+    clearAllBubbles();
+    setRobotMood(translatorBot, ['active', 'happy']);
+    await addSpeech('translator', randomPick(polishDoneQuips_translator), 2200);
+    setRobotMood(scannerBot, ['idle', 'happy', 'excited']);
+    await addSpeech('scanner', randomPick(polishDoneQuips_scanner), 2200);
+    setTimeout(() => hideRobots(), 3000);
+  }
+
+  async function robotPolishError() {
+    clearAllBubbles();
+    setRobotMood(translatorBot, ['active', 'surprised']);
+    await addSpeech('translator', '汪？沒接到。', 2000);
+    await addSpeech('scanner', '(轉頭裝沒看見)', 2000);
+    setTimeout(() => hideRobots(), 3000);
+  }
+
+  // ══════════════════════════════════
+  // ── Helpers ──
+  // ══════════════════════════════════
+  function setStatus(type, msg) {
+    if (type === 'spinner') {
+      const raw = String(msg || '');
+      const match = raw.match(/^(.+?)…?\s*(\(.+\))?$/);
+      const main = match ? match[1] : raw;
+      const detail = match?.[2] || '';
+      statusText.className = `status-active${main.startsWith('翻譯中') ? ' status-translate' : ''}`;
+      statusText.innerHTML = `
+        <div class="spinner"></div>
+        <span class="status-copy">
+          <span class="status-main">${escapeHtml(main)}</span>
+          ${detail ? `<span class="status-detail">${escapeHtml(detail)}</span>` : ''}
+        </span>`;
+    } else if (type === 'error') {
+      statusText.className = '';
+      statusText.innerHTML = `<span style="color:#c0392b">${escapeHtml(msg)}</span>`;
+    } else {
+      statusText.className = '';
+      statusText.textContent = msg;
+    }
+  }
+
+  // ══════════════════════════════════
+  // ── Settings Modal ──
+  // ══════════════════════════════════
+  function openSettings() {
+    apiKeyInput.value = getApiKey();
+    apiKeyInput.type = 'password';
+    btnEye.textContent = '👁';
+    if (polishToggleInput) polishToggleInput.checked = getPolishEnabled();
+    renderSettingsUsage();
+    saveFeedback.classList.remove('show');
+    settingsModal.classList.add('open');
+    document.body.classList.add('settings-open');
+    settingsModal.scrollTop = 0;
+    if (!window.matchMedia('(max-width: 700px)').matches) {
+      apiKeyInput.focus({ preventScroll: true });
+    } else {
+      apiKeyInput.blur();
+    }
+  }
+
+  function closeSettings() {
+    settingsModal.classList.remove('open');
+    document.body.classList.remove('settings-open');
+  }
+
+  function persistApiSettings() {
+    const key = apiKeyInput.value.trim();
+    if (!key) { localStorage.removeItem(STORAGE_KEY); }
+    else { localStorage.setItem(STORAGE_KEY, key); }
+    refreshApiKeyCallout();
+  }
+
+  let autoSaveFeedbackTimer = null;
+  function showAutoSaveFeedback(text = '已自動儲存 ✓') {
+    saveFeedback.textContent = text;
+    saveFeedback.classList.add('show');
+    if (autoSaveFeedbackTimer) clearTimeout(autoSaveFeedbackTimer);
+    autoSaveFeedbackTimer = setTimeout(() => saveFeedback.classList.remove('show'), 1400);
+  }
+
+  function saveApiKey() {
+    persistApiSettings();
+    // autofast：不寫原版 polish 偏好（潤稿恆關）
+    saveFeedback.textContent = '已儲存 ✓';
+    saveFeedback.classList.add('show');
+    setTimeout(() => {
+      closeSettings();
+      // autofast：僅在因缺 key 而延後時，於 modal 關閉後續跑一次
+      if (autoRunPendingKey && getApiKey()) { autoRunPendingKey = false; scheduleAutoRun(); }
+    }, 800);
+  }
+
+  function toggleKeyVisibility() {
+    const isHidden = apiKeyInput.type === 'password';
+    apiKeyInput.type = isHidden ? 'text' : 'password';
+    btnEye.textContent = isHidden ? '🙈' : '👁';
+  }
+
+  async function testApiKey() {
+    const key = apiKeyInput.value.trim();
+    if (!key) { btnTest.textContent = '請先輸入 Key'; setTimeout(() => btnTest.textContent = '測試連線', 1500); return; }
+    btnTest.disabled = true;
+    btnTest.textContent = '測試中…';
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 10000);
+    try {
+      const model = getModel();
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify({ contents: [{ parts: [{ text: 'Hi' }] }] }),
+        signal: ac.signal
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        btnTest.textContent = '連線成功 ✓';
+        btnTest.style.color = 'var(--accent)';
+        btnTest.style.borderColor = 'var(--accent)';
+      } else {
+        const data = await res.json().catch(() => ({}));
+        btnTest.textContent = data?.error?.message?.slice(0, 20) || `失敗 (${res.status})`;
+        btnTest.style.color = '#c0392b';
+        btnTest.style.borderColor = '#c0392b';
+      }
+    } catch (err) {
+      clearTimeout(timer);
+      btnTest.textContent = err.name === 'AbortError' ? '連線逾時' : '網路錯誤';
+      btnTest.style.color = '#c0392b';
+      btnTest.style.borderColor = '#c0392b';
+    }
+    btnTest.disabled = false;
+    setTimeout(() => { btnTest.textContent = '測試連線'; btnTest.style.color = ''; btnTest.style.borderColor = ''; }, 2500);
+  }
+
+  apiKeyInput.addEventListener('input', () => {
+    persistApiSettings();
+    showAutoSaveFeedback(apiKeyInput.value.trim() ? 'Key 已自動記憶 ✓' : 'Key 已清除');
+  });
+  settingsModal.addEventListener('click', e => { if (e.target === settingsModal) closeSettings(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (viewerOverlay.classList.contains('open')) { closeViewer(); return; }
+      if (settingsModal.classList.contains('open')) { closeSettings(); return; }
+    }
+  });
+
+  // ══════════════════════════════════
+  // ── Export Functions ──
+  // ══════════════════════════════════
+  const exportToolbar = document.getElementById('export-toolbar');
+
+  function updateExportToolbar() {
+    if (resultsSection.children.length > 0) {
+      exportToolbar.classList.add('visible');
+    } else {
+      exportToolbar.classList.remove('visible');
+    }
+  }
+
+  // Shared save — always use the browser's direct-download path
+  async function saveFile(blob, suggestedName, mimeType, extension) {
+    // 一律走瀏覽器直接下載，檔案落在預設「下載」資料夾，不彈出選擇位置對話框
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = suggestedName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('已下載到預設資料夾 📥');
+  }
+
+  // Capture a single result card as canvas (transOnly: only translation panel)
+  async function captureCard(card, transOnly, options = {}) {
+    const panels = card.querySelector('.result-panels');
+    if (!panels) return null;
+    const clone = panels.cloneNode(true);
+    const layout = getEffectiveLayout(panels, transOnly);
+    const wrapW = getCaptureFrameWidth(panels, transOnly);
+    if (transOnly) {
+      const ocrPanel = clone.querySelector('[data-type="ocr"]');
+      if (ocrPanel) ocrPanel.remove();
+    }
+    applyCaptureLayoutStyle(clone, layout, wrapW, transOnly);
+    prepareCloneForCapture(clone);
+    return renderCloneToCanvas(clone, wrapW, {
+      label: options.label || (transOnly ? '譯文截圖' : '結果截圖'),
+      targetPx: options.targetPx || IMAGE_CAPTURE_TARGET_PX,
+      maxScale: options.maxScale ?? CAPTURE_MAX_SCALE,
+      adaptiveFrame: { layout, transOnly }
+    });
+  }
+
+  async function capturePanel(card, type, options = {}) {
+    const panels = card.querySelector('.result-panels');
+    if (!panels) return null;
+    const panelType = type === 'ocr' ? 'ocr' : 'trans';
+    const clone = panels.cloneNode(true);
+    const removeType = panelType === 'ocr' ? 'trans' : 'ocr';
+    const otherPanel = clone.querySelector(`[data-type="${removeType}"]`);
+    if (otherPanel) otherPanel.remove();
+    const wrapW = getCaptureFrameWidth(panels, true);
+    applyCaptureLayoutStyle(clone, 'tb', wrapW, true);
+    prepareCloneForCapture(clone);
+    return renderCloneToCanvas(clone, wrapW, {
+      label: options.label || (panelType === 'ocr' ? '原文頁' : '譯文頁'),
+      targetPx: options.targetPx || PDF_CAPTURE_TARGET_PX,
+      maxScale: options.maxScale ?? CAPTURE_MAX_SCALE,
+      adaptiveFrame: { layout: 'tb', transOnly: true }
+    });
+  }
+
+  function getResultCards() {
+    return Array.from(resultsSection.querySelectorAll('.result-card'));
+  }
+
+  function normalizeCanvasStack(canvases) {
+    const valid = canvases.filter(c => c && c.width > 0 && c.height > 0);
+    if (!valid.length) return [];
+    const width = Math.max(...valid.map(c => c.width));
+    return valid.map(canvas => ({
+      canvas,
+      width,
+      height: Math.max(1, Math.round(canvas.height * (width / canvas.width)))
+    }));
+  }
+
+  async function buildMergedCanvas(canvases, label) {
+    const parts = normalizeCanvasStack(canvases);
+    if (!parts.length) return null;
+    const totalW = Math.max(...parts.map(p => p.width));
+    const totalH = parts.reduce((sum, p) => sum + p.height, 0);
+    if (totalH > MAX_EXPORT_CANVAS_EDGE) {
+      showToast('圖片過多，合併高度超出上限，請改用 PDF 匯出 ⚠️');
+      return null;
+    }
+    if (isExportCanvasTooLarge(totalW, totalH)) {
+      showCanvasTooLarge(label, totalW, totalH);
+      return null;
+    }
+    const merged = document.createElement('canvas');
+    merged.width = totalW;
+    merged.height = totalH;
+    const ctx = merged.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, totalW, totalH);
+    let y = 0;
+    for (const part of parts) {
+      ctx.drawImage(part.canvas, 0, y, part.width, part.height);
+      y += part.height;
+    }
+    return merged;
+  }
+
+  // --- Export: Merged Image ---
+  function exportMergedImage(transOnly) {
+    return queueExportJob(transOnly ? '譯文大圖' : '合併大圖', () => runExportMergedImage(transOnly));
+  }
+
+  async function runExportMergedImage(transOnly) {
+    const cards = getResultCards();
+    if (!cards.length) return;
+    showToast('合併大圖產生中…⏳');
+    const canvases = [];
+    let merged = null;
+    try {
+      for (let i = 0; i < cards.length; i++) {
+        const c = await captureCard(cards[i], transOnly, {
+          label: `合併大圖 #${i + 1}`,
+          targetPx: IMAGE_CAPTURE_TARGET_PX
+        });
+        if (c) canvases.push(c);
+        await yieldToUi(20);
+      }
+      if (!canvases.length) { showToast('截圖失敗 ❌'); return; }
+      merged = await buildMergedCanvas(canvases, '合併大圖');
+      if (!merged) return;
+      const encoded = await canvasToPreferredImageBlob(merged, '合併大圖');
+      if (!encoded) return;
+      const basename = transOnly ? 'OCR_translated_merged' : 'OCR_results_merged';
+      const fname = basename + encoded.extension;
+      await saveFile(encoded.blob, fname, encoded.mimeType, encoded.extension);
+    } catch (err) {
+      console.error('Merged image export error:', err);
+      showToast('合併大圖匯出失敗 ❌ ' + err.message);
+    } finally {
+      releaseCanvases(canvases);
+      releaseCanvas(merged);
+    }
+  }
+
+  function getPdfPageSpec(canvas) {
+    const portrait = !canvas.__capturePreferLandscape && canvas.height >= canvas.width;
+    return {
+      pageW: portrait ? 210 : 297,
+      pageH: portrait ? 297 : 210,
+      orientation: portrait ? 'portrait' : 'landscape'
+    };
+  }
+
+  function startOrAddPdfPage(pdf, jsPDF, spec) {
+    if (!pdf) {
+      return new jsPDF({ unit: 'mm', format: [spec.pageW, spec.pageH], orientation: spec.orientation });
+    }
+    pdf.addPage([spec.pageW, spec.pageH], spec.orientation);
+    return pdf;
+  }
+
+  function addCanvasToPdf(pdf, jsPDF, canvas) {
+    const spec = getPdfPageSpec(canvas);
+    const margin = 5;
+    const usableW = spec.pageW - margin * 2;
+    const usableH = spec.pageH - margin * 2;
+    const finalW = canvas.width;
+    const finalH = canvas.height;
+    const scaledW = usableW;
+    const scaledH = (finalH / finalW) * usableW;
+    let pagesAdded = 0;
+
+    if (scaledH <= usableH) {
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+      pdf = startOrAddPdfPage(pdf, jsPDF, spec);
+      pdf.addImage(imgData, 'JPEG', margin, margin, scaledW, scaledH);
+      return { pdf, pagesAdded: 1 };
+    }
+
+    const pxPerMm = finalW / usableW;
+    const sliceH = usableH * pxPerMm;
+    let srcY = 0;
+    while (srcY < finalH) {
+      const thisSliceH = Math.min(sliceH, finalH - srcY);
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = finalW;
+      sliceCanvas.height = Math.ceil(thisSliceH);
+      const ctx = sliceCanvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+      ctx.drawImage(canvas, 0, srcY, finalW, thisSliceH, 0, 0, finalW, thisSliceH);
+      const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.9);
+      const sliceMmH = thisSliceH / pxPerMm;
+      pdf = startOrAddPdfPage(pdf, jsPDF, spec);
+      pdf.addImage(sliceData, 'JPEG', margin, margin, scaledW, sliceMmH);
+      releaseCanvas(sliceCanvas);
+      pagesAdded++;
+      srcY += thisSliceH;
+    }
+    return { pdf, pagesAdded };
+  }
+
+  // --- Export: PDF (one source panel page, then one translation panel page) ---
+  function exportPdf(transOnly) {
+    return queueExportJob(transOnly ? '譯文 PDF' : 'PDF', () => runExportPdf(transOnly));
+  }
+
+  async function runExportPdf(transOnly) {
+    const cards = getResultCards();
+    if (!cards.length) return;
+    showToast('PDF 產生中…⏳');
+    try {
+      const jspdfModule = window.jspdf;
+      const jsPDF = jspdfModule?.jsPDF;
+      if (!jsPDF) { showToast('jsPDF 載入失敗 ❌'); return; }
+      let pdf = null;
+      let failCount = 0;
+      let pageCount = 0;
+      const panelTypes = transOnly ? ['trans'] : ['ocr', 'trans'];
+
+      for (let i = 0; i < cards.length; i++) {
+        for (const type of panelTypes) {
+          let canvas = null;
+          try {
+            const label = type === 'ocr' ? '原文' : '譯文';
+            canvas = await capturePanel(cards[i], type, {
+              label: `PDF 圖片 #${i + 1} ${label}`,
+              targetPx: PDF_CAPTURE_TARGET_PX
+            });
+            if (!canvas) { failCount++; continue; }
+            if (isExportCanvasTooLarge(canvas.width, canvas.height)) {
+              showCanvasTooLarge(`PDF 圖片 #${i + 1} ${label}`, canvas.width, canvas.height);
+              failCount++;
+              continue;
+            }
+            const added = addCanvasToPdf(pdf, jsPDF, canvas);
+            pdf = added.pdf;
+            pageCount += added.pagesAdded;
+          } catch (cardErr) {
+            console.warn(`PDF: card ${i + 1} panel ${type} failed, skipping:`, cardErr);
+            failCount++;
+          } finally {
+            releaseCanvas(canvas);
+            await yieldToUi(20);
+          }
+        }
+      }
+      if (!pdf) { showToast('所有卡片截圖均失敗 ❌'); return; }
+      const blob = pdf.output('blob');
+      const pdfName = transOnly ? 'OCR_translated.pdf' : 'OCR_results.pdf';
+      await saveFile(blob, pdfName, 'application/pdf', '.pdf');
+      if (failCount > 0) {
+        showToast(`PDF 已匯出（${pageCount} 頁完成，${failCount} 項跳過）⚠️`);
+      } else {
+        showToast(`PDF 已匯出（${pageCount} 頁）📄`);
+      }
+    } catch (err) {
+      console.error('PDF export error:', err);
+      showToast('PDF 匯出失敗 ❌ ' + err.message);
+    }
+  }
+
+  // --- Export: PPTX ---
+  async function exportPptx(transOnly) {
+    const cards = getResultCards();
+    if (!cards.length) return;
+    showToast('PPTX 產生中…⏳');
+    try {
+      const slideW = 10;
+      const maxSlideH = 56;
+      // 第一輪：收集所有 canvas 資料
+      const slides = [];
+      for (const card of cards) {
+        const canvas = await captureCard(card, transOnly);
+        if (!canvas) continue;
+        if (isExportCanvasTooLarge(canvas.width, canvas.height)) {
+          showCanvasTooLarge('PPTX', canvas.width, canvas.height);
+          releaseCanvas(canvas);
+          continue;
+        }
+        const imgData = canvas.toDataURL('image/png');
+        const naturalSlideH = (canvas.height / canvas.width) * slideW;
+        const fitScale = Math.min(1, maxSlideH / naturalSlideH);
+        const imageW = slideW * fitScale;
+        const slideH = naturalSlideH * fitScale;
+        slides.push({ imgData, slideH, imageW, imageX: (slideW - imageW) / 2 });
+        releaseCanvas(canvas);
+      }
+      if (!slides.length) { showToast('截圖失敗 ❌'); return; }
+      // 用最大高度統一 layout
+      const maxH = Math.max(...slides.map(s => s.slideH), 5.63);
+      const pptx = new PptxGenJS();
+      pptx.defineLayout({ name: 'CUSTOM', width: slideW, height: maxH });
+      pptx.layout = 'CUSTOM';
+      // 第二輪：建立投影片
+      for (const s of slides) {
+        const slide = pptx.addSlide();
+        slide.addImage({ data: s.imgData, x: s.imageX, y: 0, w: s.imageW, h: s.slideH });
+      }
+      const blob = await pptx.write({ outputType: 'blob' });
+      const pptxName = transOnly ? 'OCR_translated.pptx' : 'OCR_results.pptx';
+      await saveFile(blob, pptxName, 'application/vnd.openxmlformats-officedocument.presentationml.presentation', '.pptx');
+    } catch (err) {
+      console.error('PPTX export error:', err);
+      showToast('PPTX 匯出失敗 ❌ ' + err.message);
+    }
+  }
+
+  // --- Export: DOCX ---
+  async function exportDocx(transOnly) {
+    const cards = getResultCards();
+    if (!cards.length) return;
+    showToast('DOCX 產生中…⏳');
+    try {
+      const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, PageBreak } = docx;
+      const children = [];
+      for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const transPanel = card.querySelector('[data-type="trans"] .panel-content');
+        const transText = transPanel ? transPanel.innerText : '';
+        const transParas = transText.split('\n').filter(l => l.trim()).map(l => new Paragraph({ children: [new TextRun(l)] }));
+        if (transOnly) {
+          children.push(
+            new Paragraph({ children: [new TextRun({ text: `圖片 #${i + 1}`, bold: true, size: 28 })] }),
+            ...(transParas.length ? transParas : [new Paragraph('')])
+          );
+        } else {
+          const ocrPanel = card.querySelector('[data-type="ocr"] .panel-content');
+          const ocrText = ocrPanel ? ocrPanel.innerText : '';
+          const ocrParas = ocrText.split('\n').filter(l => l.trim()).map(l => new Paragraph({ children: [new TextRun(l)] }));
+          const headerRow = new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '原文 OCR', bold: true })] })], width: { size: 50, type: WidthType.PERCENTAGE } }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '譯文', bold: true })] })], width: { size: 50, type: WidthType.PERCENTAGE } }),
+            ]
+          });
+          const contentRow = new TableRow({
+            children: [
+              new TableCell({ children: ocrParas.length ? ocrParas : [new Paragraph('')], width: { size: 50, type: WidthType.PERCENTAGE } }),
+              new TableCell({ children: transParas.length ? transParas : [new Paragraph('')], width: { size: 50, type: WidthType.PERCENTAGE } }),
+            ]
+          });
+          children.push(
+            new Paragraph({ children: [new TextRun({ text: `圖片 #${i + 1}`, bold: true, size: 28 })] }),
+            new Table({ rows: [headerRow, contentRow], width: { size: 100, type: WidthType.PERCENTAGE } })
+          );
+        }
+        if (i < cards.length - 1) {
+          children.push(new Paragraph({ children: [new PageBreak()] }));
+        }
+      }
+      const doc = new Document({ sections: [{ children }] });
+      const blob = await Packer.toBlob(doc);
+      const docxName = transOnly ? 'OCR_translated.docx' : 'OCR_results.docx';
+      await saveFile(blob, docxName, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', '.docx');
+    } catch (err) {
+      console.error('DOCX export error:', err);
+      showToast('DOCX 匯出失敗 ❌ ' + err.message);
+    }
+  }
+
+  // --- Export: XLSX ---
+  async function exportXlsx(transOnly) {
+    const cards = getResultCards();
+    if (!cards.length) return;
+    showToast('XLSX 產生中…⏳');
+    try {
+      const header = transOnly ? ['圖片編號', '譯文'] : ['圖片編號', '原文', '譯文'];
+      const data = [header];
+      cards.forEach((card, i) => {
+        const transPanel = card.querySelector('[data-type="trans"] .panel-content');
+        const transText = transPanel ? transPanel.innerText : '';
+        if (transOnly) {
+          data.push([`#${i + 1}`, transText]);
+        } else {
+          const ocrPanel = card.querySelector('[data-type="ocr"] .panel-content');
+          data.push([`#${i + 1}`, ocrPanel ? ocrPanel.innerText : '', transText]);
+        }
+      });
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      ws['!cols'] = transOnly ? [{ wch: 10 }, { wch: 80 }] : [{ wch: 10 }, { wch: 60 }, { wch: 60 }];
+      XLSX.utils.book_append_sheet(wb, ws, transOnly ? 'Translated' : 'OCR Results');
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const xlsxName = transOnly ? 'OCR_translated.xlsx' : 'OCR_results.xlsx';
+      await saveFile(blob, xlsxName, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', '.xlsx');
+    } catch (err) {
+      console.error('XLSX export error:', err);
+      showToast('XLSX 匯出失敗 ❌ ' + err.message);
+    }
+  }
+
+  // ══════════════════════════════════
+  // ── File / Paste / Drop Events ──
+  // ══════════════════════════════════
+  function handleFiles(files) {
+    if (isProcessing) {
+      showToast('批次處理中，請稍後再加入圖片 ⏳');
+      return;
+    }
+    for (const file of files) {
+      if (file.type.startsWith('image/')) {
+        addToQueue(file);
+      }
+    }
+  }
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', e => {
+    handleFiles(e.target.files);
+    fileInput.value = '';
+  });
+  document.addEventListener('paste', e => {
+    if (isProcessing) return;
+    // Don't intercept paste when editing result panels
+    if (e.target.closest('[contenteditable]')) return;
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    let intercepted = false;
+    for (const item of items) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        addToQueue(item.getAsFile());
+        intercepted = true;
+      }
+    }
+    if (intercepted) e.preventDefault();
+  });
+
+  // ── Keyboard shortcut: Ctrl+Enter to translate with selected language ──
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isProcessing && imageQueue.length > 0) {
+      e.preventDefault();
+      startSelectedLanguageBatch();
+    }
+  });
+
+  // Initial state — autofast：單一台灣繁中，不讀/不寫原版 lang 偏好
+  lastUsedLang = LOCKED_TARGET_LANG;
+  updateQueueUI();
+  syncPolishUi();
+  syncModeUi();
+  refreshApiKeyCallout();
+</script>
+</body>
+</html>

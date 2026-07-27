@@ -1,0 +1,5 @@
+# 本檔只列變數名稱。請複製成 .dev.vars 後填入開發環境專用值。
+# .dev.vars 已被 gitignore；不得把真實 Secret commit 進 Git。
+GEMINI_API_KEY=
+TURNSTILE_SECRET_KEY=
+SESSION_HMAC_SECRET=

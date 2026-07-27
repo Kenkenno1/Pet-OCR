@@ -1,2 +1,8 @@
 node_modules/
 dist/
+.wrangler/
+.dry-run/
+.dev.vars
+.env
+.env.*
+!.env.example

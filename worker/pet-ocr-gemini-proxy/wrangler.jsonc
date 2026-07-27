@@ -1,0 +1,64 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pet-ocr-gemini-proxy-dev",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-27",
+  "compatibility_flags": ["enable_request_signal"],
+  "vars": {
+    "APP_ENV": "development",
+    "ALLOWED_ORIGINS": "http://localhost:3000,http://127.0.0.1:3000",
+    "TURNSTILE_VERIFY_URL": "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    "GEMINI_BASE_URL": "https://generativelanguage.googleapis.com/v1beta",
+    "TURNSTILE_EXPECTED_HOSTNAME": "localhost",
+    "TURNSTILE_EXPECTED_ACTION": "pet-ocr-session",
+    "SESSION_IDLE_SECONDS": "86400",
+    "SESSION_ABSOLUTE_SECONDS": "604800",
+    "SESSION_MAX_CALLS": "200",
+    "DAILY_MAX_CALLS": "600",
+    "IP_DAILY_MAX_CALLS": "150",
+    "IP_MINUTE_MAX_CALLS": "30"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "USAGE_GATE",
+        "class_name": "UsageGate"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["UsageGate"]
+    }
+  ],
+  "env": {
+    "production": {
+      "name": "pet-ocr-gemini-proxy",
+      "workers_dev": true,
+      "preview_urls": false,
+      "vars": {
+        "APP_ENV": "production",
+        "ALLOWED_ORIGINS": "https://kenkenno1.github.io",
+        "TURNSTILE_VERIFY_URL": "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        "GEMINI_BASE_URL": "https://generativelanguage.googleapis.com/v1beta",
+        "TURNSTILE_EXPECTED_HOSTNAME": "kenkenno1.github.io",
+        "TURNSTILE_EXPECTED_ACTION": "pet-ocr-session",
+        "SESSION_IDLE_SECONDS": "86400",
+        "SESSION_ABSOLUTE_SECONDS": "604800",
+        "SESSION_MAX_CALLS": "200",
+        "DAILY_MAX_CALLS": "600",
+        "IP_DAILY_MAX_CALLS": "150",
+        "IP_MINUTE_MAX_CALLS": "30"
+      },
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "USAGE_GATE",
+            "class_name": "UsageGate"
+          }
+        ]
+      }
+    }
+  }
+}

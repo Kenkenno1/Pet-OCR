@@ -51,3 +51,27 @@ test("frontend preserves sanitizer, immediate fit-page and the UFO OCR seam", ()
   );
   assert.match(html, /cleanupUfoEasterEgg\(\); \/\/ 批次結束/u);
 });
+
+test("frontend exposes a one-click current-batch translation download with mobile expansion", () => {
+  assert.match(html, /const MAX_FILES = 3;/u);
+  assert.equal(html.includes("上限 30 張"), false);
+  assert.match(html, /id="btn-download-batch-translated"/u);
+  assert.match(html, /⬇ 下載譯文圖片/u);
+  assert.match(html, /batchTranslatedCards/u);
+  assert.match(html, /card\.isConnected/u);
+  assert.match(html, /MAX_MERGED_CANVAS_HEIGHT = 8192/u);
+  assert.match(html, /canvas\.toBlob returned null/u);
+  assert.match(html, /preparedBatchTranslatedDownload/u);
+  assert.match(html, /function prepareBatchTranslatedDownload\(/u);
+  assert.match(html, /function saveFile\(/u);
+  assert.doesNotMatch(html, /async function saveFile\(/u);
+  assert.doesNotMatch(html, /async function downloadLatestBatchTranslatedImage\(/u);
+  assert.match(
+    html,
+    /function downloadLatestBatchTranslatedImage\(\) \{[\s\S]*?saveFile\(prepared\.blob/u
+  );
+  assert.match(
+    html,
+    /matchMedia\(LAYOUT_MOBILE_QUERY\)\.matches[\s\S]*?openViewer\(/u
+  );
+});

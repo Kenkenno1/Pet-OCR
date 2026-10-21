@@ -958,6 +958,28 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
     localStorage.removeItem(BACKEND_SESSION_STORAGE_KEY);
   }
 
+  // 並行請求各自收到 401 時，只清掉「被拒絕的那個 token」；別的請求已換好的新 token 不可刪。
+  function clearBackendSessionIfCurrent(rejectedToken) {
+    try {
+      const stored = JSON.parse(localStorage.getItem(BACKEND_SESSION_STORAGE_KEY) || 'null');
+      if (stored?.token === rejectedToken) clearBackendSession();
+    } catch {
+      clearBackendSession();
+    }
+  }
+
+  // Worker 依最後一次扣額度時間判定閒置（index.ts consume）；前端記「最後一次成功請求的送出時間」，
+  // 這個值不會晚於 Worker 的 last_seen_at，所以用來提早換新是安全方向。
+  function markBackendSessionUsed(token, usedAt) {
+    try {
+      const stored = JSON.parse(localStorage.getItem(BACKEND_SESSION_STORAGE_KEY) || 'null');
+      if (!stored || stored.token !== token) return;
+      if (Number.isFinite(stored.lastUsedAt) && stored.lastUsedAt >= usedAt) return;
+      stored.lastUsedAt = usedAt;
+      localStorage.setItem(BACKEND_SESSION_STORAGE_KEY, JSON.stringify(stored));
+    } catch (_) {}
+  }
+
   function readBackendSession() {
     let stored;
     try {
@@ -976,14 +998,28 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
       clearBackendSession();
       return null;
     }
+    // 閒置過期改由前端先判斷：否則整張圖上傳完才被 Worker 回 401，要重新驗證再傳一次。
+    // 舊版存的 session 沒有 lastUsedAt，無法判斷閒置，一律換新一次。
+    const idleUsable = Number.isFinite(stored.idleMs) && stored.idleMs > BACKEND_SESSION_REFRESH_WINDOW_MS;
+    if (
+      !Number.isFinite(stored.lastUsedAt) ||
+      (idleUsable && Date.now() - stored.lastUsedAt >= stored.idleMs - BACKEND_SESSION_REFRESH_WINDOW_MS)
+    ) {
+      clearBackendSession();
+      return null;
+    }
     return stored;
   }
 
-  function storeBackendSession(data) {
+  function storeBackendSession(data, requestedAt = Date.now()) {
+    const receivedAt = Date.now();
     const stored = {
       token: String(data?.token || ''),
       expiresAt: Number(data?.expiresAt),
       idleExpiresAt: Number(data?.idleExpiresAt),
+      // 閒置時限取「收到回應時」計算（偏短＝安全）；起算點取送出請求前（不晚於 Worker 建立時間）。
+      idleMs: Number(data?.idleExpiresAt) - receivedAt,
+      lastUsedAt: requestedAt,
     };
     if (!stored.token || !Number.isFinite(stored.expiresAt)) {
       throw makeBackendError(502, 'session_invalid_response', '安全驗證回傳資料不完整。');
@@ -1094,13 +1130,14 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
 
   async function createBackendSession(signal) {
     const turnstileToken = await requestTurnstileToken(signal);
+    const requestedAt = Date.now();
     const response = await fetch(`${BACKEND_BASE_URL}/v1/session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ turnstileToken }),
       signal,
     });
-    return storeBackendSession(await readBackendJson(response));
+    return storeBackendSession(await readBackendJson(response), requestedAt);
   }
 
   async function ensureBackendSession(signal, forceRefresh = false) {
@@ -1144,7 +1181,8 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
     let reauthenticated = false;
     while (true) {
       if (signal?.aborted) throw makeAbortError();
-      const session = await ensureBackendSession(signal, reauthenticated);
+      const session = await ensureBackendSession(signal);
+      const requestStartedAt = Date.now();
       const response = await fetch(`${BACKEND_BASE_URL}/v1/${route}`, {
         method: 'POST',
         headers: {
@@ -1159,6 +1197,7 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
         if (typeof data.text !== 'string' || !data.text.trim()) {
           throw makeBackendError(502, 'model_no_output', '模型沒有回傳可用內容。');
         }
+        markBackendSessionUsed(session.token, requestStartedAt);
         if (typeof onUsage === 'function') {
           try {
             onUsage(createGeminiUsageRecord(data.model || LOCKED_MODEL, data.usageMetadata));
@@ -1170,7 +1209,8 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
       } catch (error) {
         const sessionRejected =
           response.status === 401 || SESSION_REAUTH_CODES.has(error.code);
-        if (sessionRejected) clearBackendSession();
+        // 只清被拒的 token；若別張已換新，下一圈 ensureBackendSession 會直接用新的或共用建立中的那一個。
+        if (sessionRejected) clearBackendSessionIfCurrent(session.token);
         const shouldReauthenticate = !reauthenticated && sessionRejected;
         if (!shouldReauthenticate) throw error;
         reauthenticated = true;
@@ -1708,16 +1748,19 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
   function armUfoTimer(signal) {
     if (ufoShownThisBatch) return () => {};
     const epoch = ufoOcrEpoch;
-    ufoDelayTimer = setTimeout(() => {
-      ufoDelayTimer = null;
+    // 多張並行時每張各有自己的 timer；disarm 只清自己的，不可清到別張的。
+    const timer = setTimeout(() => {
+      if (ufoDelayTimer === timer) ufoDelayTimer = null;
       if (epoch !== ufoOcrEpoch) return;          // 已被 cleanup
       if (ufoShownThisBatch) return;               // 本批已演過
       if (!isProcessing) return;                   // 批次已結束
       if (signal && signal.aborted) return;        // 已取消
       playUfoEasterEgg();
     }, UFO_DELAY_MS);
+    ufoDelayTimer = timer;
     return () => {
-      if (ufoDelayTimer !== null) { clearTimeout(ufoDelayTimer); ufoDelayTimer = null; }
+      clearTimeout(timer);
+      if (ufoDelayTimer === timer) ufoDelayTimer = null;
     };
   }
 
@@ -1725,10 +1768,12 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
   async function robotGreeting() {
     showRobots();
     clearAllBubbles();
+    const epoch = speechEpoch; // 開場白不再被 await：對白被清掉時就停止，不再續播下一句
     setRobotMood(scannerBot, ['active', 'happy']);
     setRobotMood(translatorBot, ['idle', 'looking-left']);
     const pair = randomPick(greetingPairs);
     for (const line of pair) {
+      if (epoch !== speechEpoch) return;
       await addSpeech(line.who, line.text, 1200);
     }
   }
@@ -1762,11 +1807,14 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
 
   async function robotAllDone(count) {
     clearAllBubbles();
+    const epoch = speechEpoch; // 不再被 await：新批次清掉對白時就停止，也不去收起新批次的角色
     setRobotMood(scannerBot, ['active', 'happy', 'excited']);
     setRobotMood(translatorBot, ['active', 'happy']);
     await addSpeech('scanner', randomPick(allDoneScannerQuips), 2500);
+    if (epoch !== speechEpoch) return;
     await addSpeech('translator', randomPick(allDoneTranslatorQuips), 2500);
-    setTimeout(() => hideRobots(), 3500);
+    if (epoch !== speechEpoch) return;
+    setTimeout(() => { if (!isProcessing) hideRobots(); }, 3500);
   }
 
   async function robotError(msg) {
@@ -1881,35 +1929,55 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
     const items = [...imageQueue];
     const batchTranslatedCards = [];
 
-    // Robots greet (awaited for ordering)
-    await robotGreeting();
+    // 開場對白不再擋住第一個請求：與 OCR 同時播放
+    robotGreeting().catch(() => {});
 
     let cancelled = false;
+    // 多張圖同時處理（上限 MAX_FILES 張，全部一起開跑），卡片仍依原順序顯示。
+    // 每張自己串 OCR→翻譯，錯誤包成結果物件、不 reject；遇停機碼立即中止其他張。
+    let batchStopError = null;
+    let ocrRunning = 0;
+    let finishedImages = 0;
+    const narrated = new Set(); // 並行時每種對白每批只播一次，避免洗版
+    const narrateOnce = (key, run) => {
+      if (narrated.has(key)) return;
+      narrated.add(key);
+      run();
+    };
+    const stopBatch = err => {
+      if (batchStopError) return;
+      batchStopError = err;
+      batchAbortController?.abort();
+    };
+    const abortedOutcome = () => (batchStopError ? 'stopped' : 'cancelled');
+    const updateBatchStatus = () => {
+      const label = ocrRunning > 0 ? 'OCR 辨識中…' : '翻譯中…';
+      setStatus('spinner', items.length > 1
+        ? `${label} (完成 ${finishedImages}/${items.length})`
+        : `${label} (1/1)`);
+    };
+    const captureUsage = stage => usageRecord => {
+      const stagedRecord = withUsageStage(stage, usageRecord);
+      addBatchUsageRecord(stagedRecord);
+    };
 
-    for (let i = 0; i < items.length; i++) {
-      if (signal.aborted) { cancelled = true; break; }
-
-      const item = items[i];
-      const captureUsage = stage => usageRecord => {
-        const stagedRecord = withUsageStage(stage, usageRecord);
-        addBatchUsageRecord(stagedRecord);
+    const processItem = async (item, i) => {
+      const result = {
+        item, index: i + 1, ocrHtml: '', transHtml: '',
+        translationOk: false, polished: false, outcome: 'done', errorMessage: '',
       };
       const queueEl = document.getElementById(`queue-item-${item.id}`);
       if (queueEl) queueEl.classList.add('processing');
 
-      setStatus('spinner', `OCR 辨識中… (${i + 1}/${items.length})`);
-
-      // Robot: OCR start (fire-and-forget, don't block API call)
-      robotOcrStart(i + 1, items.length);
-
-      let ocrHtml = '';
+      ocrRunning++;
+      updateBatchStatus();
       try {
         const sourceWidth = await getItemSourceWidthForOcr(item);
         console.info(`[ocr] source-width contract: ${sourceWidth ? `${sourceWidth}px` : 'omitted (dimension unavailable)'}`);
         // 飛碟彩蛋：只圍住這一次 OCR request，settle/reject/abort 都由 finally 清 timer
         const disarmUfo = armUfoTimer(signal);
         try {
-          ocrHtml = await callGeminiOCR(item.base64, item.mimeType, signal, lastUsedModel, sourceWidth, captureUsage('ocr'));
+          result.ocrHtml = await callGeminiOCR(item.base64, item.mimeType, signal, lastUsedModel, sourceWidth, captureUsage('ocr'));
         } finally {
           disarmUfo();
         }
@@ -1917,102 +1985,115 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
         setBatchProgress((completedSteps / totalSteps) * 100);
       } catch (err) {
         if (err.name === 'AbortError') {
-          cancelled = true;
-          appendResultCard(
-            item,
-            ocrHtml || '<div style="color:var(--ink3)">⏹ OCR 已取消</div>',
-            '<div style="color:var(--ink3)">⏹ 翻譯已取消</div>',
-            i + 1,
-          );
-          break;
+          result.outcome = abortedOutcome();
+          return result;
         }
-        if (shouldStopBatchForBackendError(err)) throw err;
+        if (shouldStopBatchForBackendError(err)) {
+          stopBatch(err);
+          result.outcome = 'stopped';
+          return result;
+        }
         if (queueEl) queueEl.classList.remove('processing');
-        await robotError(err.message);
-        appendResultCard(item, `<div style="color:#c0392b">OCR 失敗：${escapeHtml(err.message)}</div>`, '', i + 1);
+        narrateOnce('error', () => { robotError(err.message).catch(() => {}); });
+        result.outcome = 'ocr_failed';
+        result.errorMessage = err.message;
         completedSteps += stepsPerImage; // skip remaining steps for this image
         setBatchProgress((completedSteps / totalSteps) * 100);
+        return result;
+      } finally {
+        // Free base64 memory immediately after OCR
         item.base64 = null;
-        continue;
+        ocrRunning--;
+        updateBatchStatus();
       }
-
-      // Free base64 memory immediately after OCR
-      item.base64 = null;
 
       // Robot: OCR done (fire-and-forget)
-      robotOcrDone();
+      narrateOnce('ocrDone', () => { robotOcrDone(); });
 
       if (signal.aborted) {
-        cancelled = true;
-        appendResultCard(
-          item,
-          ocrHtml,
-          '<div style="color:var(--ink3)">⏹ 翻譯已取消</div>',
-          i + 1,
-        );
-        break;
+        result.outcome = abortedOutcome();
+        return result;
       }
 
-      setStatus('spinner', `翻譯中… (${i + 1}/${items.length})`);
-
       // Robot: Translate start (fire-and-forget)
-      robotTranslateStart();
+      narrateOnce('translateStart', () => { robotTranslateStart(); });
 
-      let transHtml = '';
-      let translationOk = false;
       try {
-        transHtml = await callGeminiTranslate(ocrHtml, lang, signal, lastUsedModel, captureUsage('translate'));
-        translationOk = true;
+        result.transHtml = await callGeminiTranslate(result.ocrHtml, lang, signal, lastUsedModel, captureUsage('translate'));
+        result.translationOk = true;
         completedSteps++;
         setBatchProgress((completedSteps / totalSteps) * 100);
       } catch (err) {
         if (err.name === 'AbortError') {
-          cancelled = true;
-          appendResultCard(
-            item,
-            ocrHtml,
-            transHtml || '<div style="color:var(--ink3)">⏹ 翻譯已取消</div>',
-            i + 1,
-          );
-          break;
+          result.outcome = abortedOutcome();
+          return result;
         }
-        if (shouldStopBatchForBackendError(err)) throw err;
-        transHtml = `<div style="color:#c0392b">翻譯失敗：${escapeHtml(err.message)}</div>`;
+        if (shouldStopBatchForBackendError(err)) {
+          stopBatch(err);
+          result.outcome = 'stopped';
+          return result;
+        }
+        result.transHtml = `<div style="color:#c0392b">翻譯失敗：${escapeHtml(err.message)}</div>`;
         completedSteps += polishEnabled ? 2 : 1; // skip Translate (+ Polish)
         setBatchProgress((completedSteps / totalSteps) * 100);
       }
 
-      const finalOcr = ocrHtml;
-      ocrHtml = null;
-
       // Robot: Translate done (fire-and-forget)
-      robotTranslateDone();
+      narrateOnce('translateDone', () => { robotTranslateDone(); });
 
       // ── Auto-polish ──
-      let polished = false;
-      if (polishEnabled && translationOk && !signal.aborted) {
-        setStatus('spinner', `潤稿中… (${i + 1}/${items.length})`);
+      if (polishEnabled && result.translationOk && !signal.aborted) {
         // Robot: Polish start (fire-and-forget)
-        robotPolishStart();
+        narrateOnce('polishStart', () => { robotPolishStart(); });
         try {
-          const polishedHtml = await callGeminiPolish(finalOcr, transHtml, lang, signal, lastUsedModel, captureUsage('polish'));
-          transHtml = polishedHtml;
-          polished = true;
+          result.transHtml = await callGeminiPolish(result.ocrHtml, result.transHtml, lang, signal, lastUsedModel, captureUsage('polish'));
+          result.polished = true;
         } catch (err) {
           if (err.name === 'AbortError') {
-            cancelled = true;
-            appendResultCard(
-              item,
-              finalOcr,
-              transHtml || '<div style="color:var(--ink3)">⏹ 潤稿已取消</div>',
-              i + 1,
-            );
-            break;
+            result.outcome = abortedOutcome();
+            return result;
           }
           // Polish failed — keep original translation, not a fatal error
         }
         completedSteps++;
         setBatchProgress((completedSteps / totalSteps) * 100);
+      }
+      return result;
+    };
+
+    const tasks = items.map((item, i) => processItem(item, i)
+      .catch(err => {
+        stopBatch(err); // 非預期例外：中止其他張，迴圈後交給外層 catch 統一清理
+        return { item, index: i + 1, outcome: 'unexpected' };
+      })
+      .then(result => {
+        finishedImages++;
+        updateBatchStatus();
+        return result;
+      }));
+
+    for (const task of tasks) {
+      const result = await task;
+      const { item } = result;
+      const queueEl = document.getElementById(`queue-item-${item.id}`);
+
+      if (result.outcome === 'stopped' || result.outcome === 'unexpected') {
+        if (queueEl) queueEl.classList.remove('processing');
+        continue;
+      }
+      if (result.outcome === 'cancelled') {
+        cancelled = true;
+        appendResultCard(
+          item,
+          result.ocrHtml || '<div style="color:var(--ink3)">⏹ OCR 已取消</div>',
+          result.transHtml || '<div style="color:var(--ink3)">⏹ 翻譯已取消</div>',
+          result.index,
+        );
+        continue;
+      }
+      if (result.outcome === 'ocr_failed') {
+        appendResultCard(item, `<div style="color:#c0392b">OCR 失敗：${escapeHtml(result.errorMessage)}</div>`, '', result.index);
+        continue;
       }
 
       if (queueEl) {
@@ -2020,11 +2101,11 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
         queueEl.classList.add('done');
       }
 
-      const resultCard = appendResultCard(item, finalOcr, transHtml, i + 1);
-      if (translationOk && resultCard) batchTranslatedCards.push(resultCard);
+      const resultCard = appendResultCard(item, result.ocrHtml, result.transHtml, result.index);
+      if (result.translationOk && resultCard) batchTranslatedCards.push(resultCard);
 
       // Mark polish indicator if polished
-      if (polished) {
+      if (result.polished) {
         const lastCard = resultsSection.lastElementChild;
         if (lastCard) {
           const polishInd = lastCard.querySelector('.polish-indicator');
@@ -2038,6 +2119,8 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
       }
     }
 
+    if (batchStopError) throw batchStopError;
+
     // Hide cancel button
     btnCancelBatch.classList.remove('visible');
 
@@ -2047,17 +2130,18 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
       resetBatchTranslatedDownload();
       hideRobots();
     } else {
+      // 先給完成狀態、開始準備下載圖、手機自動開譯文；慶祝動畫不再擋這些
+      setStatus('', `✓ 全部完成！共 ${items.length} 張`);
+      setBatchTranslatedDownload(batchTranslatedCards);
+      openFirstSuccessfulTranslationOnMobile(batchTranslatedCards);
       // Epic done reaction
       setTimeout(() => {
         showToast(randomPick(r.done));
         spawnConfetti(20);
         emojiRain('🎉', 5);
       }, 300);
-      // Robot: All done (awaited)
-      await robotAllDone(items.length);
-      setStatus('', `✓ 全部完成！共 ${items.length} 張`);
-      setBatchTranslatedDownload(batchTranslatedCards);
-      openFirstSuccessfulTranslationOnMobile(batchTranslatedCards);
+      // Robot: All done (fire-and-forget)
+      robotAllDone(items.length).catch(() => {});
     }
 
     if (cancelled) {

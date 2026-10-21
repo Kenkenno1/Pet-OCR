@@ -431,8 +431,11 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
   const USD_TO_TWD_ESTIMATE_DATE = '2026-07-23';
   const MAX_FILES = 30;
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 4; // 初次＋3 次重試（官方 SDK 也是重試多次）；429 的等待由共用閘門負責
   const MAX_RESULT_CARDS = 20;
+  // 同時處理的圖片數。使用者自帶金鑰，免費層每分鐘次數低，所以保守；遇 429 時共用閘門會自動降到 1
+  const BATCH_CONCURRENCY = 3;
+  const GEMINI_MAX_IN_FLIGHT = 3;
 
   // ══════════════════════════════════
   // ── DOM References ──
@@ -469,6 +472,7 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
   let imageQueue = []; // { id, file, base64, mimeType, blobUrl }
   let renderedBlobUrls = new Set(); // blob URLs used in result cards — do NOT revoke
   let isProcessing = false;
+  let manualPolishInFlight = 0; // 單張「潤稿」進行中的數量；期間不開新批次，避免同一把金鑰同時發太多請求
   let queueIdCounter = 0;
   let queueEpoch = 0; // incremented on clearQueue to invalidate pending readers
   let pendingReaders = 0; // number of FileReaders still in-flight
@@ -841,62 +845,158 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
     });
   }
 
-  async function callGemini(parts, { signal, model: modelOverride, systemInstruction, onUsage } = {}) {
-    const key = getApiKey();
+  // ── 共用 Gemini 閘門（同一把使用者金鑰）──
+  // 並行時各請求不再各自退避又同時重試：限制同時送出的數量；任何一個遇到 429，全體一起冷卻。
+  // 冷卻後若期間沒有任何請求成功，只放一個探測請求；若 429 之前送出的請求已成功回來，直接恢復並行
+  // （模擬顯示有 RetryInfo 時這樣反而 429 較少，故刻意如此）。
+  const geminiGate = { active: 0, waiters: [], cooldownUntil: 0, probing: false, timer: null };
+
+  function pumpGeminiGate() {
+    const limit = geminiGate.probing ? 1 : GEMINI_MAX_IN_FLIGHT;
+    while (geminiGate.waiters.length && geminiGate.active < limit && Date.now() >= geminiGate.cooldownUntil) {
+      geminiGate.active++;
+      geminiGate.waiters.shift().grant();
+    }
+    if (geminiGate.waiters.length && Date.now() < geminiGate.cooldownUntil && geminiGate.timer === null) {
+      geminiGate.timer = setTimeout(() => {
+        geminiGate.timer = null;
+        pumpGeminiGate();
+      }, geminiGate.cooldownUntil - Date.now());
+    }
+  }
+
+  function acquireGeminiSlot(signal) {
+    return new Promise((resolve, reject) => {
+      if (signal?.aborted) { reject(new DOMException('Aborted', 'AbortError')); return; }
+      const onAbort = () => {
+        const i = geminiGate.waiters.indexOf(waiter);
+        if (i >= 0) geminiGate.waiters.splice(i, 1);
+        reject(new DOMException('Aborted', 'AbortError'));
+      };
+      const waiter = {
+        grant: () => {
+          signal?.removeEventListener('abort', onAbort);
+          resolve();
+        },
+      };
+      signal?.addEventListener('abort', onAbort, { once: true });
+      geminiGate.waiters.push(waiter);
+      pumpGeminiGate();
+    });
+  }
+
+  function releaseGeminiSlot() {
+    geminiGate.active = Math.max(0, geminiGate.active - 1);
+    pumpGeminiGate();
+  }
+
+  function geminiBackoffMs(attempt) {
+    return Math.min(1000 * Math.pow(2, attempt), 8000) + Math.random() * 500;
+  }
+
+  // 429 回應的 error.details 若含 RetryInfo（retryDelay: "37s"），照它冷卻
+  function parseGeminiRetryDelayMs(data) {
+    const details = data?.error?.details;
+    if (!Array.isArray(details)) return null;
+    for (const detail of details) {
+      const match = typeof detail?.retryDelay === 'string' && detail.retryDelay.match(/^(\d+(?:\.\d+)?)s$/);
+      // 至少等 1 秒：retryDelay 為 "0s" 時不可立刻連續重送把次數用光
+      if (match) return Math.max(1000, Math.round(parseFloat(match[1]) * 1000));
+    }
+    return null;
+  }
+
+  // 每日額度用完（QuotaFailure 的 quotaId 含 PerDay）時重試沒有意義，直接失敗
+  function isGeminiDailyQuotaError(data) {
+    return /PerDay/i.test(JSON.stringify(data?.error?.details || []));
+  }
+
+  async function callGemini(parts, { signal, model: modelOverride, systemInstruction, onUsage, generationConfig } = {}) {
     const model = modelOverride || getModel();
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    const reqBody = { contents: [{ parts }] };
+    if (systemInstruction) {
+      reqBody.systemInstruction = { parts: [{ text: systemInstruction }] };
+    }
+    if (generationConfig) reqBody.generationConfig = generationConfig;
+    const body = JSON.stringify(reqBody);
 
     let lastError;
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-
+      const isLastAttempt = attempt === MAX_RETRIES - 1;
+      let retryWait = 0; // 下一次之前要等多久；在閘門外等，不佔名額
+      await acquireGeminiSlot(signal);
       try {
-        const reqBody = { contents: [{ parts }] };
-        if (systemInstruction) {
-          reqBody.systemInstruction = { parts: [{ text: systemInstruction }] };
-        }
+        // 每次嘗試拿到名額後才讀金鑰：排隊或重試期間使用者換了金鑰，就改用新金鑰送出（放在 try 內，讀取失敗也會釋放名額）
+        const key = getApiKey();
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-          body: JSON.stringify(reqBody),
+          body,
           signal,
         });
 
-        // Retry on 429 / 502 / 503 with exponential backoff
-        if (res.status === 429 || res.status === 502 || res.status === 503) {
-          const wait = Math.min(1000 * Math.pow(2, attempt) + Math.random() * 500, 16000);
-          await abortableSleep(wait, signal);
-          lastError = new Error(`HTTP ${res.status} (retry ${attempt + 1}/${MAX_RETRIES})`);
-          continue;
-        }
-
-        // Non-retryable client errors (400, 401, 403, 404…) — fail immediately
-        if (res.status >= 400 && res.status < 500) {
-          const data = await res.json().catch(() => ({}));
-          const err = new Error(data?.error?.message || `HTTP ${res.status}`);
-          err.nonRetryable = true;
-          throw err;
-        }
-
-        const data = await res.json();
-        if (res.ok && typeof onUsage === 'function') {
+        if (res.status >= 400) {
+          // 先讀完錯誤本文，再核對金鑰：讀取期間使用者換了金鑰，也算舊金鑰的錯誤。
+          // 讀完之後的判斷與閘門狀態更新都是同步的，中間沒有 await，不會再被換金鑰插隊
+          const data = await res.json().catch(() => null);
+          // 換金鑰前用舊金鑰送出的請求的錯誤（429、每日額度、金鑰無效…）不代表新金鑰的狀態：
+          // 不套用每日額度判斷、不觸發全域冷卻，直接改用新金鑰重送
+          if (key !== getApiKey()) {
+            lastError = new Error(`處理中更換了 API 金鑰，改用新金鑰重送仍未成功（第 ${attempt + 1}/${MAX_RETRIES} 次）`);
+            continue;
+          }
+          if (res.status === 429) {
+            if (isGeminiDailyQuotaError(data)) {
+              const err = new Error(`今日 API 額度已用完：${data?.error?.message || 'HTTP 429'}`);
+              err.nonRetryable = true;
+              throw err;
+            }
+            // 全體冷卻，之後只放一個探測請求；等待由閘門處理，這裡不另外睡
+            const delay = parseGeminiRetryDelayMs(data) ?? geminiBackoffMs(attempt);
+            geminiGate.cooldownUntil = Math.max(geminiGate.cooldownUntil, Date.now() + delay);
+            geminiGate.probing = true;
+            lastError = new Error(`HTTP 429（第 ${attempt + 1}/${MAX_RETRIES} 次）`);
+            continue;
+          }
+          if (res.status === 408 || res.status >= 500) {
+            // 408 與 5xx 可重試（官方排錯建議），在迴圈尾端等待；保留 Gemini 的錯誤說明（例如 504 Deadline expired）
+            lastError = new Error(`${data?.error?.message || `HTTP ${res.status}`}（第 ${attempt + 1}/${MAX_RETRIES} 次）`);
+            retryWait = geminiBackoffMs(attempt);
+          } else {
+            // 其餘 4xx 立即失敗
+            const err = new Error(data?.error?.message || `HTTP ${res.status}`);
+            err.nonRetryable = true;
+            throw err;
+          }
+        } else {
+          const data = await res.json();
+          // 只有目前金鑰的成功才解除探測模式；舊金鑰晚回來的成功不代表新金鑰的限流已恢復
+          if (key === getApiKey()) geminiGate.probing = false;
+          if (typeof onUsage === 'function') {
+            try {
+              onUsage(createGeminiUsageRecord(model, data?.usageMetadata));
+            } catch (usageError) {
+              console.warn('[usage] Failed to record Gemini usage:', usageError);
+            }
+          }
+          // 截斷、被擋、空白屬於內容問題，重送同一份請求不會變好，也會重複計費：不重試
           try {
-            onUsage(createGeminiUsageRecord(model, data?.usageMetadata));
-          } catch (usageError) {
-            console.warn('[usage] Failed to record Gemini usage:', usageError);
+            return extractModelText(data);
+          } catch (contentError) {
+            contentError.nonRetryable = true;
+            throw contentError;
           }
         }
-        return extractModelText(data);
-
       } catch (err) {
         if (err.name === 'AbortError') throw err;
         if (err.nonRetryable) throw err;
-        lastError = err;
-        if (attempt < MAX_RETRIES - 1) {
-          const wait = Math.min(1000 * Math.pow(2, attempt), 8000);
-          await abortableSleep(wait, signal);
-        }
+        lastError = err; // 網路錯誤或回應不是 JSON
+        retryWait = geminiBackoffMs(attempt);
+      } finally {
+        releaseGeminiSlot();
       }
+      if (retryWait && !isLastAttempt) await abortableSleep(retryWait, signal);
     }
     throw lastError || new Error('Max retries exceeded');
   }
@@ -1364,10 +1464,12 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
   async function robotGreeting() {
     showRobots();
     clearAllBubbles();
+    const epoch = speechEpoch; // 開場白不再被 await：對白被清掉時就停止，不再續播下一句
     setRobotMood(scannerBot, ['active', 'waving', 'happy']);
     setRobotMood(translatorBot, ['idle', 'looking-left']);
     const pair = randomPick(greetingPairs);
     for (const line of pair) {
+      if (epoch !== speechEpoch) return;
       await addSpeech(line.who, line.text, 1200);
     }
   }
@@ -1393,25 +1495,32 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
   }
 
   async function robotTranslateDone() {
+    const epoch = speechEpoch; // 對白被清掉（例如批次已結束）時不再續播第二句
     setRobotMood(translatorBot, ['active', 'happy']);
     await addSpeech('translator', randomPick(translatorDoneQuips), 2000);
+    if (epoch !== speechEpoch) return;
     setRobotMood(scannerBot, ['idle', 'happy', 'excited']);
     await addSpeech('scanner', randomPick(scannerCheersQuips), 2000);
   }
 
   async function robotAllDone(count) {
     clearAllBubbles();
+    const epoch = speechEpoch; // 不再被 await：新批次清掉對白時就停止，也不去收起新批次的角色
     setRobotMood(scannerBot, ['active', 'happy', 'excited']);
     setRobotMood(translatorBot, ['active', 'happy']);
     await addSpeech('scanner', randomPick(allDoneScannerQuips), 2500);
+    if (epoch !== speechEpoch) return;
     await addSpeech('translator', randomPick(allDoneTranslatorQuips), 2500);
-    setTimeout(() => hideRobots(), 3500);
+    if (epoch !== speechEpoch) return;
+    setTimeout(() => { if (!isProcessing && epoch === speechEpoch) hideRobots(); }, 3500);
   }
 
   async function robotError(msg) {
+    const epoch = speechEpoch; // 不再被 await：批次結束清掉對白後，不把第二句插進「全部完成」
     setRobotMood(scannerBot, ['active', 'surprised']);
     setRobotMood(translatorBot, ['idle', 'surprised']);
     await addSpeech('scanner', '喵？！', 2000);
+    if (epoch !== speechEpoch) return;
     await addSpeech('translator', '再試一次。', 2000);
   }
 
@@ -1434,16 +1543,21 @@ Rules:
 5. Avoid artificial narrow columns: give each text block enough width for normal words/phrases to wrap naturally.${widthContract}
 ${outputRuleNumber}. Return ONLY raw HTML string. No markdown, no code fences.`;
 
+    // OCR 不需要思考：實測精緻模式（3.6 Flash）預設每次思考 2,200～3,600 token、約 20 秒，minimal 約 7.5 秒且文字完整度相同。
+    // 翻譯與潤稿維持模型預設（minimal 會出現錯譯，見 CODE-REVIEW-pet-variant-speed-quality-20261022.md B1）。
     return callGemini([
       { text: prompt },
       { inline_data: { mime_type: mimeType, data: base64Data } }
-    ], { signal, model: modelOverride, systemInstruction: sysInstr, onUsage });
+    ], { signal, model: modelOverride, systemInstruction: sysInstr, onUsage, generationConfig: { thinkingConfig: { thinkingLevel: 'minimal' } } });
   }
 
   async function callGeminiTranslate(html, lang, signal, modelOverride, onUsage) {
     let localeRule = '';
-    if (/chinese/i.test(lang)) {
+    // 繁中與簡中分開判斷：舊寫法 /chinese/i 會讓「Simplified Chinese」也套用台灣繁體規則，實測輸出變成繁體字
+    if (/traditional chinese/i.test(lang)) {
       localeRule = '\n3. Use Taiwan Traditional Chinese phrasing (not Mainland China/HK usage).';
+    } else if (/simplified chinese/i.test(lang)) {
+      localeRule = '\n3. Use Simplified Chinese characters and Mainland China phrasing.';
     } else if (/japanese/i.test(lang)) {
       localeRule = '\n3. Use natural, native Japanese (日本語) phrasing. Output MUST be in Japanese, NOT Chinese.';
     } else if (/english/i.test(lang)) {
@@ -1559,9 +1673,17 @@ Revise the translation along these three axes:
       openSettings();
       return;
     }
+    if (manualPolishInFlight > 0) {
+      showToast('單張潤稿進行中，完成後再開始翻譯 ⏳');
+      return;
+    }
 
     setFlow('busy');
     isProcessing = true;
+    let cancelled = false;
+    let batchFailed = false;
+    let batchSettled = false; // 外層 catch 收尾後，仍在跑的 worker 不可再改狀態列與進度
+    try { // 外層 try/catch/finally：任何非預期例外都要讓 isProcessing 與畫面歸位
     lastUsedLang = lang;
     lastUsedModel = modelOverride || getModel();
     if (targetLangSelect) localStorage.setItem(STORAGE_LANG_KEY, lang);
@@ -1597,153 +1719,242 @@ Revise the translation along these three axes:
 
     const items = [...imageQueue];
 
-    // Robots greet (awaited for ordering)
-    await robotGreeting();
+    // 開場對白不再擋住第一個請求：與 OCR 同時播放
+    robotGreeting().catch(() => {});
 
-    let cancelled = false;
+    // 多張圖以有上限的並行處理（BATCH_CONCURRENCY）；每張依序 OCR→翻譯→潤稿，卡片仍依原順序顯示。
+    // 每張的錯誤包成結果物件；未開始的圖在取消後留在佇列，已開始的才移除。
+    let batchStopError = null;
+    let ocrRunning = 0;
+    let polishRunning = 0;
+    let finishedImages = 0;
+    const narrated = new Set(); // 並行時每種對白每批只播一次，避免洗版
+    const narrateOnce = (key, run) => {
+      if (narrated.has(key)) return;
+      narrated.add(key);
+      run();
+    };
+    const abortedOutcome = () => (batchStopError ? 'stopped' : 'cancelled');
+    const updateBatchStatus = () => {
+      if (batchSettled) return;
+      const label = ocrRunning > 0 ? 'OCR 辨識中…' : (polishRunning > 0 ? '潤稿中…' : '翻譯中…');
+      setStatus('spinner', items.length > 1
+        ? `${label} (完成 ${finishedImages}/${items.length})`
+        : `${label} (1/1)`);
+    };
+    const progress = () => { if (!batchSettled) setBatchProgress((completedSteps / totalSteps) * 100); };
+    const captureUsage = stage => usageRecord => {
+      const stagedRecord = withUsageStage(stage, usageRecord);
+      addBatchUsageRecord(stagedRecord);
+    };
 
-    for (let i = 0; i < items.length; i++) {
-      if (signal.aborted) { cancelled = true; break; }
-
-      const item = items[i];
-      const captureUsage = stage => usageRecord => {
-        const stagedRecord = withUsageStage(stage, usageRecord);
-        addBatchUsageRecord(stagedRecord);
-      };
+    // result 由 worker 建立後傳入：processItem 中途出現非預期例外時，worker 仍拿得到已完成的部分（例如 OCR 結果）
+    const newResult = (item, i) => ({
+      item, index: i + 1, ocrHtml: '', transHtml: '',
+      translationOk: false, polished: false, outcome: 'done', errorMessage: '',
+    });
+    const processItem = async (item, i, result) => {
       const queueEl = document.getElementById(`queue-item-${item.id}`);
       if (queueEl) queueEl.classList.add('processing');
 
-      setStatus('spinner', `OCR 辨識中… (${i + 1}/${items.length})`);
-
-      // Robot: OCR start (fire-and-forget, don't block API call)
-      robotOcrStart(i + 1, items.length);
-
-      let ocrHtml = '';
+      ocrRunning++;
+      updateBatchStatus();
       try {
         const sourceWidth = await getItemSourceWidthForOcr(item);
         console.info(`[ocr] source-width contract: ${sourceWidth ? `${sourceWidth}px` : 'omitted (dimension unavailable)'}`);
-        ocrHtml = await callGeminiOCR(item.base64, item.mimeType, signal, lastUsedModel, sourceWidth, captureUsage('ocr'));
+        result.ocrHtml = await callGeminiOCR(item.base64, item.mimeType, signal, lastUsedModel, sourceWidth, captureUsage('ocr'));
         completedSteps++;
-        setBatchProgress((completedSteps / totalSteps) * 100);
+        progress();
       } catch (err) {
         if (err.name === 'AbortError') {
-          cancelled = true;
-          appendResultCard(
-            item,
-            ocrHtml || '<div style="color:var(--ink3)">⏹ OCR 已取消</div>',
-            '<div style="color:var(--ink3)">⏹ 翻譯已取消</div>',
-            i + 1,
-          );
-          break;
+          // 還沒拿到 OCR 結果就被中止（含在閘門排隊、請求從未送出）：視同未開始，留在佇列並保留圖片資料，之後可以重跑
+          result.outcome = 'not_started';
+          return result;
         }
-        if (queueEl) queueEl.classList.remove('processing');
-        await robotError(err.message);
-        appendResultCard(item, `<div style="color:#c0392b">OCR 失敗：${escapeHtml(err.message)}</div>`, '', i + 1);
+        narrateOnce('error', () => { robotError(err.message).catch(() => {}); });
+        result.outcome = 'ocr_failed';
+        result.errorMessage = err.message;
         completedSteps += stepsPerImage; // skip remaining steps for this image
-        setBatchProgress((completedSteps / totalSteps) * 100);
-        item.base64 = null;
-        continue;
+        progress();
+        return result;
+      } finally {
+        // Free base64 memory immediately after OCR（中止的保留，之後重跑要用）
+        if (result.outcome !== 'not_started') item.base64 = null;
+        ocrRunning--;
+        updateBatchStatus();
       }
-
-      // Free base64 memory immediately after OCR
-      item.base64 = null;
 
       // Robot: OCR done (fire-and-forget)
-      robotOcrDone();
+      narrateOnce('ocrDone', () => { robotOcrDone(); });
 
       if (signal.aborted) {
-        cancelled = true;
-        appendResultCard(
-          item,
-          ocrHtml,
-          '<div style="color:var(--ink3)">⏹ 翻譯已取消</div>',
-          i + 1,
-        );
-        break;
+        result.outcome = abortedOutcome();
+        return result;
       }
-
-      setStatus('spinner', `翻譯中… (${i + 1}/${items.length})`);
 
       // Robot: Translate start (fire-and-forget)
-      robotTranslateStart();
+      narrateOnce('translateStart', () => { robotTranslateStart(); });
 
-      let transHtml = '';
-      let translationOk = false;
       try {
-        transHtml = await callGeminiTranslate(ocrHtml, lang, signal, lastUsedModel, captureUsage('translate'));
-        translationOk = true;
+        result.transHtml = await callGeminiTranslate(result.ocrHtml, lang, signal, lastUsedModel, captureUsage('translate'));
+        result.translationOk = true;
         completedSteps++;
-        setBatchProgress((completedSteps / totalSteps) * 100);
+        progress();
       } catch (err) {
         if (err.name === 'AbortError') {
-          cancelled = true;
-          appendResultCard(
-            item,
-            ocrHtml,
-            transHtml || '<div style="color:var(--ink3)">⏹ 翻譯已取消</div>',
-            i + 1,
-          );
-          break;
+          result.outcome = abortedOutcome();
+          return result;
         }
-        transHtml = `<div style="color:#c0392b">翻譯失敗：${escapeHtml(err.message)}</div>`;
+        result.transHtml = `<div style="color:#c0392b">翻譯失敗：${escapeHtml(err.message)}</div>`;
         completedSteps += polishEnabled ? 2 : 1; // skip Translate (+ Polish)
-        setBatchProgress((completedSteps / totalSteps) * 100);
+        progress();
       }
-
-      const finalOcr = ocrHtml;
-      ocrHtml = null;
 
       // Robot: Translate done (fire-and-forget)
-      robotTranslateDone();
+      narrateOnce('translateDone', () => { robotTranslateDone(); });
 
       // ── Auto-polish ──
-      let polished = false;
-      if (polishEnabled && translationOk && !signal.aborted) {
-        setStatus('spinner', `潤稿中… (${i + 1}/${items.length})`);
+      if (polishEnabled && result.translationOk && !signal.aborted) {
         // Robot: Polish start (fire-and-forget)
-        robotPolishStart();
+        narrateOnce('polishStart', () => { robotPolishStart().catch(() => {}); });
+        polishRunning++;
+        updateBatchStatus();
         try {
-          const polishedHtml = await callGeminiPolish(finalOcr, transHtml, lang, signal, lastUsedModel, captureUsage('polish'));
-          transHtml = polishedHtml;
-          polished = true;
+          result.transHtml = await callGeminiPolish(result.ocrHtml, result.transHtml, lang, signal, lastUsedModel, captureUsage('polish'));
+          result.polished = true;
         } catch (err) {
           if (err.name === 'AbortError') {
-            cancelled = true;
-            appendResultCard(
-              item,
-              finalOcr,
-              transHtml || '<div style="color:var(--ink3)">⏹ 潤稿已取消</div>',
-              i + 1,
-            );
-            break;
+            result.outcome = abortedOutcome();
+            return result;
           }
           // Polish failed — keep original translation, not a fatal error
+        } finally {
+          polishRunning--;
+          updateBatchStatus();
         }
         completedSteps++;
-        setBatchProgress((completedSteps / totalSteps) * 100);
+        progress();
       }
+      return result;
+    };
 
-      if (queueEl) {
-        queueEl.classList.remove('processing');
-        queueEl.classList.add('done');
-      }
-
-      appendResultCard(item, finalOcr, transHtml, i + 1);
-
-      // Mark polish indicator if polished
-      if (polished) {
-        const lastCard = resultsSection.lastElementChild;
-        if (lastCard) {
-          const polishInd = lastCard.querySelector('.polish-indicator');
-          if (polishInd) polishInd.classList.add('visible');
-          const polishBtn = lastCard.querySelector('.btn-polish');
-          if (polishBtn) {
-            polishBtn.classList.add('done-polish');
-            polishBtn.innerHTML = '<span class="polish-icon">✨</span> 再次潤稿';
+    // 有上限的排程：每個 worker 取下一張未開始的圖；取消後剩下的圖標記為未開始
+    const slots = items.map(() => {
+      let resolve;
+      const promise = new Promise(res => { resolve = res; });
+      return { promise, resolve };
+    });
+    let nextIndex = 0;
+    const worker = async () => {
+      while (nextIndex < items.length) {
+        const i = nextIndex++;
+        if (signal.aborted) {
+          slots[i].resolve({ item: items[i], index: i + 1, outcome: 'not_started' });
+          continue;
+        }
+        const result = newResult(items[i], i);
+        try {
+          await processItem(items[i], i, result);
+        } catch (err) {
+          // 非預期例外：中止其他張，渲染完已完成的結果後交給外層 catch 統一清理。
+          // 例外只會發生在 OCR 之後（OCR 本身的錯誤已被接住），所以已有 OCR 結果，以「已停止」顯示
+          if (!batchStopError) {
+            batchStopError = err;
+            batchAbortController?.abort();
           }
+          result.outcome = result.ocrHtml ? 'stopped' : 'not_started'; // 沒有 OCR 結果就留在佇列可重跑
+        }
+        // 有結果的圖標成 done、OCR 失敗標成 failed，取消收尾都會移除，不會留下沒有圖片資料的項目；
+        // 還沒拿到 OCR 結果就中止的（not_started）只拿掉 processing，留在佇列
+        const queueEl = document.getElementById(`queue-item-${items[i].id}`);
+        if (queueEl) {
+          queueEl.classList.remove('processing');
+          if (result.outcome === 'ocr_failed') queueEl.classList.add('failed');
+          else if (result.outcome !== 'not_started') queueEl.classList.add('done');
+        }
+        finishedImages++;
+        updateBatchStatus();
+        slots[i].resolve(result);
+      }
+    };
+    const workers = Array.from({ length: Math.min(BATCH_CONCURRENCY, items.length) }, () => worker());
+
+    // 每張卡各自保護：一張渲染失敗不可讓後面已完成、已計費的結果一起消失
+    const renderSlotResult = result => {
+      const { item } = result;
+      if (result.outcome === 'not_started' || result.outcome === 'unexpected') return; // 未開始的留在佇列，之後可以再跑
+      if (result.outcome === 'cancelled' || result.outcome === 'stopped') {
+        // 已拿到 OCR 結果、在翻譯或潤稿時被取消／停止：仍顯示已完成的部分
+        if (result.outcome === 'cancelled') cancelled = true;
+        const stopLabel = result.outcome === 'stopped' ? '⏹ 翻譯已停止' : '⏹ 翻譯已取消';
+        appendResultCard(
+          item,
+          result.ocrHtml || '<div style="color:var(--ink3)">⏹ OCR 已取消</div>',
+          result.transHtml || `<div style="color:var(--ink3)">${stopLabel}</div>`,
+          result.index,
+        );
+        return;
+      }
+      if (result.outcome === 'ocr_failed') {
+        appendResultCard(item, `<div style="color:#c0392b">OCR 失敗：${escapeHtml(result.errorMessage)}</div>`, '', result.index);
+        return;
+      }
+
+      const resultCard = appendResultCard(item, result.ocrHtml, result.transHtml, result.index);
+
+      // Mark polish indicator if polished（用本張卡片，不用 lastElementChild，避免並行時指錯卡）
+      if (result.polished && resultCard) {
+        const polishInd = resultCard.querySelector('.polish-indicator');
+        if (polishInd) polishInd.classList.add('visible');
+        const polishBtn = resultCard.querySelector('.btn-polish');
+        if (polishBtn) {
+          polishBtn.classList.add('done-polish');
+          polishBtn.innerHTML = '<span class="polish-icon">✨</span> 再次潤稿';
+        }
+      }
+    };
+    // 卡片渲染失敗時的退路：以純文字重畫同一份結果（仍用一般卡片結構，匯出功能照常），保住已完成、已計費的內容
+    const htmlToPlainText = html => {
+      const tpl = document.createElement('template');
+      tpl.innerHTML = String(html || '').replace(/<(br|\/p|\/div|\/li|\/tr|\/h[1-6])\b[^>]*>/gi, '$&\n');
+      return tpl.content.textContent.replace(/\n{3,}/g, '\n\n').trim();
+    };
+    const asTextBlock = html => `<pre style="white-space:pre-wrap;margin:0;font:inherit">${escapeHtml(htmlToPlainText(html))}</pre>`;
+    const renderSlotResultAsText = result => {
+      const ocrPart = result.outcome === 'ocr_failed'
+        ? `<div style="color:#c0392b">OCR 失敗：${escapeHtml(result.errorMessage)}</div>`
+        : asTextBlock(result.ocrHtml);
+      appendResultCard(result.item, ocrPart, result.transHtml ? asTextBlock(result.transHtml) : '', result.index);
+    };
+    // 渲染失敗時移除畫到一半的卡片，避免同一張出現兩次（渲染在這個迴圈內依序進行，最後一張就是本張）
+    const removePartialCard = lastCardBefore => {
+      const last = resultsSection.lastElementChild;
+      if (last && last !== lastCardBefore) last.remove();
+    };
+    let renderFailures = 0;
+    for (const slot of slots) {
+      const result = await slot.promise;
+      const lastCardBefore = resultsSection.lastElementChild;
+      try {
+        renderSlotResult(result);
+      } catch (renderError) {
+        console.error(`[batch] 圖片 #${result.index} 結果顯示失敗:`, renderError);
+        removePartialCard(lastCardBefore);
+        try {
+          renderSlotResultAsText(result);
+          showToast(`圖片 #${result.index} 改以純文字顯示 ⚠`);
+        } catch (fallbackError) {
+          renderFailures++;
+          console.error(`[batch] 圖片 #${result.index} 純文字顯示也失敗:`, fallbackError);
+          removePartialCard(lastCardBefore);
+          showToast(`圖片 #${result.index} 的結果無法顯示 ⚠`);
         }
       }
     }
+    await Promise.all(workers);
+    if (signal.aborted && !batchStopError) cancelled = true;
+
+    if (batchStopError) throw batchStopError;
 
     // Hide cancel button
     btnCancelBatch.classList.remove('visible');
@@ -1753,15 +1964,18 @@ Revise the translation along these three axes:
       showToast('批次已取消 ⏹');
       hideRobots();
     } else {
+      // 先給完成狀態，慶祝動畫不再擋住；有結果無法顯示時要明講，不可宣稱全部完成
+      setStatus('', renderFailures
+        ? `⚠ 完成 ${items.length} 張，其中 ${renderFailures} 張結果無法顯示`
+        : `✓ 全部完成！共 ${items.length} 張`);
       // Epic done reaction
       setTimeout(() => {
         showToast(randomPick(r.done));
         spawnConfetti(20);
         emojiRain('🎉', 5);
       }, 300);
-      // Robot: All done (awaited)
-      await robotAllDone(items.length);
-      setStatus('', `✓ 全部完成！共 ${items.length} 張`);
+      // Robot: All done (fire-and-forget)
+      robotAllDone(items.length).catch(() => {});
     }
 
     if (cancelled) {
@@ -1775,42 +1989,55 @@ Revise the translation along these three axes:
         progressHideTimer = null;
       }, 1500);
     }
+    } catch (err) {
+      batchFailed = true;
+      batchSettled = true;
+      batchAbortController?.abort(); // 主流程出錯時停掉其他還在跑的圖，不再繼續呼叫 API
+      console.error('[batch] unexpected error:', err);
+      try { hideRobots(); } catch (_) {}
+      if (progressHideTimer !== null) { clearTimeout(progressHideTimer); progressHideTimer = null; }
+      progressContainer.classList.remove('active');
+      document.body.classList.remove('progress-active');
+      setStatus('error', '⚠ 發生非預期錯誤，已停止');
+      showToast('發生非預期錯誤，已停止 ⚠');
+    } finally {
+      isProcessing = false;
+      batchAbortController = null;
+      btnCancelBatch.classList.remove('visible');
 
-    isProcessing = false;
-    batchAbortController = null;
-
-    if (cancelled) {
-      // Only remove processed/partial items; keep unprocessed items in queue
-      const doneIds = new Set();
-      queueGrid.querySelectorAll('.queue-item.done, .queue-item.processing').forEach(el => {
-        const id = parseInt(el.id.replace('queue-item-', ''));
-        if (!isNaN(id)) doneIds.add(id);
-        el.remove();
-      });
-      imageQueue = imageQueue.filter(item => {
-        if (doneIds.has(item.id)) {
-          if (item.blobUrl && !renderedBlobUrls.has(item.blobUrl)) {
-            try { URL.revokeObjectURL(item.blobUrl); } catch(e) {}
+      if (cancelled || batchFailed) {
+        // Only remove processed/partial items; keep unprocessed items in queue
+        const doneIds = new Set();
+        queueGrid.querySelectorAll('.queue-item.done, .queue-item.failed, .queue-item.processing').forEach(el => {
+          const id = parseInt(el.id.replace('queue-item-', ''));
+          if (!isNaN(id)) doneIds.add(id);
+          el.remove();
+        });
+        imageQueue = imageQueue.filter(item => {
+          if (doneIds.has(item.id)) {
+            if (item.blobUrl && !renderedBlobUrls.has(item.blobUrl)) {
+              try { URL.revokeObjectURL(item.blobUrl); } catch(e) {}
+            }
+            item.base64 = null;
+            item.file = null;
+            return false;
           }
-          item.base64 = null;
-          item.file = null;
-          return false;
-        }
-        return true;
-      });
-      // Re-number remaining queue items
-      document.querySelectorAll('.queue-item .item-number').forEach((n, i) => {
-        n.textContent = `#${i + 1}`;
-      });
-      settleFlowAfterQueueChange();
-    } else {
-      clearQueue();
-    }
+          return true;
+        });
+        // Re-number remaining queue items
+        document.querySelectorAll('.queue-item .item-number').forEach((n, i) => {
+          n.textContent = `#${i + 1}`;
+        });
+        settleFlowAfterQueueChange();
+      } else {
+        clearQueue();
+      }
 
-    document.querySelectorAll('.action-btn').forEach(btn => {
-      btn.classList.remove('processing-btn');
-    });
-    updateQueueUI();
+      document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.classList.remove('processing-btn');
+      });
+      updateQueueUI();
+    }
   }
 
   // ══════════════════════════════════
@@ -1891,6 +2118,7 @@ Revise the translation along these three axes:
     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setupSyncScroll(cardId);
     updateExportToolbar();
+    return card;
   }
 
   // ── 檢視/縮放狀態（per-card）──
@@ -2959,8 +3187,9 @@ Revise the translation along these three axes:
 
     showRobots();
     clearAllBubbles();
-    await robotPolishStart();
+    robotPolishStart().catch(() => {}); // 動畫與 API 同時進行，不再先等 4 秒
 
+    manualPolishInFlight++;
     try {
       const polished = await callGeminiPolish(sourceHtml, translatedHtml, lang, undefined, model, usageRecord => {
         const stagedRecord = withUsageStage('polish', usageRecord);
@@ -2995,13 +3224,15 @@ Revise the translation along these three axes:
         `;
       }
 
-      await robotPolishDone();
       showToast('潤稿完成！品質再升級 💎');
+      robotPolishDone().catch(() => {});
     } catch (err) {
       btn.classList.remove('polishing');
       btn.innerHTML = '<span class="polish-icon">✨</span> 潤稿';
       showToast('潤稿失敗：' + err.message.substring(0, 30));
-      await robotPolishError();
+      robotPolishError().catch(() => {});
+    } finally {
+      manualPolishInFlight--;
     }
   }
 
@@ -3046,28 +3277,36 @@ Revise the translation along these three axes:
   ];
 
   async function robotPolishStart() {
+    const epoch = speechEpoch; // 與 API 同時播放：潤稿先完成而清掉對白時就停止
     const pair = randomPick(polishStartPairs);
     for (const line of pair) {
+      if (epoch !== speechEpoch) return;
       await addSpeech(line.who, line.text, 2000);
     }
-    setRobotMood(translatorBot, ['active', 'looking-left']);
+    if (epoch === speechEpoch) setRobotMood(translatorBot, ['active', 'looking-left']);
   }
 
   async function robotPolishDone() {
     clearAllBubbles();
+    const epoch = speechEpoch;
     setRobotMood(translatorBot, ['active', 'happy']);
     await addSpeech('translator', randomPick(polishDoneQuips_translator), 2200);
+    if (epoch !== speechEpoch) return;
     setRobotMood(scannerBot, ['idle', 'happy', 'excited']);
     await addSpeech('scanner', randomPick(polishDoneQuips_scanner), 2200);
-    setTimeout(() => hideRobots(), 3000);
+    if (epoch !== speechEpoch) return;
+    setTimeout(() => { if (!isProcessing && epoch === speechEpoch) hideRobots(); }, 3000);
   }
 
   async function robotPolishError() {
     clearAllBubbles();
+    const epoch = speechEpoch;
     setRobotMood(translatorBot, ['active', 'surprised']);
     await addSpeech('translator', '汪？沒接到。', 2000);
+    if (epoch !== speechEpoch) return;
     await addSpeech('scanner', '(轉頭裝沒看見)', 2000);
-    setTimeout(() => hideRobots(), 3000);
+    if (epoch !== speechEpoch) return;
+    setTimeout(() => { if (!isProcessing && epoch === speechEpoch) hideRobots(); }, 3000);
   }
 
   // ══════════════════════════════════
@@ -3122,6 +3361,12 @@ Revise the translation along these three axes:
 
   function persistApiSettings() {
     const key = apiKeyInput.value.trim();
+    // 換了金鑰：舊金鑰留下的 429 冷卻與探測模式不適用於新金鑰
+    if (key !== getApiKey()) {
+      geminiGate.cooldownUntil = 0;
+      geminiGate.probing = false;
+      pumpGeminiGate();
+    }
     if (!key) { localStorage.removeItem(STORAGE_KEY); }
     else { localStorage.setItem(STORAGE_KEY, key); }
     refreshApiKeyCallout();

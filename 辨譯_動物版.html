@@ -1576,7 +1576,9 @@ ${html}
 Rules:
 1. Keep all HTML structure, classes, and inline styles EXACTLY the same.
 2. Only translate visible text content.${localeRule}
-4. Return ONLY raw HTML string. No markdown, no code fences.`;
+4. Translate every piece of visible text, including headings, item names, descriptions, notes and small print. Do not leave ordinary words in the source language (for example, an English adjective inside a dish name must be translated too).
+5. Names of shops, restaurants, companies and brands: keep the original name exactly as written, then add the translated name in parentheses right after it, e.g. "THE OLD MILL BRASSERIE（translated name）". Use full-width parentheses （） for Chinese or Japanese, half-width ( ) for other languages. If the name is already written in the target language, keep it as is. Dish and menu item names are not brand names: translate them fully.
+6. Return ONLY raw HTML string. No markdown, no code fences.`;
 
     return callGemini([{ text: prompt }], { signal, model: modelOverride, systemInstruction: sysInstr, onUsage });
   }
@@ -1624,7 +1626,8 @@ Revise the translation along these three axes:
 1. Keep ALL HTML structure, tags, classes, and inline styles EXACTLY the same as the current translation
 2. Only modify the visible text content
 3. The output language MUST be ${lang}
-4. Return ONLY the revised raw HTML string. No markdown, no code fences, no explanations.`;
+4. Names of shops, restaurants, companies and brands stay as "original name (translated name)" as in the current translation: never drop the original name or the translated name
+5. Return ONLY the revised raw HTML string. No markdown, no code fences, no explanations.`;
 
     return callGemini([{ text: prompt }], { signal, model: modelOverride, systemInstruction: sysInstr, onUsage });
   }
@@ -1760,6 +1763,19 @@ Revise the translation along these three axes:
       item, index: i + 1, ocrHtml: '', transHtml: '',
       translationOk: false, polished: false, outcome: 'done', errorMessage: '',
     });
+    // 每張一個「原文已就緒」訊號：OCR 成功就帶結果物件 resolve，讓卡片先依原順序顯示原文；
+    // 沒拿到 OCR 結果就結束（失敗、未開始）時由 worker 以 null resolve
+    const ocrReady = items.map(() => {
+      let resolve;
+      const promise = new Promise(res => { resolve = res; });
+      return { promise, resolve };
+    });
+    // 有潤稿時的「譯文已就緒」訊號：翻譯成功就先把譯文填回卡片，潤稿好了再替換；不潤稿或翻譯失敗時由 worker 以 null resolve
+    const transReady = items.map(() => {
+      let resolve;
+      const promise = new Promise(res => { resolve = res; });
+      return { promise, resolve };
+    });
     const processItem = async (item, i, result) => {
       const queueEl = document.getElementById(`queue-item-${item.id}`);
       if (queueEl) queueEl.classList.add('processing');
@@ -1790,6 +1806,8 @@ Revise the translation along these three axes:
         ocrRunning--;
         updateBatchStatus();
       }
+
+      ocrReady[i].resolve(result); // 原文先顯示，譯文好了再填回同一張卡
 
       // Robot: OCR done (fire-and-forget)
       narrateOnce('ocrDone', () => { robotOcrDone(); });
@@ -1822,6 +1840,7 @@ Revise the translation along these three axes:
 
       // ── Auto-polish ──
       if (polishEnabled && result.translationOk && !signal.aborted) {
+        transReady[i].resolve(result); // 先顯示譯文，潤稿好了再替換
         // Robot: Polish start (fire-and-forget)
         narrateOnce('polishStart', () => { robotPolishStart().catch(() => {}); });
         polishRunning++;
@@ -1856,6 +1875,8 @@ Revise the translation along these three axes:
       while (nextIndex < items.length) {
         const i = nextIndex++;
         if (signal.aborted) {
+          ocrReady[i].resolve(null);
+          transReady[i].resolve(null);
           slots[i].resolve({ item: items[i], index: i + 1, outcome: 'not_started' });
           continue;
         }
@@ -1881,6 +1902,8 @@ Revise the translation along these three axes:
         }
         finishedImages++;
         updateBatchStatus();
+        ocrReady[i].resolve(null); // 已在 OCR 成功時 resolve 過的，這次不會改變結果
+        transReady[i].resolve(null);
         slots[i].resolve(result);
       }
     };
@@ -1939,8 +1962,8 @@ Revise the translation along these three axes:
       if (last && last !== lastCardBefore) last.remove();
     };
     let renderFailures = 0;
-    for (const slot of slots) {
-      const result = await slot.promise;
+    // 整張一次畫出：沒有先顯示原文的卡片（OCR 失敗、先顯示也失敗）走這裡
+    const renderWholeResult = result => {
       const lastCardBefore = resultsSection.lastElementChild;
       try {
         renderSlotResult(result);
@@ -1957,7 +1980,108 @@ Revise the translation along these three axes:
           showToast(`圖片 #${result.index} 的結果無法顯示 ⚠`);
         }
       }
+    };
+    // 原文先行：OCR 一完成就依原順序畫出卡片（譯文欄先顯示「翻譯中」），不必等翻譯、潤稿做完
+    const TRANS_PENDING_HTML = '<div style="color:var(--ink3);padding:12px 0">⏳ 翻譯中…</div>';
+    const renderEarlyCard = result => {
+      const lastCardBefore = resultsSection.lastElementChild;
+      try {
+        const card = appendResultCard(result.item, result.ocrHtml, TRANS_PENDING_HTML, result.index);
+        card.classList.add('trans-pending');
+        return card;
+      } catch (renderError) {
+        console.error(`[batch] 圖片 #${result.index} 原文顯示失敗:`, renderError);
+        removePartialCard(lastCardBefore);
+        try {
+          const card = appendResultCard(result.item, asTextBlock(result.ocrHtml), TRANS_PENDING_HTML, result.index);
+          card.classList.add('trans-pending');
+          showToast(`圖片 #${result.index} 改以純文字顯示 ⚠`);
+          return card;
+        } catch (fallbackError) {
+          console.error(`[batch] 圖片 #${result.index} 原文純文字顯示也失敗:`, fallbackError);
+          removePartialCard(lastCardBefore);
+          return null; // 譯文好了以後再整張畫
+        }
+      }
+    };
+    // 譯文好了（或被取消／停止）時填回同一張卡；畫不出來改純文字，保住已計費的內容
+    const fillTranslation = (card, result) => {
+      if (result.outcome === 'cancelled') cancelled = true;
+      const stopLabel = result.outcome === 'stopped' ? '⏹ 翻譯已停止' : '⏹ 翻譯已取消';
+      const transHtml = (result.outcome === 'cancelled' || result.outcome === 'stopped')
+        ? (result.transHtml || `<div style="color:var(--ink3)">${stopLabel}</div>`)
+        : result.transHtml;
+      const transContent = card.querySelector('.result-panel[data-type="trans"] .panel-content');
+      try {
+        transContent.innerHTML = sanitizeHtml(transHtml);
+        stabilizeGeneratedLayout(transContent);
+      } catch (renderError) {
+        console.error(`[batch] 圖片 #${result.index} 譯文顯示失敗:`, renderError);
+        try {
+          transContent.innerHTML = asTextBlock(transHtml);
+          showToast(`圖片 #${result.index} 譯文改以純文字顯示 ⚠`);
+        } catch (fallbackError) {
+          renderFailures++;
+          console.error(`[batch] 圖片 #${result.index} 譯文純文字顯示也失敗:`, fallbackError);
+          if (transContent) transContent.textContent = '⚠ 譯文無法顯示';
+          showToast(`圖片 #${result.index} 的譯文無法顯示 ⚠`);
+        }
+      }
+      card.classList.remove('trans-pending');
+      delete card.dataset.interimTrans;
+      const polishBtn = card.querySelector('.btn-polish');
+      if (polishBtn) polishBtn.classList.remove('polishing'); // 收掉「潤稿中…」
+      if (result.polished) {
+        card.querySelector('.polish-indicator')?.classList.add('visible');
+        if (polishBtn) {
+          polishBtn.classList.add('done-polish');
+          polishBtn.innerHTML = '<span class="polish-icon">✨</span> 再次潤稿';
+        }
+      } else if (polishBtn) {
+        polishBtn.innerHTML = '<span class="polish-icon">✨</span> 潤稿'; // 潤稿失敗或被取消：留下的是未潤稿譯文
+      }
+      const panelsId = card.querySelector('.result-panels')?.id;
+      if (panelsId) requestAnimationFrame(() => applyCardZoom(panelsId)); // 譯文長度改變 → 重算縮放
+    };
+    // 有潤稿時：翻譯一完成就先顯示譯文，卡片仍標為處理中（不可複製／匯出），潤稿好了由 fillTranslation 替換
+    const showInterimTranslation = (card, result) => {
+      if (!card.classList.contains('trans-pending')) return; // 已經填回最終結果，不再覆蓋
+      try {
+        const transContent = card.querySelector('.result-panel[data-type="trans"] .panel-content');
+        transContent.innerHTML = sanitizeHtml(result.transHtml);
+        stabilizeGeneratedLayout(transContent);
+        card.dataset.interimTrans = '1';
+        const polishBtn = card.querySelector('.btn-polish');
+        if (polishBtn) {
+          polishBtn.classList.add('polishing');
+          polishBtn.innerHTML = '<span class="polish-icon">✨</span> 潤稿中…';
+        }
+        const panelsId = card.querySelector('.result-panels')?.id;
+        if (panelsId) requestAnimationFrame(() => applyCardZoom(panelsId));
+      } catch (err) {
+        console.error(`[batch] 圖片 #${result.index} 譯文先行顯示失敗:`, err); // 潤稿結束後仍會填回最終譯文
+      }
+    };
+    const finishing = [];
+    for (let k = 0; k < slots.length; k++) {
+      const early = await ocrReady[k].promise;
+      if (!early) {
+        renderWholeResult(await slots[k].promise); // OCR 失敗或未開始：結束後依原順序畫（未開始的不畫）
+        continue;
+      }
+      const card = renderEarlyCard(early);
+      if (card) transReady[k].promise.then(r => { if (r) showInterimTranslation(card, r); });
+      finishing.push(slots[k].promise.then(result => {
+        try {
+          if (card) fillTranslation(card, result);
+          else renderWholeResult(result);
+        } catch (err) {
+          renderFailures++;
+          console.error(`[batch] 圖片 #${result.index} 譯文填回失敗:`, err);
+        }
+      }));
     }
+    await Promise.all(finishing);
     await Promise.all(workers);
     if (signal.aborted && !batchStopError) cancelled = true;
 
@@ -2011,6 +2135,19 @@ Revise the translation along these three axes:
       isProcessing = false;
       batchAbortController = null;
       btnCancelBatch.classList.remove('visible');
+      // 安全網：非預期中斷時還在「翻譯中」的卡片改為已停止，不會永遠卡住，也不會擋住匯出
+      resultsSection.querySelectorAll('.result-card.trans-pending').forEach(card => {
+        const transContent = card.querySelector('.result-panel[data-type="trans"] .panel-content');
+        // 已先顯示的未潤稿譯文保留；還沒有譯文的才改為已停止
+        if (transContent && !card.dataset.interimTrans) transContent.innerHTML = '<div style="color:var(--ink3)">⏹ 翻譯已停止</div>';
+        delete card.dataset.interimTrans;
+        const polishBtn = card.querySelector('.btn-polish');
+        if (polishBtn?.classList.contains('polishing')) {
+          polishBtn.classList.remove('polishing');
+          polishBtn.innerHTML = '<span class="polish-icon">✨</span> 潤稿';
+        }
+        card.classList.remove('trans-pending');
+      });
 
       if (cancelled || batchFailed) {
         // Only remove processed/partial items; keep unprocessed items in queue
@@ -2541,7 +2678,16 @@ Revise the translation along these three axes:
   // ══════════════════════════════════
   // ── Copy (with clipboard fallback) ──
   // ══════════════════════════════════
+  // 原文先行顯示期間，譯文欄還是「翻譯中」：不可被複製、下載或匯出成譯文
+  function isTransPending(cardId) {
+    return !!document.getElementById(cardId)?.closest('.result-card')?.classList.contains('trans-pending');
+  }
+
   async function copyResult(cardId, type) {
+    if (type === 'trans' && isTransPending(cardId)) {
+      showToast('譯文還在翻譯或潤稿中，完成後再複製 ⏳');
+      return;
+    }
     const panel = document.querySelector(`#${cardId} [data-type="${type}"]`);
     if (!panel) return;
     const content = panel.cloneNode(true);
@@ -3125,6 +3271,10 @@ Revise the translation along these three axes:
   async function downloadResultImage(cardId, index, event) {
     const container = document.getElementById(cardId);
     if (!container) return;
+    if (isTransPending(cardId)) {
+      showToast('譯文還在翻譯或潤稿中，完成後再下載 ⏳');
+      return;
+    }
     const btn = event?.target?.closest('.btn-ghost');
     if (btn) { btn.disabled = true; btn.textContent = '擷取中…'; }
 
@@ -3519,7 +3669,13 @@ Revise the translation along these three axes:
   }
 
   function getResultCards() {
-    return Array.from(resultsSection.querySelectorAll('.result-card'));
+    const cards = Array.from(resultsSection.querySelectorAll('.result-card'));
+    // 還有卡片在等譯文時不匯出，避免把「翻譯中」當成譯文
+    if (cards.some(card => card.classList.contains('trans-pending'))) {
+      showToast('還有譯文在翻譯或潤稿中，完成後再匯出 ⏳');
+      return [];
+    }
+    return cards;
   }
 
   function normalizeCanvasStack(canvases) {

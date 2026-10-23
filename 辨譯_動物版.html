@@ -408,6 +408,7 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
   const STORAGE_KEY = 'ocr_gemini_api_key';
   const STORAGE_MODEL_KEY = 'ocr_gemini_model';
   const STORAGE_POLISH_KEY = 'ocr_polish_enabled';
+  const STORAGE_POLISH_REFINED_KEY = 'ocr_polish_enabled_refined';
   const STORAGE_LANG_KEY = 'ocr_target_language';
   const MODE_MODELS = Object.freeze({ quick: 'gemini-3.5-flash-lite', refined: 'gemini-3.6-flash' });
   const DEFAULT_MODEL = MODE_MODELS.quick;
@@ -634,12 +635,15 @@ body.settings-open{overflow:hidden;overscroll-behavior:none}
   function getModeModel(mode) {
     return MODE_MODELS[mode] || MODE_MODELS.quick;
   }
-  function getPolishEnabled() {
+  // 潤稿偏好依模式分開存：快速模式沿用原本的設定（預設開）；精緻模式每步都慢（潤稿一步約 25 秒），預設關閉
+  function getPolishEnabled(mode = getMode()) {
+    if (mode === 'refined') return localStorage.getItem(STORAGE_POLISH_REFINED_KEY) === '1';
     const v = localStorage.getItem(STORAGE_POLISH_KEY);
     return v === null ? true : v === '1';
   }
   function setPolishEnabled(on) {
-    localStorage.setItem(STORAGE_POLISH_KEY, on ? '1' : '0');
+    const key = getMode() === 'refined' ? STORAGE_POLISH_REFINED_KEY : STORAGE_POLISH_KEY;
+    localStorage.setItem(key, on ? '1' : '0');
     syncPolishUi();
   }
   function syncPolishUi() {
@@ -1653,6 +1657,7 @@ Revise the translation along these three axes:
     const model = getModeModel(chosen);
     localStorage.setItem(STORAGE_MODEL_KEY, model); // 記住模式對應型號（沿用舊 key，向後相容）
     syncModeUi(chosen);
+    syncPolishUi(); // 潤稿開關依模式不同，切換模式後要跟著更新
     startBatch(getSelectedLanguage(), model);
   }
 
@@ -1690,7 +1695,9 @@ Revise the translation along these three axes:
     batchAbortController = new AbortController();
     const signal = batchAbortController.signal;
     const r = getReaction(lang);
-    const polishEnabled = getPolishEnabled();
+    const isRefinedRun = lastUsedModel === MODE_MODELS.refined;
+    const polishEnabled = getPolishEnabled(isRefinedRun ? 'refined' : 'quick');
+    if (isRefinedRun && !polishEnabled) showToast('精緻模式預設不潤稿，需要時可按卡片上的「潤稿」 ✨');
     const stepsPerImage = polishEnabled ? 3 : 2; // OCR + Translate (+ Polish)
     const totalSteps = imageQueue.length * stepsPerImage;
     let completedSteps = 0;
